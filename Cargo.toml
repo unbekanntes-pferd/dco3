@@ -1,0 +1,44 @@
+[package]
+name = "dco3"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+# HTTP client
+reqwest = {version = "0.11.14", features = ["json", "stream"]}
+
+# crypto 
+dco3_crypto = "0.5.0"
+
+# async runtime and utils
+tokio = { version = "1.27.0", features = ["full"] }
+tokio-util = { version = "0.7.7", features = ["full"] }
+async-trait = "0.1.68"
+async-stream = "0.3.5"
+futures-util = "0.3.28"
+bytes = "1.4.0"
+
+# parsing
+serde = { version = "1.0.159", features = ["derive"] }
+serde-xml-rs = "0.6.0"
+serde_json = "1.0.95"
+
+# error handling
+thiserror = "1.0.2"
+
+# logging and tracing
+tracing = "0.1.37"
+tracing-subscriber = {version = "0.3.17", features = ["env-filter"]}
+
+# utils
+url = "2.3.1"
+base64 = "0.21.0"
+chrono = "0.4.1"
+
+
+[dev-dependencies]
+mockito = "1.0.2"
+tokio-test = "0.4.2"
