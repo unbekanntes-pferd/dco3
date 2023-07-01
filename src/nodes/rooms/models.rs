@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{errors::DracoonClientError, models::DracoonErrorResponse},
-    models::Range,
+    models::{RangedItems},
     nodes::models::{NodePermissions, UserInfo},
     utils::{parse_body, FromResponse},
 };
@@ -371,12 +371,8 @@ impl EncryptRoomRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RoomGroupList {
-    range: Range,
-    items: Vec<RoomGroup>,
-}
+
+pub type RoomGroupList = RangedItems<RoomGroup>;
 
 #[async_trait]
 impl FromResponse for RoomGroupList {
@@ -526,12 +522,7 @@ impl From<Vec<u64>> for RoomGroupsDeleteBatchRequest {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RoomUserList {
-    range: Range,
-    items: Vec<RoomUser>,
-}
+pub type RoomUserList = RangedItems<RoomUser>;
 
 #[async_trait]
 impl FromResponse for RoomUserList {

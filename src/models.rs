@@ -24,7 +24,31 @@ impl Default for ListAllParams {
     }
 }
 
+/// This is a struct to pass params for listing requests (GET)
+/// - offset: offset of the list
+/// - limit: limit of the list
+/// - filter: filter queries
+/// - sort: sort queries
+/// 
+/// To build filters, use appropiate filters in relevant modules
+/// To build sorts, use appropiate sorts in relevant modules
+/// 
+/// Example:
+/// 
+/// ´´´
+/// use dco3::models::ListAllParams;
+/// 
+/// let params = ListAllParams::builder()
+///    .with_offset(0)
+///   .with_limit(100)
+///   .with_filter(dco3::nodes::models::NodesFilter::name_equals("test"))
+///   .with_sort(dco3::nodes::models::NodesSort::name_asc())
+///  .build();
+/// 
+/// ´´´
+///   
 impl ListAllParams {
+    /// Creates a builder to pass filters, sorting, offset and limit
     pub fn builder() -> ListAllParamsBuilder {
         ListAllParamsBuilder::new()
     }
@@ -48,7 +72,7 @@ impl ListAllParams {
         match self.sort.as_deref() {
             Some(sorts) =>{
                 sorts
-                    .into_iter()
+                    .iter()
                     .map(|sort| sort.to_sort_string())
                     .collect::<Vec<String>>()
                     .join("|")
@@ -86,8 +110,7 @@ impl ListAllParamsBuilder {
                 self.params.filter = Some(filters);
             },
             None => {
-                let mut filters = Vec::new();
-                filters.push(filter.into());
+                let filters = vec![filter.into()];
                 self.params.filter = Some(filters);
             }
         }
@@ -102,8 +125,7 @@ impl ListAllParamsBuilder {
                 self.params.sort = Some(sorts);
             },
             None => {
-                let mut sorts = Vec::new();
-                sorts.push(sort.into());
+                let sorts = vec![sort.into()];
                 self.params.sort = Some(sorts);
             }
         }
@@ -131,11 +153,11 @@ impl From<ListAllParams> for String {
 
         let params = value
             .filter
-            .map(|filter| format!("{params}&filter={}", filters))
+            .map(|_| format!("{params}&filter={}", filters))
             .unwrap_or(params);
         let params = value
             .sort
-            .map(|sort| format!("{params}&sort={}", sorts))
+            .map(|_| format!("{params}&sort={}", sorts))
             .unwrap_or(params);
 
         value
@@ -248,7 +270,8 @@ impl From<&SortOrder> for String {
     }
 }
 
-struct FilterQueryBuilder {
+#[derive(Default)]
+pub struct FilterQueryBuilder {
     field: Option<String>,
     operator: Option<FilterOperator>,
     value: Option<String>,
@@ -291,7 +314,8 @@ impl FilterQueryBuilder {
 }
 
 
-struct SortQueryBuilder {
+#[derive(Default)]
+pub struct SortQueryBuilder {
     field: Option<String>,
     order: Option<SortOrder>,
 }

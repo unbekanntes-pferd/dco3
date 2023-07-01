@@ -332,7 +332,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
                         url_part += 1;
                     }
-                    Err(err) => return Err(DracoonClientError::IoError),
+                    Err(_) => return Err(DracoonClientError::IoError),
                 }
             }
         }
@@ -354,6 +354,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                     _,
                 > = async_stream::stream! {
                     // TODO: chunk stream for better progress
+                    // currently the progress is only updated per chunk
                     yield Ok(chunk);
 
                 };
@@ -389,7 +390,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
-            Err(err) => return Err(DracoonClientError::IoError),
+            Err(_) => return Err(DracoonClientError::IoError),
         }
 
         // finalize upload

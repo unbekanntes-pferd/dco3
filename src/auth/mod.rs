@@ -29,9 +29,10 @@ pub enum OAuth2Flow {
     RefreshToken(String),
 }
 
-/// represents possible states for the `DracoonClient`
+/// connected state of [DracoonClient]
 #[derive(Debug, Clone)]
 pub struct Connected;
+/// disconnected state of [DracoonClient]
 #[derive(Debug, Clone)]
 pub struct Disconnected;
 
@@ -56,6 +57,8 @@ pub struct DracoonClient<State = Disconnected> {
     connected: PhantomData<State>,
 }
 
+/// Builder for the [DracoonClient] struct.
+#[derive(Default)]
 pub struct DracoonClientBuilder {
     base_url: Option<String>,
     redirect_uri: Option<String>,
@@ -64,6 +67,7 @@ pub struct DracoonClientBuilder {
 }
 
 impl DracoonClientBuilder {
+    /// Creates a new [DracoonClientBuilder]
     pub fn new() -> Self {
         Self {
             base_url: None,
@@ -72,26 +76,32 @@ impl DracoonClientBuilder {
             client_secret: None,
         }
     }
+
+    /// Sets the base url for the DRACOON instance
     pub fn with_base_url(mut self, base_url: impl Into<String>) -> Self {
         self.base_url = Some(base_url.into());
         self
     }
 
+    /// Sets the redirect uri for the OAuth2 flow (required for the auth code flow)
     pub fn with_redirect_uri(mut self, redirect_uri: impl Into<String>) -> Self {
         self.redirect_uri = Some(redirect_uri.into());
         self
     }
 
+    /// Sets the client id for the OAuth2 flow
     pub fn with_client_id(mut self, client_id: impl Into<String>) -> Self {
         self.client_id = Some(client_id.into());
         self
     }
 
+    /// Sets the client secret for the OAuth2 flow
     pub fn with_client_secret(mut self, client_secret: impl Into<String>) -> Self {
         self.client_secret = Some(client_secret.into());
         self
     }
 
+    /// Builds the [DracoonClient] struct - returns an error if any of the required fields are missing
     pub fn build(self) -> Result<DracoonClient<Disconnected>, DracoonClientError> {
         let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
 
@@ -132,8 +142,9 @@ impl DracoonClientBuilder {
     }
 }
 
-/// `DracoonClient` implementation for Disconnected state
+/// [DracoonClient] implementation for Disconnected state
 impl DracoonClient<Disconnected> {
+    /// Connects to DRACOON using any of the supported OAuth2 flows
     pub async fn connect(
         self,
         oauth_flow: OAuth2Flow,
@@ -164,6 +175,7 @@ impl DracoonClient<Disconnected> {
         })
     }
 
+    /// returns client id and client secret bas64 encoded for the basic auth header
     fn client_credentials(&self) -> String {
         const B64_URLSAFE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
@@ -172,6 +184,7 @@ impl DracoonClient<Disconnected> {
         B64_URLSAFE.encode(client_credentials)
     }
 
+    /// Returns the authorize url for the OAuth2 auth code flow
     pub fn get_authorize_url(&mut self) -> String {
         let default_redirect = self
             .base_url
@@ -200,12 +213,14 @@ impl DracoonClient<Disconnected> {
         authorize_url.to_string()
     }
 
+    /// Returns the token url for any OAuth2 flow
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
             .expect("Correct base url")
     }
 
+    /// Connects to DRACOON using the password flow
     async fn connect_password_flow(
         &self,
         username: &str,
@@ -229,6 +244,7 @@ impl DracoonClient<Disconnected> {
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
     }
 
+    /// Connects to DRACOON using the auth code flow
     async fn connect_authcode_flow(&self, code: &str) -> Result<Connection, DracoonClientError> {
         let token_url = self.get_token_url();
 
@@ -249,6 +265,7 @@ impl DracoonClient<Disconnected> {
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
     }
 
+    /// Connects to DRACOON using the refresh token flow
     async fn connect_refresh_token(
         &self,
         refresh_token: &str,
@@ -267,6 +284,8 @@ impl DracoonClient<Disconnected> {
 
 /// `DracoonClient` implementation for Connected state
 impl DracoonClient<Connected> {
+    /// disconnects the client and optionally revokes the access and refresh token
+    /// access token is revoked by default, refresh token is not revoked by default
     pub async fn disconnect(
         self,
         revoke_access_token: Option<bool>,
@@ -295,17 +314,20 @@ impl DracoonClient<Connected> {
             http: self.http,
         })
     }
-
+    
+    /// Returns the base url of the DRACOON instance
     pub fn get_base_url(&self) -> &Url {
         &self.base_url
     }
 
+    /// Returns the token url for any OAuth2 flow
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
             .expect("Correct base url")
     }
 
+    /// Revokes the access token
     async fn revoke_acess_token(&self) -> Result<(), DracoonClientError> {
         let access_token = self
             .connection
@@ -326,11 +348,12 @@ impl DracoonClient<Connected> {
             &access_token,
         );
 
-        let res = self.http.post(api_url).form(&auth).send().await?;
+        self.http.post(api_url).form(&auth).send().await?;
 
         Ok(())
     }
 
+    /// Revokes the refresh token
     async fn revoke_refresh_token(&self) -> Result<(), DracoonClientError> {
         let refresh_token = self
             .connection
@@ -351,11 +374,12 @@ impl DracoonClient<Connected> {
             &refresh_token,
         );
 
-        let res = self.http.post(api_url).form(&auth).send().await?;
+        self.http.post(api_url).form(&auth).send().await?;
 
         Ok(())
     }
 
+    /// Fetches new tokens using available refresh token from the current connection
     async fn connect_refresh_token(&self) -> Result<Connection, DracoonClientError> {
         let token_url = self.get_token_url();
 
@@ -374,9 +398,10 @@ impl DracoonClient<Connected> {
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
     }
 
+    /// Returns the necessary token header for any API call that requires authentication in DRACOON
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
         if !self.check_access_token_validity() {
-            let connection = self.connect_refresh_token().await?;
+            self.connect_refresh_token().await?;
         }
 
         Ok(format!(
@@ -388,6 +413,7 @@ impl DracoonClient<Connected> {
         ))
     }
 
+    /// Returns the refresh token
     pub fn get_refresh_token(&self) -> &str {
         self.connection
             .as_ref()
@@ -396,6 +422,7 @@ impl DracoonClient<Connected> {
             .as_str()
     }
 
+    /// Checks if the access token is still valid
     fn check_access_token_validity(&self) -> bool {
         let connection = self
             .connection

@@ -205,7 +205,7 @@ impl From<DracoonErrorResponse> for DracoonClientError {
 
 impl From<ParseError> for DracoonClientError {
     /// transforms a URL parse error into a DRACOON client error
-    fn from(value: ParseError) -> Self {
+    fn from(_v: ParseError) -> Self {
 
         Self::InvalidUrl("parsing url failed (invalid)".to_string())
     }

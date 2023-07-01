@@ -62,6 +62,7 @@ pub struct FileMeta(
     pub Option<DateTime<Utc>>,
 );
 
+#[derive(Default)]
 pub struct FileMetaBuilder {
     name: Option<String>,
     size: Option<u64>,
@@ -130,6 +131,7 @@ impl UploadOptions {
     }
 }
 
+#[derive(Default)]
 pub struct UploadOptionsBuilder {
     expiration: Option<ObjectExpiration>,
     classification: Option<u8>,
@@ -984,7 +986,7 @@ impl FromResponse for MissingKeysResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetBatchRequest {
     items: Vec<UserFileKeySetRequest>,
