@@ -12,6 +12,8 @@ use base64::{
 pub mod errors;
 pub mod models;
 
+pub use models::*;
+
 use crate::{
     auth::models::{
         OAuth2AuthCodeFlow, OAuth2PasswordFlow, OAuth2TokenResponse, OAuth2TokenRevoke,

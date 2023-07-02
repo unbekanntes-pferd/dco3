@@ -1,22 +1,21 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-//! # dco3
+//! # dco3 - DRACOON API wrapper in Rust
 //!
 //! `dco3` is an async wrapper around API calls in DRACOON.
-//! DRACOON is a cloud service provider - more information can be found on <https://dracoon.com>
-//! 
-//! The
+//! DRACOON is a cloud service provider - more information can be found on <https://dracoon.com>.
+//! The name is based on several other projects pointing to oxide (Rust) and DRACOON.
 //!
 //! ## Usage
-//! All API calls are implemented by the `Dracoon` struct. It can be created by using the `DracoonBuilder` struct.
+//! All API calls are implemented by the `Dracoon` struct. It can be created by using the `builder()` method.
 //! 
 //! In order to access specific API calls, the `Dracoon` struct needs to be in the `Connected` state. 
 //! This can be achieved by calling the `connect` method.
 //! To use specific endpoints, you need to import relevant traits.
 //! Currently, the following traits are implemented:
 //! 
-//! * [User] - for user management
+//! * [User] - for user account management
 //! * [UserAccountKeypairs] - for user keypair management
 //! * [Nodes] - for node operations (folders, rooms, upload and download are excluded)
 //! * [Download] - for downloading files
@@ -36,19 +35,187 @@
 //!       .with_client_id("client_id")
 //!       .with_client_secret("client_secret")
 //!       .build()
-//!      .unwrap()
-//!     .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
-//!    .await
-//!   .unwrap();
-//! 
+//!       .unwrap()
+//!       .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!       .await
+//!       .unwrap();
 //! 
 //!   let user_info = dracoon.get_user_account().await.unwrap();
 //!   println!("User info: {:?}", user_info);
 //! }
 //!```
 //! 
+//! ## Authentication
 //! 
-
+//! All supported OAuth2 flows are implemented. 
+//! 
+//! ### Password Flow
+//! ```no_run
+//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! 
+//! #[tokio::main]
+//! async fn main() {
+//! 
+//!    // you can instantiate the required flow by using the `OAuth2Flow` enum
+//!    let password_flow = OAuth2Flow::PasswordFlow("username".into(), "password".into());
+//! 
+//!    let dracoon = Dracoon::builder()
+//!       .with_base_url("https://dracoon.team")
+//!       .with_client_id("client_id")
+//!       .with_client_secret("client_secret")
+//!       .build()
+//!       .unwrap()
+//!       .connect(password_flow)
+//!       .await
+//!       .unwrap();
+//! }
+//!```
+//! ### Authorization Code Flow
+//! ```no_run
+//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! 
+//! #[tokio::main]
+//! async fn main() {
+//! 
+//!    let mut dracoon = Dracoon::builder()
+//!       .with_base_url("https://dracoon.team")
+//!       .with_client_id("client_id")
+//!       .with_client_secret("client_secret")
+//!       .with_redirect_uri("https://redirect.uri")
+//!       .build()
+//!       .unwrap();
+//! 
+//!    // initiate the authorization code flow
+//!    let authorize_url = dracoon.get_authorize_url();
+//! 
+//!    // get auth code
+//!    let auth_code = "some_auth_code";
+//! 
+//!    // you can instantiate the required flow by using the `OAuth2Flow` enum
+//!    let auth_code_flow = OAuth2Flow::AuthCodeFlow("auth_code".into());
+//! 
+//!    let dracoon = dracoon.connect(auth_code_flow).await.unwrap();
+//! }
+//!```
+//! 
+//! 
+//! 
+//! ### Refresh Token
+//! 
+//! ```no_run
+//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! 
+//! #[tokio::main]
+//! async fn main() {
+//! 
+//!   let refresh_token = "some_refresh_token";
+//! 
+//!   let dracoon = Dracoon::builder()
+//!     .with_base_url("https://dracoon.team")
+//!     .with_client_id("client_id")
+//!     .with_client_secret("client_secret")
+//!     .build()
+//!     .unwrap()
+//!     .connect(OAuth2Flow::RefreshToken(refresh_token.into()))
+//!     .await
+//!     .unwrap();
+//! 
+//! }
+//! ```
+//! 
+//! ## Error handling
+//! 
+//! All errors are wrapped in the [DracoonClientError] enum.
+//! 
+//! Most errrors are related to general usage (like missing parameters). 
+//! 
+//! All API errors are wrapped in the `DracoonClientError::Http` variant.
+//! The variant contains response with relevant status code and message.
+//! 
+//! You can check if the underlying error message if a specific API error by using the `is_*` methods.
+//! 
+//! ```no_run
+//! use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
+//! 
+//! #[tokio::main]
+//! 
+//! async fn main() {
+//! 
+//!  let dracoon = Dracoon::builder()
+//!    .with_base_url("https://dracoon.team")
+//!    .with_client_id("client_id")
+//!    .with_client_secret("client_secret")
+//!    .build()
+//!    .unwrap()
+//!    .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!    .await
+//!    .unwrap();
+//! 
+//! let node = dracoon.get_node(123).await;
+//! 
+//! match node {
+//!  Ok(node) => println!("Node info: {:?}", node),
+//! Err(err) => {
+//!  if err.is_not_found() {
+//!   println!("Node not found");
+//! } else {
+//!  println!("Error: {:?}", err);
+//!       }
+//!    }
+//!   }
+//! }
+//! 
+//! ```
+//! 
+//! ## Building requests
+//! 
+//! All API calls are implemented as traits.
+//! Each API call that requires a sepcific payload has a corresponding builder.
+//! To access the builder, you can call the builder() method.
+//! 
+//! ```no_run
+//! # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::CreateRoomRequest};
+//! # #[tokio::main]
+//! # async fn main() {
+//! # let dracoon = Dracoon::builder()
+//! #  .with_base_url("https://dracoon.team")
+//! #  .with_client_id("client_id")
+//! #  .with_client_secret("client_secret")
+//! #  .build()
+//! #  .unwrap()
+//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//! #  .await
+//! #  .unwrap();
+//! let room = CreateRoomRequest::builder("My Room")
+//!            .with_parent_id(123)
+//!            .with_admin_ids(vec![1, 2, 3])
+//!            .build();
+//! 
+//! let room = dracoon.create_room(room).await.unwrap();
+//! # }
+//! ```
+//! 
+//! ## Cryptography support
+//! All API calls (specifically up- and downloads) support encryption and decryption.
+//! In order to use encryption, you need to get your keypair once the client is in `Connected` state.
+//! 
+//! ```no_run
+//! # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
+//! # #[tokio::main]
+//! # async fn main() {
+//! # let dracoon = Dracoon::builder()
+//! # .with_base_url("https://dracoon.team")
+//! # .with_client_id("client_id")
+//! # .with_client_secret("client_secret")
+//! # .build()
+//! # let dracoon = dracoon.connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//! // note that the method has an optional parameter - this is because the client must be able to 
+//! // get the keypair (also after providing the secret once)
+//! dracoon.get_user_keypair(Some("my secret")).await.unwrap();
+//! ```
+//! 
+//! ## Examples
+//! For an example client implementation, see the [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) repository.
 
 use std::marker::PhantomData;
 
@@ -56,17 +223,19 @@ use dco3_crypto::PlainUserKeyPairContainer;
 use reqwest::Url;
 
 use self::{
-    auth::{errors::DracoonClientError, Connected, Disconnected, OAuth2Flow},
+    auth::{Connected, Disconnected, OAuth2Flow},
     auth::{DracoonClient, DracoonClientBuilder},
     user::{models::UserAccount},
 };
 
-// re-export traits
+// re-export traits and base models
 pub use self::{
     nodes::{Download, Folders, Nodes, Rooms, Upload},
     user::User,
     user::UserAccountKeypairs,
+    auth::errors::DracoonClientError
 };
+
 
 pub mod auth;
 pub mod constants;
@@ -76,6 +245,7 @@ pub mod user;
 pub mod utils;
 
 
+/// DRACOON struct - implements all API calls via traits
 #[derive(Clone)]
 pub struct Dracoon<State = Disconnected> {
     client: DracoonClient<State>,
@@ -87,6 +257,7 @@ pub struct Dracoon<State = Disconnected> {
 /// Builder for the `Dracoon` struct.
 /// Requires a base url, client id and client secret.
 /// Optionally, a redirect uri can be provided.
+/// For convenience, use the [Dracoon] builder method.
 #[derive(Default)]
 pub struct DracoonBuilder {
     client_builder: DracoonClientBuilder,

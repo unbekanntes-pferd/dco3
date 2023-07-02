@@ -133,6 +133,65 @@ impl DracoonErrorResponse {
             error_code: None,
         }
     }
+    
+    /// Checks if error is 403 Forbidden
+    pub fn is_forbidden(&self) -> bool {
+        self.code == 403
+    }
+
+    /// Checks if error is 404 Not Found
+    pub fn is_not_found(&self) -> bool {
+        self.code == 404
+    }
+   
+    /// Checks if error is 409 Conflict
+    pub fn is_conflict(&self) -> bool {
+        self.code == 409
+    }
+    
+    /// Checks if error is 429 Too Many Requests
+    pub fn is_too_many_requests(&self) -> bool {
+        self.code == 429
+    }
+
+    /// Checks if error is 500 Internal Server Error
+    pub fn is_server_error(&self) -> bool {
+        self.code >= 500
+    }
+    
+    /// Checks if error is a client error (4xx)
+    pub fn is_client_error(&self) -> bool {
+        self.code >= 400 && self.code < 500
+    }
+    
+    /// Checks if error is 401 Unauthorized
+    pub fn is_unauthorized(&self) -> bool {
+        self.code == 401
+    }
+
+    /// Checks if error is 400 Bad Request
+    pub fn is_bad_request(&self) -> bool {
+        self.code == 400
+    }
+    
+    /// Checks if error is 402 Payment Required
+    pub fn is_payment_required(&self) -> bool {
+        self.code == 402
+    }
+    
+    /// Checks if error is 412 Precondition Failed
+    pub fn is_precondition_failed(&self) -> bool {
+        self.code == 412
+    }
+    
+    /// Returns the error message
+    pub fn error_message(&self) -> String {
+        self.message.clone()
+    }
+
+    pub fn debug_info(&self) -> Option<String> {
+        self.debug_info.clone()
+    }
 }
 
 /// DRACOON `OAuth2` error response

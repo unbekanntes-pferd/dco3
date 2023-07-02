@@ -1,4 +1,4 @@
-use self::{
+pub use self::{
     models::{
         CreateFolderRequest, DownloadProgressCallback, FileMeta, Node, NodeList,
         TransferNodesRequest, UpdateFolderRequest, UploadOptions, UploadProgressCallback,
@@ -20,6 +20,7 @@ pub mod models;
 pub mod nodes;
 pub mod rooms;
 pub mod upload;
+
 
 /// This trait provides methods to manage nodes.
 /// Specifically, there's a method to obtain a node for a given path and 
@@ -176,7 +177,9 @@ pub trait Rooms {
 }
 
 /// This trait represents the download functionality and provides
-/// a signle method to download a stream of bytes to a writer
+/// a signle method to download a stream of bytes to a writer.
+/// This rquires a mutable reference to the client because the download method
+/// needs to be able to check for the secret and set it for the client if encryption is used.
 #[async_trait]
 pub trait Download {
     /// Downloads a file (node) to the given writer buffer
@@ -222,7 +225,9 @@ pub trait Download {
 }
 
 /// This trait represents the upload functionality and provides
-/// a single method to upload a stream of bytes by passing a buffered reader
+/// a single method to upload a stream of bytes by passing a buffered reader.
+/// This rquires a mutable reference to the client because the upload method
+/// needs to be able to check for the secret and set it for the client if encryption is used.
 #[async_trait]
 pub trait Upload<R: AsyncRead> {
     /// Uploads a stream (buffered reader) with given file meta info to the given parent node
