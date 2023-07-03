@@ -49,6 +49,11 @@ pub const USER_BASE: &str = "user";
 pub const USER_ACCOUNT: &str = "account";
 pub const USER_ACCOUNT_KEYPAIR: &str = "keypair";
 
+// GROUPS
+pub const GROUPS_BASE: &str = "groups";
+pub const GROUPS_USERS: &str = "users";
+pub const GROUPS_LAST_ADMIN_ROOMS: &str = "last_admin_rooms";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
