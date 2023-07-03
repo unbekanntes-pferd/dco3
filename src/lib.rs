@@ -243,6 +243,7 @@ pub mod models;
 pub mod nodes;
 pub mod user;
 pub mod utils;
+pub mod groups;
 
 
 /// DRACOON struct - implements all API calls via traits
