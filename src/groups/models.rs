@@ -43,9 +43,9 @@ pub struct CreateGroupRequest {
 }
 
 impl CreateGroupRequest {
-    pub fn new(name: String, expiration: Option<ObjectExpiration>) -> Self {
+    pub fn new(name: impl Into<String>, expiration: Option<ObjectExpiration>) -> Self {
         Self {
-            name,
+            name: name.into(),
             expiration
         }
     }
@@ -91,6 +91,14 @@ pub struct ChangeGroupMembersRequest {
 
 impl From<Vec<u64>> for ChangeGroupMembersRequest {
     fn from(ids: Vec<u64>) -> Self {
+        Self {
+            ids
+        }
+    }
+}
+
+impl ChangeGroupMembersRequest {
+    pub fn new(ids: Vec<u64>) -> Self {
         Self {
             ids
         }

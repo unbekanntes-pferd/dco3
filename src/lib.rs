@@ -22,6 +22,7 @@
 //! * [Upload] - for uploading files
 //! * [Folders] - for folder operations
 //! * [Rooms] - for room operations
+//! * [Groups] - for group operations
 //! 
 //! 
 //! ### Example
@@ -98,8 +99,6 @@
 //! }
 //!```
 //! 
-//! 
-//! 
 //! ### Refresh Token
 //! 
 //! ```no_run
@@ -157,13 +156,13 @@
 //!  Ok(node) => println!("Node info: {:?}", node),
 //! Err(err) => {
 //!  if err.is_not_found() {
-//!   println!("Node not found");
-//! } else {
-//!  println!("Error: {:?}", err);
+//!     println!("Node not found");
+//!     } else {
+//!          println!("Error: {:?}", err);
+//!            }
+//!         }
 //!       }
-//!    }
-//!   }
-//! }
+//!  }
 //! 
 //! ```
 //! 
@@ -192,9 +191,31 @@
 //!            .build();
 //! 
 //! let room = dracoon.create_room(room).await.unwrap();
+//! 
 //! # }
 //! ```
+//! Some requests do not have any complicated fields - in these cases, use the `new()` method.
+//! ```no_run
+//! # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::CreateGroupRequest};
+//! # #[tokio::main]
+//! # async fn main() {
+//! # let dracoon = Dracoon::builder()
+//! #  .with_base_url("https://dracoon.team")
+//! #  .with_client_id("client_id")
+//! #  .with_client_secret("client_secret")
+//! #  .build()
+//! #  .unwrap()
+//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//! #  .await
+//! #  .unwrap();
 //! 
+//! // this takes a mandatory name and optional expiration
+//! let group = CreateGroupRequest::new("My Group", None);
+//! let group = dracoon.create_group(group).await.unwrap();
+//! 
+//! # }
+//! ```
+
 //! ## Cryptography support
 //! All API calls (specifically up- and downloads) support encryption and decryption.
 //! In order to use encryption, you need to get your keypair once the client is in `Connected` state.
@@ -203,17 +224,19 @@
 //! # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
 //! # #[tokio::main]
 //! # async fn main() {
-//! # let dracoon = Dracoon::builder()
-//! # .with_base_url("https://dracoon.team")
-//! # .with_client_id("client_id")
-//! # .with_client_secret("client_secret")
-//! # .build()
-//! # let dracoon = dracoon.connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
-//! // note that the method has an optional parameter - this is because the client must be able to 
+//! # let mut dracoon = Dracoon::builder()
+//! #  .with_base_url("https://dracoon.team")
+//! #  .with_client_id("client_id")
+//! #  .with_client_secret("client_secret")
+//! #  .build()
+//! #  .unwrap()
+//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//! #  .await
+//! #  .unwrap();
 //! // get the keypair (also after providing the secret once)
-//! dracoon.get_user_keypair(Some("my secret")).await.unwrap();
+//! dracoon.get_keypair(Some("my secret")).await.unwrap();
+//! # }
 //! ```
-//! 
 //! ## Examples
 //! For an example client implementation, see the [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) repository.
 
@@ -233,7 +256,8 @@ pub use self::{
     nodes::{Download, Folders, Nodes, Rooms, Upload},
     user::User,
     user::UserAccountKeypairs,
-    auth::errors::DracoonClientError
+    auth::errors::DracoonClientError,
+    groups::Groups
 };
 
 
