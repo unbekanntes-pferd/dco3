@@ -52,12 +52,12 @@ impl FilterQuery for NodesFilter {
 }
 
 impl NodesFilter {
-    pub fn name_equals(val: &str) -> Self {
-        NodesFilter::Name(FilterOperator::Eq, String::from(val))
+    pub fn name_equals(val: impl Into<String>) -> Self {
+        NodesFilter::Name(FilterOperator::Eq, String::from(val.into()))
     }
 
-    pub fn name_contains(val: &str) -> Self {
-        NodesFilter::Name(FilterOperator::Cn, String::from(val))
+    pub fn name_contains(val: impl Into<String>) -> Self {
+        NodesFilter::Name(FilterOperator::Cn, String::from(val.into()))
     }
 
     pub fn is_encrypted(val: bool) -> Self {
@@ -68,20 +68,20 @@ impl NodesFilter {
         NodesFilter::ReferenceId(FilterOperator::Eq, val)
     }
 
-    pub fn created_before(val: &str) -> Self {
-        NodesFilter::TimestampCreation(FilterOperator::Le, String::from(val))
+    pub fn created_before(val: impl Into<String>) -> Self {
+        NodesFilter::TimestampCreation(FilterOperator::Le, String::from(val.into()))
     }
 
-    pub fn created_after(val: &str) -> Self {
-        NodesFilter::TimestampCreation(FilterOperator::Ge, String::from(val))
+    pub fn created_after(val: impl Into<String>) -> Self {
+        NodesFilter::TimestampCreation(FilterOperator::Ge, String::from(val.into()))
     }
 
-    pub fn modified_before(val: &str) -> Self {
-        NodesFilter::TimestampModification(FilterOperator::Le, String::from(val))
+    pub fn modified_before(val: impl Into<String>) -> Self {
+        NodesFilter::TimestampModification(FilterOperator::Le, String::from(val.into()))
     }
 
-    pub fn modified_after(val: &str) -> Self {
-        NodesFilter::TimestampModification(FilterOperator::Ge, String::from(val))
+    pub fn modified_after(val: impl Into<String>) -> Self {
+        NodesFilter::TimestampModification(FilterOperator::Ge, String::from(val.into()))
     }
 
     pub fn branch_version_before(val: u64) -> Self {
@@ -107,8 +107,8 @@ impl NodesFilter {
 }
 
 impl From<NodesFilter> for Box<dyn FilterQuery> {
-    fn from(value: NodesFilter) -> Self {
-        Box::new(value)  
+    fn from(filter: NodesFilter) -> Self {
+        Box::new(filter)  
     }
 }
 
@@ -151,12 +151,12 @@ impl NodesSearchFilter {
         NodesSearchFilter::IsFavorite(FilterOperator::Eq, val)
     }
 
-    pub fn parent_path_equals(val: &str) -> Self {
-        NodesSearchFilter::ParentPath(FilterOperator::Eq, String::from(val))
+    pub fn parent_path_equals(val: impl Into<String>) -> Self {
+        NodesSearchFilter::ParentPath(FilterOperator::Eq, String::from(val.into()))
     }
 
-    pub fn parent_path_contains(val: &str) -> Self {
-        NodesSearchFilter::ParentPath(FilterOperator::Cn, String::from(val))
+    pub fn parent_path_contains(val: impl Into<String>) -> Self {
+        NodesSearchFilter::ParentPath(FilterOperator::Cn, String::from(val.into()))
     }
 
     pub fn size_greater_equals(val: u64) -> Self {
@@ -175,47 +175,47 @@ impl NodesSearchFilter {
         NodesSearchFilter::BranchVersion(FilterOperator::Ge, val)
     }
 
-    pub fn created_at_before(val: &str) -> Self {
-        NodesSearchFilter::CreatedAt(FilterOperator::Le, String::from(val))
+    pub fn created_at_before(val: impl Into<String>) -> Self {
+        NodesSearchFilter::CreatedAt(FilterOperator::Le, String::from(val.into()))
     }
 
-    pub fn created_at_after(val: &str) -> Self {
-        NodesSearchFilter::CreatedAt(FilterOperator::Ge, String::from(val))
+    pub fn created_at_after(val: impl Into<String>) -> Self {
+        NodesSearchFilter::CreatedAt(FilterOperator::Ge, String::from(val.into()))
     }
 
-    pub fn updated_at_before(val: &str) -> Self {
-        NodesSearchFilter::UpdatedAt(FilterOperator::Le, String::from(val))
+    pub fn updated_at_before(val: impl Into<String>) -> Self {
+        NodesSearchFilter::UpdatedAt(FilterOperator::Le, String::from(val.into()))
     }
 
-    pub fn updated_at_after(val: &str) -> Self {
-        NodesSearchFilter::UpdatedAt(FilterOperator::Ge, String::from(val))
+    pub fn updated_at_after(val: impl Into<String>) -> Self {
+        NodesSearchFilter::UpdatedAt(FilterOperator::Ge, String::from(val.into()))
     }
 
-    pub fn expire_at_before(val: &str) -> Self {
-        NodesSearchFilter::ExpireAt(FilterOperator::Le, String::from(val))
+    pub fn expire_at_before(val: impl Into<String>) -> Self {
+        NodesSearchFilter::ExpireAt(FilterOperator::Le, String::from(val.into()))
     }
 
-    pub fn expire_at_after(val: &str) -> Self {
-        NodesSearchFilter::ExpireAt(FilterOperator::Ge, String::from(val))
+    pub fn expire_at_after(val: impl Into<String>) -> Self {
+        NodesSearchFilter::ExpireAt(FilterOperator::Ge, String::from(val.into()))
     }
 
     pub fn classification_equals(val: u8) -> Self {
         NodesSearchFilter::Classification(FilterOperator::Eq, val)
     }
 
-    pub fn file_type_equals(val: &str) -> Self {
-        NodesSearchFilter::FileType(FilterOperator::Eq, String::from(val))
+    pub fn file_type_equals(val: impl Into<String>) -> Self {
+        NodesSearchFilter::FileType(FilterOperator::Eq, String::from(val.into()))
     }
 
-    pub fn file_type_contains(val: &str) -> Self {
-        NodesSearchFilter::FileType(FilterOperator::Cn, String::from(val))
+    pub fn file_type_contains(val: impl Into<String>) -> Self {
+        NodesSearchFilter::FileType(FilterOperator::Cn, String::from(val.into()))
     }
 
 }
 
 impl From<NodesSearchFilter> for Box<dyn FilterQuery> {
-    fn from(value: NodesSearchFilter) -> Self {
-        Box::new(value)  
+    fn from(filter: NodesSearchFilter) -> Self {
+        Box::new(filter)  
     }
 }
 
