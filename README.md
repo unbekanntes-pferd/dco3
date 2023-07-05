@@ -27,9 +27,7 @@ To contribute, fork the repository and create a pull request.
 ## Roadmap
 
 * implement missing API calls
-    * shares
     * users
-    * groups
     * config
 * improve upload callback (chunk stream)
 * add examples
