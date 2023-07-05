@@ -1,3 +1,4 @@
+//! This module implments basic models for the DRACOON API.
 use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
