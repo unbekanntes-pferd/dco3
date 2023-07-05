@@ -603,8 +603,8 @@ pub struct DownloadShareLinkEmail {
 
 impl DownloadShareLinkEmail {
     pub fn new(
-        recipients: Vec<String>,
         body: impl Into<String>,
+        recipients: Vec<String>,
         receiver_language: Option<String>,
     ) -> Self {
         DownloadShareLinkEmail {

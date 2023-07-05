@@ -2,7 +2,13 @@ use async_trait::async_trait;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
-use crate::{models::{RangedItems, ObjectExpiration, FilterOperator, FilterQuery, SortOrder, SortQuery}, nodes::models::UserInfo, utils::{FromResponse, parse_body}, DracoonClientError, auth::DracoonErrorResponse};
+use crate::{
+    auth::DracoonErrorResponse,
+    models::{FilterOperator, FilterQuery, ObjectExpiration, RangedItems, SortOrder, SortQuery},
+    nodes::models::UserInfo,
+    utils::{parse_body, FromResponse},
+    DracoonClientError,
+};
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -33,7 +39,6 @@ pub struct UploadShare {
     pub show_creator_username: Option<bool>,
 }
 
-
 #[async_trait]
 impl FromResponse for UploadShare {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
@@ -59,9 +64,13 @@ pub struct UploadShareLinkEmail {
 }
 
 impl UploadShareLinkEmail {
-    pub fn new(body: String, recipients: Vec<String>, receiver_language: Option<String>) -> Self {
+    pub fn new(
+        body: impl Into<String>,
+        recipients: Vec<String>,
+        receiver_language: Option<String>,
+    ) -> Self {
         Self {
-            body,
+            body: body.into(),
             recipients,
             receiver_language,
         }
@@ -388,10 +397,10 @@ pub struct UpdateUploadSharesBulkRequest {
     max_size: Option<u64>,
     reset_max_size: Option<bool>,
     file_expiry_period: Option<u32>,
-    reset_file_expiry_period: Option<bool>
+    reset_file_expiry_period: Option<bool>,
 }
 
-impl UpdateUploadSharesBulkRequest { 
+impl UpdateUploadSharesBulkRequest {
     pub fn builder(object_ids: Vec<u64>) -> UpdateUploadSharesBulkRequestBuilder {
         UpdateUploadSharesBulkRequestBuilder::new(object_ids)
     }
@@ -409,7 +418,7 @@ pub struct UpdateUploadSharesBulkRequestBuilder {
     max_size: Option<u64>,
     reset_max_size: Option<bool>,
     file_expiry_period: Option<u32>,
-    reset_file_expiry_period: Option<bool>
+    reset_file_expiry_period: Option<bool>,
 }
 
 impl UpdateUploadSharesBulkRequestBuilder {
@@ -482,7 +491,7 @@ impl UpdateUploadSharesBulkRequestBuilder {
             max_size: self.max_size,
             reset_max_size: self.reset_max_size,
             file_expiry_period: self.file_expiry_period,
-            reset_file_expiry_period: self.reset_file_expiry_period
+            reset_file_expiry_period: self.reset_file_expiry_period,
         }
     }
 }
@@ -507,57 +516,56 @@ impl FilterQuery for UploadSharesFilter {
                 let op: String = op.into();
 
                 format!("name:{}:{}", op, val)
-            },
+            }
             UploadSharesFilter::CreatedAt(op, val) => {
                 let op: String = op.into();
 
                 format!("createdAt:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::CreatedBy(op, val) => {
                 let op: String = op.into();
 
                 format!("createdBy:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::CreatedById(op, val) => {
                 let op: String = op.into();
 
                 format!("createdById:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::AccessKey(op, val) => {
                 let op: String = op.into();
 
                 format!("accessKey:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::TargetId(op, val) => {
                 let op: String = op.into();
 
                 format!("targetId:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::UserId(op, val) => {
                 let op: String = op.into();
 
                 format!("userId:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::UpdatedBy(op, val) => {
                 let op: String = op.into();
 
                 format!("updatedBy:{}:{}", op, val)
-            },
+            }
 
             UploadSharesFilter::UpdatedById(op, val) => {
                 let op: String = op.into();
 
                 format!("updatedById:{}:{}", op, val)
-            },
+            }
         }
     }
-
 }
 
 impl From<UploadSharesFilter> for Box<dyn FilterQuery> {
@@ -631,23 +639,23 @@ impl SortQuery for UploadSharesSortBy {
             UploadSharesSortBy::Name(order) => {
                 let order: String = order.into();
                 format!("name:{}", order)
-            },
+            }
             UploadSharesSortBy::NotifyCreator(order) => {
                 let order: String = order.into();
                 format!("notifyCreator:{}", order)
-            },
+            }
             UploadSharesSortBy::ExpireAt(order) => {
                 let order: String = order.into();
                 format!("expireAt:{}", order)
-            },
+            }
             UploadSharesSortBy::CreatedAt(order) => {
                 let order: String = order.into();
                 format!("createdAt:{}", order)
-            },
+            }
             UploadSharesSortBy::CreatedBy(order) => {
                 let order: String = order.into();
                 format!("createdBy:{}", order)
-            },
+            }
         }
     }
 }

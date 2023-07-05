@@ -3,6 +3,9 @@
 pub mod filters;
 pub mod sorts;
 
+pub use filters::*;
+pub use sorts::*;
+
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -310,6 +313,51 @@ pub struct NodePermissions {
 impl NodePermissions {
     pub fn builder() -> NodePermissionsBuilder {
         NodePermissionsBuilder::new()
+    }
+
+    pub fn new_with_edit_permissions() -> Self {
+        Self {
+            manage: false,
+            read: true,
+            create: true,
+            change: true,
+            delete: true,
+            manage_download_share: true,
+            manage_upload_share: true,
+            read_recycle_bin: true,
+            restore_recycle_bin: true,
+            delete_recycle_bin: false,
+        }
+    }
+
+    pub fn new_with_read_permissions() -> Self {
+        Self {
+            manage: false,
+            read: true,
+            create: false,
+            change: false,
+            delete: false,
+            manage_download_share: false,
+            manage_upload_share: false,
+            read_recycle_bin: false,
+            restore_recycle_bin: false,
+            delete_recycle_bin: false,
+        }
+    }
+
+    pub fn new_with_manage_permissions() -> Self {
+        Self {
+            manage: true,
+            read: true,
+            create: true,
+            change: true,
+            delete: true,
+            manage_download_share: true,
+            manage_upload_share: true,
+            read_recycle_bin: true,
+            restore_recycle_bin: true,
+            delete_recycle_bin: true,
+        }
     }
 }
 
@@ -837,9 +885,9 @@ pub struct CreateFolderRequestBuilder {
 }
 
 impl CreateFolderRequest {
-    pub fn builder(name: String, parent_id: u64) -> CreateFolderRequestBuilder {
+    pub fn builder(name: impl Into<String>, parent_id: u64) -> CreateFolderRequestBuilder {
         CreateFolderRequestBuilder {
-            name,
+            name: name.into(),
             parent_id,
             notes: None,
             timestamp_creation: None,
@@ -850,18 +898,18 @@ impl CreateFolderRequest {
 }
 
 impl CreateFolderRequestBuilder {
-    pub fn with_notes(mut self, notes: String) -> Self {
-        self.notes = Some(notes);
+    pub fn with_notes(mut self, notes: impl Into<String>) -> Self {
+        self.notes = Some(notes.into());
         self
     }
 
-    pub fn with_timestamp_creation(mut self, timestamp_creation: String) -> Self {
-        self.timestamp_creation = Some(timestamp_creation);
+    pub fn with_timestamp_creation(mut self, timestamp_creation: impl Into<String>) -> Self {
+        self.timestamp_creation = Some(timestamp_creation.into());
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: String) -> Self {
-        self.timestamp_modification = Some(timestamp_modification);
+    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+        self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
 
@@ -913,23 +961,23 @@ impl UpdateFolderRequest {
 }
 
 impl UpdateFolderRequestBuilder {
-    pub fn with_name(mut self, name: String) -> Self {
-        self.name = Some(name);
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
         self
     }
 
-    pub fn with_notes(mut self, notes: String) -> Self {
-        self.notes = Some(notes);
+    pub fn with_notes(mut self, notes: impl Into<String>) -> Self {
+        self.notes = Some(notes.into());
         self
     }
 
-    pub fn with_timestamp_creation(mut self, timestamp_creation: String) -> Self {
-        self.timestamp_creation = Some(timestamp_creation);
+    pub fn with_timestamp_creation(mut self, timestamp_creation: impl Into<String>) -> Self {
+        self.timestamp_creation = Some(timestamp_creation.into());
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: String) -> Self {
-        self.timestamp_modification = Some(timestamp_modification);
+    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+        self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
 

@@ -86,7 +86,7 @@ impl UploadShares for Dracoon<Connected> {
         Ok(())
     }
 
-    async fn create_share(&self, create: CreateUploadShareRequest) -> Result<UploadShare, DracoonClientError> {
+    async fn create_upload_share(&self, create: CreateUploadShareRequest) -> Result<UploadShare, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}");
 
         let api_url = self.build_api_url(&url_part);

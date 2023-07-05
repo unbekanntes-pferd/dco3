@@ -1,3 +1,5 @@
+//! This module contains all constants, specifically to address API endpoints and default configuration values.
+
 // constants for `grant_type` parameter
 pub const GRANT_TYPE_PASSWORD: &str = "password";
 pub const GRANT_TYPE_AUTH_CODE: &str = "authorization_code";

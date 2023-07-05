@@ -1,3 +1,5 @@
+//! This module is responsible for the authentication with DRACOON and implements 
+//! the [DracoonClient] struct which is used to interact with the DRACOON API.
 use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use std::marker::PhantomData;

@@ -189,8 +189,8 @@ pub struct UpdateRoomRequestBuilder {
 }
 
 impl UpdateRoomRequestBuilder {
-    pub fn with_name(mut self, name: String) -> Self {
-        self.name = Some(name);
+    pub fn with_name(mut self, name: impl Into<String>) -> Self {
+        self.name = Some(name.into());
         self
     }
 
@@ -199,18 +199,18 @@ impl UpdateRoomRequestBuilder {
         self
     }
 
-    pub fn with_notes(mut self, notes: String) -> Self {
-        self.notes = Some(notes);
+    pub fn with_notes(mut self, notes: impl Into<String>) -> Self {
+        self.notes = Some(notes.into());
         self
     }
 
-    pub fn with_timestamp_creation(mut self, timestamp_creation: String) -> Self {
-        self.timestamp_creation = Some(timestamp_creation);
+    pub fn with_timestamp_creation(mut self, timestamp_creation: impl Into<String>) -> Self {
+        self.timestamp_creation = Some(timestamp_creation.into());
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: String) -> Self {
-        self.timestamp_modification = Some(timestamp_modification);
+    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+        self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
 
@@ -331,9 +331,9 @@ pub struct EncryptRoomRequest {
 }
 
 impl EncryptRoomRequest {
-    pub fn builder() -> EncryptRoomRequestBuilder {
+    pub fn builder(is_encrypted: bool) -> EncryptRoomRequestBuilder {
         EncryptRoomRequestBuilder {
-            is_encrypted: true,
+            is_encrypted,
             use_data_space_rescue_key: None,
             data_room_rescue_key: None,
         }

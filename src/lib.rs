@@ -22,6 +22,8 @@
 //! * [Upload] - for uploading files
 //! * [Folders] - for folder operations
 //! * [Rooms] - for room operations
+//! * [DownloadShares] - for download share operations
+//! * [UploadShares] - for upload share operations
 //! * [Groups] - for group operations
 //! 
 //! 
@@ -257,7 +259,8 @@ pub use self::{
     user::User,
     user::UserAccountKeypairs,
     auth::errors::DracoonClientError,
-    groups::Groups
+    groups::Groups,
+    shares::{DownloadShares, UploadShares},
 };
 
 
