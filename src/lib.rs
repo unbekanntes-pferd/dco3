@@ -25,6 +25,7 @@
 //! * [DownloadShares] - for download share operations
 //! * [UploadShares] - for upload share operations
 //! * [Groups] - for group operations
+//! * [Users] - for user management operations
 //! 
 //! 
 //! ### Example
@@ -217,7 +218,42 @@
 //! 
 //! # }
 //! ```
+//! 
+//! ## Pagination
+//! 
+//! GET endpoints are limited to 500 returned items - therefore you must paginate the content to fetch 
+//! remaining items.
+//! 
+//! ```no_run
+//! # use dco3::{Dracoon, auth::OAuth2Flow, Nodes, ListAllParams};
+//! # #[tokio::main]
+//! # async fn main() {
+//! # let dracoon = Dracoon::builder()
+//! #  .with_base_url("https://dracoon.team")
+//! #  .with_client_id("client_id")
+//! #  .with_client_secret("client_secret")
+//! #  .build()
+//! #  .unwrap()
+//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//! #  .await
+//! #  .unwrap(); 
+//! 
 
+//! // This fetches the first 500 nodes without any param
+//!  let mut nodes = dracoon.get_nodes(None, None, None).await.unwrap();
+//! 
+//! // Iterate over the remaining nodes
+//!  for offset in (0..nodes.range.total).step_by(500) {
+//!  let params = ListAllParams::builder()
+//!   .with_offset(offset)
+//!   .build();
+//!  let next_nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+//!  
+//!   nodes.items.extend(next_nodes.items);
+//! 
+//! };
+//! # }
+//! ```
 //! ## Cryptography support
 //! All API calls (specifically up- and downloads) support encryption and decryption.
 //! In order to use encryption, you need to get your keypair once the client is in `Connected` state.
@@ -248,7 +284,7 @@ use dco3_crypto::PlainUserKeyPairContainer;
 use reqwest::Url;
 
 use self::{
-    auth::{Connected, Disconnected, OAuth2Flow},
+    auth::{Connected, Disconnected},
     auth::{DracoonClient, DracoonClientBuilder},
     user::{models::UserAccount},
 };
@@ -256,11 +292,13 @@ use self::{
 // re-export traits and base models
 pub use self::{
     nodes::{Download, Folders, Nodes, Rooms, Upload},
-    user::User,
-    user::UserAccountKeypairs,
+    user::{User, UserAccountKeypairs},
     auth::errors::DracoonClientError,
+    auth::OAuth2Flow,
     groups::Groups,
     shares::{DownloadShares, UploadShares},
+    users::Users,
+    models::*,
 };
 
 
@@ -272,6 +310,7 @@ pub mod user;
 pub mod utils;
 pub mod groups;
 pub mod shares;
+pub mod users;
 
 
 /// DRACOON struct - implements all API calls via traits
