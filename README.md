@@ -11,7 +11,7 @@ Above mentioned crate is based on `openssl` - therefore, currently `wasm32-unkno
 
 ## About
 
-This crate is an async wrapper built around `reqwest` ([reqwest]()).
+This crate is an async wrapper built around `reqwest` ([reqwest](https://crates.io/crates/reqwest)).
 All API calls are async and thread-safe. 
 Since this is in an early development stage, expect breaking changes.
 
@@ -27,7 +27,6 @@ To contribute, fork the repository and create a pull request.
 ## Roadmap
 
 * implement missing API calls
-    * users
     * config
 * improve upload callback (chunk stream)
 * add examples
