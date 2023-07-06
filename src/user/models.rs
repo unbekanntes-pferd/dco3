@@ -30,16 +30,17 @@ pub struct UserAccount {
     pub user_groups: Vec<UserGroup>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAuthData {
     pub method: String,
     pub login: Option<String>,
-    pub passowrd: Option<String>,
+    pub password: Option<String>,
     pub must_change_password: Option<bool>,
     pub ad_config_id: Option<u64>,
-    pub oidc_config_id: Option<u64>,
+    pub oid_config_id: Option<u64>,
 }
+
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]

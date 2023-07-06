@@ -61,7 +61,7 @@ pub trait Groups {
     async fn create_group(&self, group: CreateGroupRequest) -> Result<Group, DracoonClientError>;
     /// Get a group by id.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::{GroupsFilter, GroupsSortBy}, models::{ListAllParams, SortOrder}};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
