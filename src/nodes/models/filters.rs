@@ -53,11 +53,11 @@ impl FilterQuery for NodesFilter {
 
 impl NodesFilter {
     pub fn name_equals(val: impl Into<String>) -> Self {
-        NodesFilter::Name(FilterOperator::Eq, String::from(val.into()))
+        NodesFilter::Name(FilterOperator::Eq, val.into())
     }
 
     pub fn name_contains(val: impl Into<String>) -> Self {
-        NodesFilter::Name(FilterOperator::Cn, String::from(val.into()))
+        NodesFilter::Name(FilterOperator::Cn, val.into())
     }
 
     pub fn is_encrypted(val: bool) -> Self {
@@ -69,19 +69,19 @@ impl NodesFilter {
     }
 
     pub fn created_before(val: impl Into<String>) -> Self {
-        NodesFilter::TimestampCreation(FilterOperator::Le, String::from(val.into()))
+        NodesFilter::TimestampCreation(FilterOperator::Le, val.into())
     }
 
     pub fn created_after(val: impl Into<String>) -> Self {
-        NodesFilter::TimestampCreation(FilterOperator::Ge, String::from(val.into()))
+        NodesFilter::TimestampCreation(FilterOperator::Ge, val.into())
     }
 
     pub fn modified_before(val: impl Into<String>) -> Self {
-        NodesFilter::TimestampModification(FilterOperator::Le, String::from(val.into()))
+        NodesFilter::TimestampModification(FilterOperator::Le, val.into())
     }
 
     pub fn modified_after(val: impl Into<String>) -> Self {
-        NodesFilter::TimestampModification(FilterOperator::Ge, String::from(val.into()))
+        NodesFilter::TimestampModification(FilterOperator::Ge, val.into())
     }
 
     pub fn branch_version_before(val: u64) -> Self {
@@ -152,11 +152,11 @@ impl NodesSearchFilter {
     }
 
     pub fn parent_path_equals(val: impl Into<String>) -> Self {
-        NodesSearchFilter::ParentPath(FilterOperator::Eq, String::from(val.into()))
+        NodesSearchFilter::ParentPath(FilterOperator::Eq, val.into())
     }
 
     pub fn parent_path_contains(val: impl Into<String>) -> Self {
-        NodesSearchFilter::ParentPath(FilterOperator::Cn, String::from(val.into()))
+        NodesSearchFilter::ParentPath(FilterOperator::Cn, val.into())
     }
 
     pub fn size_greater_equals(val: u64) -> Self {
@@ -176,27 +176,27 @@ impl NodesSearchFilter {
     }
 
     pub fn created_at_before(val: impl Into<String>) -> Self {
-        NodesSearchFilter::CreatedAt(FilterOperator::Le, String::from(val.into()))
+        NodesSearchFilter::CreatedAt(FilterOperator::Le, val.into())
     }
 
     pub fn created_at_after(val: impl Into<String>) -> Self {
-        NodesSearchFilter::CreatedAt(FilterOperator::Ge, String::from(val.into()))
+        NodesSearchFilter::CreatedAt(FilterOperator::Ge, val.into())
     }
 
     pub fn updated_at_before(val: impl Into<String>) -> Self {
-        NodesSearchFilter::UpdatedAt(FilterOperator::Le, String::from(val.into()))
+        NodesSearchFilter::UpdatedAt(FilterOperator::Le, val.into())
     }
 
     pub fn updated_at_after(val: impl Into<String>) -> Self {
-        NodesSearchFilter::UpdatedAt(FilterOperator::Ge, String::from(val.into()))
+        NodesSearchFilter::UpdatedAt(FilterOperator::Ge, val.into())
     }
 
     pub fn expire_at_before(val: impl Into<String>) -> Self {
-        NodesSearchFilter::ExpireAt(FilterOperator::Le, String::from(val.into()))
+        NodesSearchFilter::ExpireAt(FilterOperator::Le, val.into())
     }
 
     pub fn expire_at_after(val: impl Into<String>) -> Self {
-        NodesSearchFilter::ExpireAt(FilterOperator::Ge, String::from(val.into()))
+        NodesSearchFilter::ExpireAt(FilterOperator::Ge, val.into())
     }
 
     pub fn classification_equals(val: u8) -> Self {
@@ -204,11 +204,11 @@ impl NodesSearchFilter {
     }
 
     pub fn file_type_equals(val: impl Into<String>) -> Self {
-        NodesSearchFilter::FileType(FilterOperator::Eq, String::from(val.into()))
+        NodesSearchFilter::FileType(FilterOperator::Eq, val.into())
     }
 
     pub fn file_type_contains(val: impl Into<String>) -> Self {
-        NodesSearchFilter::FileType(FilterOperator::Cn, String::from(val.into()))
+        NodesSearchFilter::FileType(FilterOperator::Cn, val.into())
     }
 
 }

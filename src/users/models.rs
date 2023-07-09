@@ -217,6 +217,7 @@ impl UpdateUserRequest {
     }
 }
 
+#[derive(Default)]
 pub struct UpdateUserRequestBuilder {
     first_name: Option<String>,
     last_name: Option<String>,
@@ -379,7 +380,7 @@ impl UserAuthData {
             login: None,
             ad_config_id: None,
             oid_config_id: None,
-            password: password.map(|p| p.into()),
+            password,
             must_change_password: Some(must_change_password),
         }
     }
@@ -388,7 +389,7 @@ impl UserAuthData {
         let login: String = login.into();
         Self {
             method: AuthMethod::OpenIdConnect{ login: login.clone(), oid_config_id }.into(),
-            login: Some(login.into()),
+            login: Some(login),
             ad_config_id: None,
             oid_config_id: Some(oid_config_id),
             password: None,
@@ -400,7 +401,7 @@ impl UserAuthData {
         let login: String = login.into();
         Self {
             method: AuthMethod::ActiveDirectory{ login: login.clone(), ad_config_id }.into(),
-            login: Some(login.into()),
+            login: Some(login),
             ad_config_id: Some(ad_config_id),
             oid_config_id: None,
             password: None,

@@ -520,13 +520,16 @@ mod tests {
     use tokio_test::assert_ok;
 
     use super::*;
-    use crate::constants::MAX_RETRIES;
 
     fn get_test_client(url: &str) -> DracoonClient<Disconnected> {
         DracoonClientBuilder::new()
             .with_base_url(url)
             .with_client_id("client_id")
             .with_client_secret("client_secret")
+            .with_user_agent("test_client")
+            .with_max_retries(1)
+            .with_max_retry_delay(600)
+            .with_min_retry_delay(300)
             .build()
             .expect("valid client config")
     }
@@ -741,7 +744,8 @@ mod tests {
             .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
             .await;
 
-        let req_count = MAX_RETRIES + 1;
+        // client retry set to 1 retry for testing
+        let req_count = 2;
         let req_count: usize = req_count.try_into().unwrap();
 
         auth_mock.expect_at_least(req_count);

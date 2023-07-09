@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 mod models;
+#[allow(clippy::module_inception)]
 mod users;
 
 pub use models::*;

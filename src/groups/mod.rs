@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 
+#[allow(clippy::module_inception)]
 mod groups;
 mod models;
 

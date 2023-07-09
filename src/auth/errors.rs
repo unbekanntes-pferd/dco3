@@ -47,20 +47,20 @@ impl From<ReqError> for DracoonClientError {
 
         match value {
             ReqError::Middleware(error) => {
-                return DracoonClientError::ConnectionFailed
+                DracoonClientError::ConnectionFailed
 
             },
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed;
+                    return DracoonClientError::ConnectionFailed
                 }
 
                 if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed;
+                    return DracoonClientError::ConnectionFailed
                 }
 
  
-                return DracoonClientError::Unknown;
+                DracoonClientError::Unknown
             
             },
         }
