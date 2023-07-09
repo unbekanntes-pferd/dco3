@@ -30,7 +30,7 @@
 //! 
 //! ### Example
 //! ```no_run
-//! use dco3::{Dracoon, auth::OAuth2Flow, user::User};
+//! use dco3::{Dracoon, OAuth2Flow, User};
 //! 
 //! #[tokio::main]
 //! async fn main() {
@@ -55,7 +55,7 @@
 //! 
 //! ### Password Flow
 //! ```no_run
-//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! use dco3::{Dracoon, OAuth2Flow};
 //! 
 //! #[tokio::main]
 //! async fn main() {
@@ -76,7 +76,7 @@
 //!```
 //! ### Authorization Code Flow
 //! ```no_run
-//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! use dco3::{Dracoon, OAuth2Flow};
 //! 
 //! #[tokio::main]
 //! async fn main() {
@@ -105,7 +105,7 @@
 //! ### Refresh Token
 //! 
 //! ```no_run
-//! use dco3::{Dracoon, auth::OAuth2Flow};
+//! use dco3::{Dracoon, OAuth2Flow};
 //! 
 //! #[tokio::main]
 //! async fn main() {
@@ -137,7 +137,7 @@
 //! You can check if the underlying error message if a specific API error by using the `is_*` methods.
 //! 
 //! ```no_run
-//! use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
+//! use dco3::{Dracoon, OAuth2Flow, Nodes};
 //! 
 //! #[tokio::main]
 //! 
@@ -169,6 +169,33 @@
 //! 
 //! ```
 //! 
+//! ### Retries 
+//! The client will automatically retry failed requests.
+//! You can configure the retry behavior by passing your config during client creation.
+//! 
+//! Default values are: 5 retries, min delay 600ms, max delay 20s.
+//! Keep in mind that you cannot set arbitrary values - for all values, minimum and maximum values are defined.
+//! 
+//! ```
+//! 
+//! use dco3::{Dracoon, OAuth2Flow};
+//! 
+//! #[tokio::main]
+//! async fn main() {
+//! 
+//!  let dracoon = Dracoon::builder()
+//!   .with_base_url("https://dracoon.team")
+//!   .with_client_id("client_id")
+//!   .with_client_secret("client_secret")
+//!   .with_max_retries(3)
+//!   .with_min_retry_delay(400)
+//!   .with_max_retry_delay(1000)
+//!   .build();
+//! 
+//! }
+//! 
+//! ```
+//! 
 //! ## Building requests
 //! 
 //! All API calls are implemented as traits.
@@ -176,7 +203,7 @@
 //! To access the builder, you can call the builder() method.
 //! 
 //! ```no_run
-//! # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::CreateRoomRequest};
+//! # use dco3::{Dracoon, OAuth2Flow, Rooms, nodes::CreateRoomRequest};
 //! # #[tokio::main]
 //! # async fn main() {
 //! # let dracoon = Dracoon::builder()
@@ -199,7 +226,7 @@
 //! ```
 //! Some requests do not have any complicated fields - in these cases, use the `new()` method.
 //! ```no_run
-//! # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::CreateGroupRequest};
+//! # use dco3::{Dracoon, OAuth2Flow, Groups, groups::CreateGroupRequest};
 //! # #[tokio::main]
 //! # async fn main() {
 //! # let dracoon = Dracoon::builder()
@@ -361,6 +388,26 @@ impl DracoonBuilder {
     /// Sets the redirect uri for the DRACOON instance
     pub fn with_redirect_uri(mut self, redirect_uri: impl Into<String>) -> Self {
         self.client_builder = self.client_builder.with_redirect_uri(redirect_uri);
+        self
+    }
+
+    pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
+        self.client_builder = self.client_builder.with_user_agent(user_agent);
+        self
+    }
+
+    pub fn with_max_retries(mut self, max_retries: u32) -> Self {
+        self.client_builder = self.client_builder.with_max_retries(max_retries);
+        self
+    }
+
+    pub fn with_min_retry_delay(mut self, min_retry_delay: u64) -> Self {
+        self.client_builder = self.client_builder.with_min_retry_delay(min_retry_delay);
+        self
+    }
+
+    pub fn with_max_retry_delay(mut self, max_retry_delay: u64) -> Self {
+        self.client_builder = self.client_builder.with_max_retry_delay(max_retry_delay);
         self
     }
 
