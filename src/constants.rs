@@ -71,5 +71,10 @@ pub const USERS_BASE: &str = "users";
 pub const USERS_LAST_ADMIN_ROOMS: &str = "last_admin_rooms";
 
 /// user agent header
-pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 
+// retry config
+pub const MAX_RETRIES: u32 = 5;
+pub const EXPONENTIAL_BACKOFF_BASE: u32 = 3;
+pub const MIN_RETRY_DELAY: u64 = 600; // in milliseconds (0.6 seconds)
+pub const MAX_RETRY_DELAY: u64 = 20 * 1000; // in milliseconds (20 seconds)
