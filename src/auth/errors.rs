@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
-use reqwest::{Error as ReqError, Response};
+use reqwest_middleware::{Error as ReqError};
+use reqwest::{Error as ClientError, Response};
 use thiserror::Error;
 
 use crate::{nodes::models::S3ErrorResponse, utils::FromResponse};
@@ -43,13 +44,46 @@ pub enum DracoonClientError {
 
 impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
-        if value.is_builder() {
-            return DracoonClientError::Internal;
+
+        match value {
+            ReqError::Middleware(error) => {
+                DracoonClientError::ConnectionFailed
+
+            },
+            ReqError::Reqwest(error) => {
+                if error.is_timeout() {
+                    return DracoonClientError::ConnectionFailed
+                }
+
+                if error.is_connect() {
+                    return DracoonClientError::ConnectionFailed
+                }
+
+ 
+                DracoonClientError::Unknown
+            
+            },
+        }
+    }
+}
+
+
+impl From<ClientError> for DracoonClientError {
+    fn from(value: ClientError) -> Self {
+
+        if value.is_timeout() {
+            return DracoonClientError::ConnectionFailed;
+        }
+
+        if value.is_connect() {
+            return DracoonClientError::ConnectionFailed;
         }
 
         DracoonClientError::Unknown
     }
 }
+
+
 
 #[async_trait]
 impl FromResponse for DracoonClientError {
