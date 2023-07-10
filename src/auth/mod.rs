@@ -38,6 +38,20 @@ pub enum OAuth2Flow {
     RefreshToken(String),
 }
 
+impl OAuth2Flow {
+    pub fn authorization_code(code: impl Into<String>) -> Self {
+        OAuth2Flow::AuthCodeFlow(code.into())
+    }
+
+    pub fn password_flow(username: impl Into<String>, password: impl Into<String>) -> Self {
+        OAuth2Flow::PasswordFlow(username.into(), password.into())
+    }
+
+    pub fn refresh_token(refresh_token: impl Into<String>) -> Self {
+        OAuth2Flow::RefreshToken(refresh_token.into())
+    }
+}
+
 /// connected state of [DracoonClient]
 #[derive(Debug, Clone)]
 pub struct Connected;

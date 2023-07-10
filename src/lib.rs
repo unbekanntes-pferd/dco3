@@ -40,7 +40,7 @@
 //!       .with_client_secret("client_secret")
 //!       .build()
 //!       .unwrap()
-//!       .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!       .connect(OAuth2Flow::password_flow("username", "password"))
 //!       .await
 //!       .unwrap();
 //! 
@@ -61,7 +61,7 @@
 //! async fn main() {
 //! 
 //!    // you can instantiate the required flow by using the `OAuth2Flow` enum
-//!    let password_flow = OAuth2Flow::PasswordFlow("username".into(), "password".into());
+//!    let password_flow = OAuth2Flow::password_flow("username", "password");
 //! 
 //!    let dracoon = Dracoon::builder()
 //!       .with_base_url("https://dracoon.team")
@@ -96,7 +96,7 @@
 //!    let auth_code = "some_auth_code";
 //! 
 //!    // you can instantiate the required flow by using the `OAuth2Flow` enum
-//!    let auth_code_flow = OAuth2Flow::AuthCodeFlow("auth_code".into());
+//!    let auth_code_flow = OAuth2Flow::authorization_code(auth_code);
 //! 
 //!    let dracoon = dracoon.connect(auth_code_flow).await.unwrap();
 //! }
@@ -118,7 +118,7 @@
 //!     .with_client_secret("client_secret")
 //!     .build()
 //!     .unwrap()
-//!     .connect(OAuth2Flow::RefreshToken(refresh_token.into()))
+//!     .connect(OAuth2Flow::refresh_token(refresh_token))
 //!     .await
 //!     .unwrap();
 //! 
