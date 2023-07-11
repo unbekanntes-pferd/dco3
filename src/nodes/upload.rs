@@ -30,7 +30,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
 #[async_trait]
 impl<C: UploadInternal<R> + Sync + Send, R: AsyncRead + Sync + Send + 'static> Upload<R> for C {
     async fn upload<'r>(
-        &'r mut self,
+        &'r self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -100,7 +100,7 @@ trait UploadInternal<R: AsyncRead> {
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError>;
     async fn upload_to_s3_encrypted(
-        &mut self,
+        &self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -441,7 +441,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
     #[allow(clippy::too_many_lines)]
     async fn upload_to_s3_encrypted(
-        &mut self,
+        &self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -449,7 +449,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError> {
-        let keypair = self.get_keypair(None).await?.clone();
+        let keypair = self.get_keypair().await?.clone();
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 

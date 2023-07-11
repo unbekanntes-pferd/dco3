@@ -283,23 +283,24 @@
 //! ```
 //! ## Cryptography support
 //! All API calls (specifically up- and downloads) support encryption and decryption.
-//! In order to use encryption, you need to get your keypair once the client is in `Connected` state.
+//! In order to use encryption, you need to pass the encryption password while building the client.
 //! 
 //! ```no_run
-//! # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
-//! # #[tokio::main]
-//! # async fn main() {
-//! # let mut dracoon = Dracoon::builder()
-//! #  .with_base_url("https://dracoon.team")
-//! #  .with_client_id("client_id")
-//! #  .with_client_secret("client_secret")
-//! #  .build()
-//! #  .unwrap()
-//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
-//! #  .await
-//! #  .unwrap();
-//! // get the keypair (also after providing the secret once)
-//! dracoon.get_keypair(Some("my secret")).await.unwrap();
+//!  use dco3::{Dracoon, OAuth2Flow};
+//!  #[tokio::main]
+//!  async fn main() {
+//!  let dracoon = Dracoon::builder()
+//!   .with_base_url("https://dracoon.team")
+//!   .with_client_id("client_id")
+//!   .with_client_secret("client_secret")
+//!    .with_encryption_password("my secret")
+//!   .build()
+//!   .unwrap()
+//!   .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!   .await
+//!   .unwrap();
+//! // check if the keypair is present (fails with error if no keypair is present)
+//! let kp = dracoon.get_keypair().await.unwrap();
 //! # }
 //! ```
 //! ## Examples
@@ -347,6 +348,7 @@ pub struct Dracoon<State = Disconnected> {
     state: PhantomData<State>,
     user_info: Option<UserAccount>,
     keypair: Option<PlainUserKeyPairContainer>,
+    encryption_secret: Option<String>,
 }
 
 /// Builder for the `Dracoon` struct.
@@ -356,6 +358,7 @@ pub struct Dracoon<State = Disconnected> {
 #[derive(Default)]
 pub struct DracoonBuilder {
     client_builder: DracoonClientBuilder,
+    encryption_secret: Option<String>,
 }
 
 impl DracoonBuilder {
@@ -364,7 +367,13 @@ impl DracoonBuilder {
         let client_builder = DracoonClientBuilder::new();
         Self {
             client_builder,
+            encryption_secret: None,
         }
+    }
+
+    pub fn with_encryption_password(mut self, encryption_secret: impl Into<String>) -> Self {
+        self.encryption_secret = Some(encryption_secret.into());
+        self
     }
 
     /// Sets the base url for the DRACOON instance
@@ -420,6 +429,7 @@ impl DracoonBuilder {
             state: PhantomData,
             user_info: None,
             keypair: None,
+            encryption_secret: self.encryption_secret,
         })
     }
 }
@@ -436,12 +446,22 @@ impl Dracoon<Disconnected> {
     ) -> Result<Dracoon<Connected>, DracoonClientError> {
         let client = self.client.connect(oauth_flow).await?;
 
-        Ok(Dracoon {
+        let mut dracoon = Dracoon {
             client,
             state: PhantomData,
             user_info: None,
             keypair: None,
-        })
+            encryption_secret: self.encryption_secret,
+        };
+
+        if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
+            let kp = dracoon.get_user_keypair(&encryption_secret).await?;
+            dracoon.encryption_secret = None;
+            dracoon.keypair = Some(kp);
+            drop(encryption_secret)
+        }
+
+        Ok(dracoon)
     }
 
     pub fn get_authorize_url(&mut self) -> String {
@@ -480,16 +500,13 @@ impl Dracoon<Connected> {
     }
 
     pub async fn get_keypair(
-        &mut self,
-        secret: Option<&str>,
+        &self,
     ) -> Result<&PlainUserKeyPairContainer, DracoonClientError> {
         if let Some(ref keypair) = self.keypair {
             return Ok(keypair);
         }
 
-        let secret = secret.ok_or(DracoonClientError::MissingEncryptionSecret)?;
-        let keypair = self.get_user_keypair(secret).await?;
-        self.keypair = Some(keypair);
-        Ok(self.keypair.as_ref().expect("Just set keypair"))
+        Err(DracoonClientError::MissingEncryptionSecret)
+
     }
 }

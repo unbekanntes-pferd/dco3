@@ -20,7 +20,7 @@ use tracing::debug;
 #[async_trait]
 impl<T: DownloadInternal + Sync + Send> Download for T {
     async fn download<'w>(
-        &'w mut self,
+        &'w self,
         node: &Node,
         writer: &'w mut (dyn Write + Send),
         callback: Option<DownloadProgressCallback>,
@@ -79,7 +79,7 @@ trait DownloadInternal {
     ) -> Result<(), DracoonClientError>;
 
     async fn download_encrypted(
-        &mut self,
+        &self,
         url: &str,
         node_id: u64,
         writer: &mut (dyn Write + Send),
@@ -185,7 +185,7 @@ impl DownloadInternal for Dracoon<Connected> {
     }
 
     async fn download_encrypted(
-        &mut self,
+        &self,
         url: &str,
         node_id: u64,
         writer: &mut (dyn Write + Send),
@@ -195,7 +195,7 @@ impl DownloadInternal for Dracoon<Connected> {
         // get file key
         let file_key = self.get_file_key(node_id).await?;
 
-        let keypair = self.get_keypair(None).await?;
+        let keypair = self.get_keypair().await?;
  
         let plain_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
 
