@@ -536,7 +536,6 @@ impl DracoonClient<Connected> {
 
     /// Returns the necessary token header for any API call that requires authentication in DRACOON
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
-
         if self.is_connection_expired() {
             let new_connection = self.connect_refresh_token().await?;
             let mut connection = self.connection.lock().expect("Mutex lock failure");
@@ -825,5 +824,32 @@ mod tests {
 
         auth_mock.expect_at_least(req_count);
         assert!(dracoon.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_token_refresh() {
+        let mut mock_server = mockito::Server::new();
+        let base_url = mock_server.url();
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!("./tests/auth_ok_expired.json"))
+            .create();
+
+        let dracoon = get_test_client(&base_url);
+        let dracoon = dracoon
+            .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
+            .await
+            .unwrap();
+
+        tokio::time::sleep(Duration::from_secs(1)).await;
+
+        let header = dracoon.get_auth_header().await.unwrap();
+        
+        // two requests - one for initial auth, one for refresh
+        auth_mock.expect_at_least(2);
+
+        assert_eq!(header, "Bearer access_token");
     }
 }
