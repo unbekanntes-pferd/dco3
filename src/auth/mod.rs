@@ -811,6 +811,7 @@ mod tests {
             .with_status(429)
             .with_header("content-type", "application/json")
             .with_body("Internal Server Error")
+            .expect_at_least(2)
             .create();
 
         let dracoon = get_test_client(&base_url);
@@ -818,11 +819,7 @@ mod tests {
             .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
             .await;
 
-        // client retry set to 1 retry for testing
-        let req_count = 2;
-        let req_count: usize = req_count.try_into().unwrap();
-
-        auth_mock.expect_at_least(req_count);
+        auth_mock.assert();
         assert!(dracoon.is_err());
     }
 
@@ -835,6 +832,7 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(include_str!("./tests/auth_ok_expired.json"))
+            .expect_at_least(2)
             .create();
 
         let dracoon = get_test_client(&base_url);
@@ -848,7 +846,7 @@ mod tests {
         let header = dracoon.get_auth_header().await.unwrap();
         
         // two requests - one for initial auth, one for refresh
-        auth_mock.expect_at_least(2);
+        auth_mock.assert();
 
         assert_eq!(header, "Bearer access_token");
     }
