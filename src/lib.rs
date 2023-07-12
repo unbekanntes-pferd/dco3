@@ -314,7 +314,7 @@ use reqwest::Url;
 use self::{
     auth::{Connected, Disconnected},
     auth::{DracoonClient, DracoonClientBuilder},
-    user::{models::UserAccount},
+    user::models::UserAccount,
 };
 
 // re-export traits and base models
@@ -485,7 +485,7 @@ impl Dracoon<Connected> {
         self.client.get_base_url()
     }
 
-    pub fn get_refresh_token(&self) -> &str {
+    pub fn get_refresh_token(&self) -> String {
         self.client.get_refresh_token()
     }
 

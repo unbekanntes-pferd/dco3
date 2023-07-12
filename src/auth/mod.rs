@@ -4,7 +4,11 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-use std::{marker::PhantomData, time::Duration};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 use tracing::{debug, error};
 
 use base64::{
@@ -62,10 +66,41 @@ pub struct Disconnected;
 /// represents a connection to DRACOON (`OAuth2` tokens)
 #[derive(Debug, Clone)]
 pub struct Connection {
-    pub access_token: String,
-    pub refresh_token: String,
-    pub expires_in: u32,
-    pub connected_at: DateTime<Utc>,
+    access_token: String,
+    refresh_token: String,
+    expires_in: u32,
+    connected_at: DateTime<Utc>,
+}
+
+impl Connection {
+    pub fn refresh_token(&self) -> String {
+        self.refresh_token.clone()
+    }
+
+    pub fn access_token(&self) -> String {
+        self.access_token.clone()
+    }
+
+    pub fn expires_in(&self) -> u32 {
+        self.expires_in
+    }
+
+    pub fn connected_at(&self) -> DateTime<Utc> {
+        self.connected_at
+    }
+
+    pub fn is_expired(&self) -> bool {
+        let now = Utc::now();
+        let expires_at = self.connected_at + chrono::Duration::seconds(self.expires_in as i64);
+        now > expires_at
+    }
+
+    pub fn update_tokens(&mut self, connection: Connection) {
+        self.access_token = connection.access_token;
+        self.refresh_token = connection.refresh_token;
+        self.expires_in = connection.expires_in;
+        self.connected_at = connection.connected_at;
+    }
 }
 
 #[derive(Clone)]
@@ -76,9 +111,11 @@ pub struct DracoonClient<State = Disconnected> {
     client_id: String,
     client_secret: String,
     pub http: ClientWithMiddleware,
-    connection: Option<Connection>,
+    connection: ClientConnection,
     connected: PhantomData<State>,
 }
+
+type ClientConnection = Arc<Mutex<Option<Connection>>>;
 
 /// Builder for the [DracoonClient] struct.
 #[derive(Default)]
@@ -216,7 +253,7 @@ impl DracoonClientBuilder {
             redirect_uri: Some(redirect_uri),
             client_id,
             client_secret,
-            connection: None,
+            connection: Arc::new(Mutex::new(None)),
             connected: PhantomData,
             http,
         })
@@ -248,7 +285,7 @@ impl DracoonClient<Disconnected> {
         Ok(DracoonClient {
             client_id: self.client_id,
             client_secret: self.client_secret,
-            connection: Some(connection),
+            connection: Arc::new(Mutex::new(Some(connection))),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -401,7 +438,7 @@ impl DracoonClient<Connected> {
         Ok(DracoonClient {
             client_id: self.client_id,
             client_secret: self.client_secret,
-            connection: None,
+            connection: Arc::new(Mutex::new(None)),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -425,6 +462,8 @@ impl DracoonClient<Connected> {
     async fn revoke_acess_token(&self) -> Result<(), DracoonClientError> {
         let access_token = self
             .connection
+            .lock()
+            .expect("Mutex lock failure")
             .as_ref()
             .expect("Connected client has a connection")
             .access_token
@@ -451,6 +490,8 @@ impl DracoonClient<Connected> {
     async fn revoke_refresh_token(&self) -> Result<(), DracoonClientError> {
         let refresh_token = self
             .connection
+            .lock()
+            .expect("Mutex lock failure")
             .as_ref()
             .expect("Connected client has a connection")
             .refresh_token
@@ -477,16 +518,17 @@ impl DracoonClient<Connected> {
     async fn connect_refresh_token(&self) -> Result<Connection, DracoonClientError> {
         let token_url = self.get_token_url();
 
-        let connection = self
+        let refresh_token = self
             .connection
+            .lock()
+            .expect("Mutex lock failure")
             .as_ref()
-            .expect("Connected client has a connection");
+            .expect("Connected client has a connection")
+            .refresh_token
+            .clone();
 
-        let auth = OAuth2RefreshTokenFlow::new(
-            &self.client_id,
-            &self.client_secret,
-            connection.refresh_token.as_str(),
-        );
+        let auth =
+            OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret, &refresh_token);
 
         let res = self.http.post(token_url).form(&auth).send().await?;
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
@@ -494,13 +536,21 @@ impl DracoonClient<Connected> {
 
     /// Returns the necessary token header for any API call that requires authentication in DRACOON
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
-        if !self.check_access_token_validity() {
-            self.connect_refresh_token().await?;
+
+        if self.is_connection_expired() {
+            let new_connection = self.connect_refresh_token().await?;
+            let mut connection = self.connection.lock().expect("Mutex lock failure");
+            let connection = connection
+                .as_mut()
+                .expect("Connected client has a connection");
+            connection.update_tokens(new_connection);
         }
 
         Ok(format!(
             "Bearer {}",
             self.connection
+                .lock()
+                .expect("Mutex lock failure")
                 .as_ref()
                 .expect("Connected client has a connection")
                 .access_token
@@ -508,24 +558,23 @@ impl DracoonClient<Connected> {
     }
 
     /// Returns the refresh token
-    pub fn get_refresh_token(&self) -> &str {
+    pub fn get_refresh_token(&self) -> String {
         self.connection
+            .lock()
+            .expect("Mutex lock failure")
             .as_ref()
             .expect("Connected client has a connection")
-            .refresh_token
-            .as_str()
+            .refresh_token()
     }
 
     /// Checks if the access token is still valid
-    fn check_access_token_validity(&self) -> bool {
-        let connection = self
-            .connection
+    fn is_connection_expired(&self) -> bool {
+        self.connection
+            .lock()
+            .expect("Mutex lock failure")
             .as_ref()
-            .expect("Connected client has a connection");
-
-        let now = Utc::now();
-
-        (now - connection.connected_at).num_seconds() < connection.expires_in.into()
+            .expect("Connected client has a connection")
+            .is_expired()
     }
 }
 
@@ -576,7 +625,7 @@ mod tests {
         auth_mock.assert();
         assert_ok!(&res);
 
-        assert!(res.unwrap().connection.is_some());
+        assert!(res.unwrap().connection.lock().unwrap().is_some());
     }
 
     #[tokio::test]
@@ -602,25 +651,37 @@ mod tests {
         auth_mock.assert();
         assert_ok!(&res);
 
-        assert!(res.as_ref().unwrap().connection.is_some());
+        assert!(res.as_ref().unwrap().connection.lock().unwrap().is_some());
 
         let access_token = res
             .as_ref()
             .unwrap()
             .connection
+            .lock()
+            .unwrap()
             .as_ref()
             .unwrap()
-            .access_token
-            .clone();
+            .access_token();
+
         let refresh_token = res
             .as_ref()
             .unwrap()
             .connection
+            .lock()
+            .unwrap()
             .as_ref()
             .unwrap()
-            .refresh_token
-            .clone();
-        let expires_in = res.unwrap().connection.unwrap().expires_in;
+            .refresh_token();
+
+        let expires_in = res
+            .as_ref()
+            .unwrap()
+            .connection
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .expires_in();
 
         assert_eq!(access_token, "access_token");
         assert_eq!(refresh_token, "refresh_token");
