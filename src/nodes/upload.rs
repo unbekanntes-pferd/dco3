@@ -449,7 +449,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError> {
-        let keypair = self.get_keypair().await?.clone();
+        let keypair = self.get_keypair(None).await?;
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 

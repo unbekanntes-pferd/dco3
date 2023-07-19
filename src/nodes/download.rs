@@ -195,9 +195,9 @@ impl DownloadInternal for Dracoon<Connected> {
         // get file key
         let file_key = self.get_file_key(node_id).await?;
 
-        let keypair = self.get_keypair().await?;
+        let keypair = self.get_keypair(None).await?;
  
-        let plain_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
+        let plain_key = DracoonCrypto::decrypt_file_key(file_key, &keypair)?;
 
 
         // get content length from header

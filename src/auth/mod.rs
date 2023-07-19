@@ -6,7 +6,6 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use std::{
     marker::PhantomData,
-    sync::{Arc, Mutex},
     time::Duration,
 };
 use tracing::{debug, error};
@@ -26,6 +25,7 @@ use crate::{
     auth::models::{
         OAuth2AuthCodeFlow, OAuth2PasswordFlow, OAuth2TokenResponse, OAuth2TokenRevoke,
     },
+    models::Container,
     constants::{
         DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, EXPONENTIAL_BACKOFF_BASE, MAX_RETRIES,
         MAX_RETRY_DELAY, MIN_RETRY_DELAY, TOKEN_TYPE_HINT_ACCESS_TOKEN,
@@ -111,11 +111,9 @@ pub struct DracoonClient<State = Disconnected> {
     client_id: String,
     client_secret: String,
     pub http: ClientWithMiddleware,
-    connection: ClientConnection,
+    connection: Container<Connection>,
     connected: PhantomData<State>,
 }
-
-type ClientConnection = Arc<Mutex<Option<Connection>>>;
 
 /// Builder for the [DracoonClient] struct.
 #[derive(Default)]
@@ -253,7 +251,7 @@ impl DracoonClientBuilder {
             redirect_uri: Some(redirect_uri),
             client_id,
             client_secret,
-            connection: Arc::new(Mutex::new(None)),
+            connection: Container::<Connection>::new(),
             connected: PhantomData,
             http,
         })
@@ -285,7 +283,7 @@ impl DracoonClient<Disconnected> {
         Ok(DracoonClient {
             client_id: self.client_id,
             client_secret: self.client_secret,
-            connection: Arc::new(Mutex::new(Some(connection))),
+            connection: Container::new_from(connection),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -416,7 +414,7 @@ impl DracoonClient<Disconnected> {
 /// `DracoonClient` implementation for Connected state
 impl DracoonClient<Connected> {
     /// disconnects the client and optionally revokes the access and refresh token
-    /// access token is revoked by default, refresh token is not revoked by default
+    /// access token is revoked by default, refresh token is *not* revoked by default
     pub async fn disconnect(
         self,
         revoke_access_token: Option<bool>,
@@ -438,7 +436,7 @@ impl DracoonClient<Connected> {
         Ok(DracoonClient {
             client_id: self.client_id,
             client_secret: self.client_secret,
-            connection: Arc::new(Mutex::new(None)),
+            connection: Container::<Connection>::new(),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -462,9 +460,7 @@ impl DracoonClient<Connected> {
     async fn revoke_acess_token(&self) -> Result<(), DracoonClientError> {
         let access_token = self
             .connection
-            .lock()
-            .expect("Mutex lock failure")
-            .as_ref()
+            .get()
             .expect("Connected client has a connection")
             .access_token
             .clone();
@@ -490,9 +486,7 @@ impl DracoonClient<Connected> {
     async fn revoke_refresh_token(&self) -> Result<(), DracoonClientError> {
         let refresh_token = self
             .connection
-            .lock()
-            .expect("Mutex lock failure")
-            .as_ref()
+            .get()
             .expect("Connected client has a connection")
             .refresh_token
             .clone();
@@ -520,9 +514,7 @@ impl DracoonClient<Connected> {
 
         let refresh_token = self
             .connection
-            .lock()
-            .expect("Mutex lock failure")
-            .as_ref()
+            .get()
             .expect("Connected client has a connection")
             .refresh_token
             .clone();
@@ -538,7 +530,7 @@ impl DracoonClient<Connected> {
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
         if self.is_connection_expired() {
             let new_connection = self.connect_refresh_token().await?;
-            let mut connection = self.connection.lock().expect("Mutex lock failure");
+            let mut connection = self.connection.get();
             let connection = connection
                 .as_mut()
                 .expect("Connected client has a connection");
@@ -548,9 +540,7 @@ impl DracoonClient<Connected> {
         Ok(format!(
             "Bearer {}",
             self.connection
-                .lock()
-                .expect("Mutex lock failure")
-                .as_ref()
+                .get()
                 .expect("Connected client has a connection")
                 .access_token
         ))
@@ -559,9 +549,7 @@ impl DracoonClient<Connected> {
     /// Returns the refresh token
     pub fn get_refresh_token(&self) -> String {
         self.connection
-            .lock()
-            .expect("Mutex lock failure")
-            .as_ref()
+            .get()
             .expect("Connected client has a connection")
             .refresh_token()
     }
@@ -569,9 +557,7 @@ impl DracoonClient<Connected> {
     /// Checks if the access token is still valid
     fn is_connection_expired(&self) -> bool {
         self.connection
-            .lock()
-            .expect("Mutex lock failure")
-            .as_ref()
+            .get()
             .expect("Connected client has a connection")
             .is_expired()
     }
@@ -624,7 +610,7 @@ mod tests {
         auth_mock.assert();
         assert_ok!(&res);
 
-        assert!(res.unwrap().connection.lock().unwrap().is_some());
+        assert!(res.unwrap().connection.is_some());
     }
 
     #[tokio::test]
@@ -650,15 +636,13 @@ mod tests {
         auth_mock.assert();
         assert_ok!(&res);
 
-        assert!(res.as_ref().unwrap().connection.lock().unwrap().is_some());
+        assert!(res.as_ref().unwrap().connection.is_some());
 
         let access_token = res
             .as_ref()
             .unwrap()
             .connection
-            .lock()
-            .unwrap()
-            .as_ref()
+            .get()
             .unwrap()
             .access_token();
 
@@ -666,9 +650,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .connection
-            .lock()
-            .unwrap()
-            .as_ref()
+            .get()
             .unwrap()
             .refresh_token();
 
@@ -676,9 +658,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .connection
-            .lock()
-            .unwrap()
-            .as_ref()
+            .get()
             .unwrap()
             .expires_in();
 
@@ -844,7 +824,7 @@ mod tests {
         tokio::time::sleep(Duration::from_secs(1)).await;
 
         let header = dracoon.get_auth_header().await.unwrap();
-        
+
         // two requests - one for initial auth, one for refresh
         auth_mock.assert();
 

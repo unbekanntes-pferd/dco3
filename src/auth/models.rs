@@ -10,7 +10,6 @@ use crate::{constants::{GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_AUTH_CODE, GRANT_TY
 
 use super::{errors::DracoonClientError, Connection};
 
-
 /// represents form data payload for `OAuth2` password flow
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OAuth2PasswordFlow {
