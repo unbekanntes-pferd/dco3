@@ -536,7 +536,7 @@ impl Dracoon<Connected> {
         }
 
         let keypair = self.keypair.get().expect("Keypair is some");
-        return Ok(keypair);
+        Ok(keypair)
 
     }
 }
