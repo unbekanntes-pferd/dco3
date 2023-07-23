@@ -11,9 +11,21 @@ use super::models::*;
 #[async_trait]
 impl Groups for Dracoon<Connected> {
     async fn get_groups(&self, params: Option<ListAllParams>) -> Result<GroupList, DracoonClientError> {
+        let params = params.unwrap_or_default();
         let url_part = format!("/{DRACOON_API_PREFIX}/{GROUPS_BASE}");
 
-        let api_url = self.build_api_url(&url_part);
+        let mut api_url = self.build_api_url(&url_part);
+
+        let filters = params.filter_to_string();
+        let sorts = params.sort_to_string();
+
+        api_url
+            .query_pairs_mut()
+            .extend_pairs(params.limit.map(|v| ("limit", v.to_string())))
+            .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
+            .extend_pairs(params.sort.map(|_| ("sort", sorts)))
+            .extend_pairs(params.filter.map(|_| ("filter", filters)))
+            .finish();
 
         let response = self
             .client

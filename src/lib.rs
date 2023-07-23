@@ -360,6 +360,7 @@ pub mod utils;
 pub mod groups;
 pub mod shares;
 pub mod users;
+mod tests;
 
 
 /// DRACOON struct - implements all API calls via traits
@@ -540,3 +541,4 @@ impl Dracoon<Connected> {
 
     }
 }
+
