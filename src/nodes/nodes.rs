@@ -42,7 +42,7 @@ impl Nodes for Dracoon<Connected> {
             .extend_pairs(room_manager.map(|v| ("room_manager", v.to_string())))
             .extend_pairs(parent_id.map(|v| ("parent_id", v.to_string())))
             .finish();
-
+        
         let response = self
             .client
             .http
@@ -56,6 +56,7 @@ impl Nodes for Dracoon<Connected> {
     }
 
     async fn get_node_from_path(&self, path: &str) -> Result<Option<Node>, DracoonClientError> {
+        // TODO: refactor and make use of search_nodes
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{NODES_SEARCH}");
 
         debug!("Looking up node - path: {}", path);
@@ -175,12 +176,10 @@ impl Nodes for Dracoon<Connected> {
         Ok(())
     }
 
-    async fn delete_nodes(&self, node_ids: Vec<u64>) -> Result<(), DracoonClientError> {
+    async fn delete_nodes(&self, req: DeleteNodesRequest) -> Result<(), DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}");
 
         let api_url = self.build_api_url(&url_part);
-
-        let del_node_req: DeleteNodesRequest = node_ids.into();
 
         let response = self
             .client
@@ -188,7 +187,7 @@ impl Nodes for Dracoon<Connected> {
             .delete(api_url)
             .header(header::AUTHORIZATION, self.get_auth_header().await?)
             .header(header::CONTENT_TYPE, "application/json")
-            .json(&del_node_req)
+            .json(&req)
             .send()
             .await?;
 

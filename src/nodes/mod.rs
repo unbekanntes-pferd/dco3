@@ -181,8 +181,8 @@ pub trait Nodes {
     /// dracoon.delete_nodes(node_ids).await.unwrap();
     /// # }
     /// ```
-    // TODO: refactor - use DeleteNodesRequest
-    async fn delete_nodes(&self, node_ids: Vec<u64>) -> Result<(), DracoonClientError>;
+
+    async fn delete_nodes(&self, req: DeleteNodesRequest) -> Result<(), DracoonClientError>;
     /// Move nodes to a target parent node (folder or room).
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};

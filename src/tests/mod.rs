@@ -1,11 +1,9 @@
-mod download;
 mod groups;
 mod nodes;
 mod rooms;
 mod shares;
 mod users;
 mod user;
-
 
 
 #[cfg(test)]
