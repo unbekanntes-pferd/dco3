@@ -1,8 +1,8 @@
 //! This module implments basic models for the DRACOON API.
-use std::{fmt::Debug, sync::RwLock};
+use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use super::auth::errors::DracoonClientError;
 
