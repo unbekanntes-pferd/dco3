@@ -1,5 +1,5 @@
 //! This module implments basic models for the DRACOON API.
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::RwLock};
 
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
@@ -10,39 +10,39 @@ use super::auth::errors::DracoonClientError;
 // struct for internal mutability 
 #[derive(Debug, Clone, Default)]
 pub struct Container <T: Clone> {
-    data: Arc<Mutex<Option<T>>>
+    data: Arc<RwLock<Option<T>>>
 }
 
 impl <T: Clone> Container <T> {
     pub fn new_from(data: T) -> Self {
         Self {
-            data: Arc::new(Mutex::new(Some(data)))
+            data: Arc::new(RwLock::new(Some(data)))
         }
     }
 
     pub fn new() -> Self {
         Self {
-            data: Arc::new(Mutex::new(None))
+            data: Arc::new(RwLock::new(None))
         }
     }
 
     pub fn set(&self, data: T) {
-        let mut lock = self.data.lock().expect("Could not lock mutex");
+        let mut lock = self.data.write().expect("Could not lock mutex");
         *lock = Some(data);
     }
 
     pub fn get(&self) -> Option<T> {
-        let lock = self.data.lock().expect("Could not lock mutex");
+        let lock = self.data.read().expect("Could not lock mutex");
         lock.clone()
     }
 
     pub fn is_some(&self) -> bool {
-        let lock = self.data.lock().expect("Could not lock mutex");
+        let lock = self.data.read().expect("Could not lock mutex");
         lock.is_some()
     }
 
     pub fn is_none(&self) -> bool {
-        let lock = self.data.lock().expect("Could not lock mutex");
+        let lock = self.data.read().expect("Could not lock mutex");
         lock.is_none()
     }
 
