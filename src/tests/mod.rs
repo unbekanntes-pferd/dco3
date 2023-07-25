@@ -9,7 +9,7 @@ mod user;
 
 
 #[cfg(test)]
-mod dracoon {
+pub mod dracoon {
     use crate::*;
     //use dco3_crypto::DracoonCryptoError;
 
