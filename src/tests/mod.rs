@@ -1,5 +1,5 @@
 mod groups;
-mod nodes;
+pub mod nodes;
 mod rooms;
 mod shares;
 mod users;
@@ -10,6 +10,27 @@ mod user;
 pub mod dracoon {
     use crate::*;
     //use dco3_crypto::DracoonCryptoError;
+
+    pub fn assert_user_account(user_account: &UserAccount) {
+
+        assert_eq!(user_account.id, 1);
+        assert_eq!(user_account.first_name, "string");
+        assert_eq!(user_account.last_name, "string");
+        assert_eq!(user_account.user_name, "string");
+        assert_eq!(user_account.is_locked, false);
+        assert_eq!(user_account.has_manageable_rooms, true);
+        assert_eq!(user_account.language, "string");
+        assert_eq!(user_account.must_set_email, Some(false));
+        assert_eq!(user_account.needs_to_accept_EULA, Some(false));
+        assert_eq!(user_account.expire_at, None);
+        assert_eq!(user_account.is_encryption_enabled, Some(true));
+        assert!(user_account.last_login_success_at.is_some());
+        assert!(user_account.last_login_fail_at.is_some());
+        assert_eq!(user_account.email, Some("string".to_string()));
+        assert_eq!(user_account.phone, Some("string".to_string()));
+        assert_eq!(user_account.auth_data.method, "basic");
+
+    }
 
 
     pub async fn get_connected_client() -> (Dracoon<Connected>, mockito::ServerGuard) {
@@ -118,23 +139,8 @@ pub mod dracoon {
         let user_info = dracoon.get_user_info().await.unwrap();
 
         user_info_mock.assert();
-        
-        assert_eq!(user_info.id, 1);
-        assert_eq!(user_info.first_name, "string");
-        assert_eq!(user_info.last_name, "string");
-        assert_eq!(user_info.user_name, "string");
-        assert_eq!(user_info.is_locked, false);
-        assert_eq!(user_info.has_manageable_rooms, true);
-        assert_eq!(user_info.language, "string");
-        assert_eq!(user_info.must_set_email, Some(false));
-        assert_eq!(user_info.needs_to_accept_EULA, Some(false));
-        assert_eq!(user_info.expire_at, None);
-        assert_eq!(user_info.is_encryption_enabled, Some(true));
-        assert!(user_info.last_login_success_at.is_some());
-        assert!(user_info.last_login_fail_at.is_some());
-        assert_eq!(user_info.email, Some("string".to_string()));
-        assert_eq!(user_info.phone, Some("string".to_string()));
-        assert_eq!(user_info.auth_data.method, "basic");
+
+        assert_user_account(&user_info);
         
     }
 }

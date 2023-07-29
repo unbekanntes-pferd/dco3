@@ -111,6 +111,7 @@ pub struct DracoonClient<State = Disconnected> {
     client_id: String,
     client_secret: String,
     pub http: ClientWithMiddleware,
+    pub stream_http: Client,
     connection: Container<Connection>,
     connected: PhantomData<State>,
 }
@@ -216,6 +217,7 @@ impl DracoonClientBuilder {
         };
 
         let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
+        let upload_http = http.clone();
 
         let http = ClientBuilder::new(http)
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
@@ -254,6 +256,7 @@ impl DracoonClientBuilder {
             connection: Container::<Connection>::new(),
             connected: PhantomData,
             http,
+            stream_http: upload_http
         })
     }
 }
@@ -288,6 +291,7 @@ impl DracoonClient<Disconnected> {
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
             http: self.http,
+            stream_http: self.stream_http
         })
     }
 
@@ -441,6 +445,7 @@ impl DracoonClient<Connected> {
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
             http: self.http,
+            stream_http: self.stream_http,
         })
     }
 

@@ -1,12 +1,12 @@
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::{
         nodes::{Node, NodeType, NodesFilter, NodesSortBy, UserType, NodesSearchFilter, NodesSearchSortBy},
         tests::dracoon::get_connected_client,
         *,
     };
 
-    fn assert_node(node: &Node) {
+    pub fn assert_node(node: &Node) {
         assert_eq!(node.id, 2);
         assert!(node.parent_id.is_some());
         assert_eq!(node.parent_id.unwrap(), 1);

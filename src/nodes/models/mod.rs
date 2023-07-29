@@ -498,9 +498,9 @@ impl FromResponse for FileKey {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileUploadResponse {
-    pub upload_url: Option<String>,
+    pub upload_url: String,
     pub upload_id: String,
-    pub token: Option<String>,
+    pub token: String,
 }
 
 #[async_trait]
@@ -540,7 +540,7 @@ pub struct S3FileUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub enum S3UploadStatus {
     #[serde(rename = "transfer")]
     Transfer,
@@ -1034,7 +1034,7 @@ pub struct FileFileKeys {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
-    pub range: Range,
+    pub range: Option<Range>,
     pub items: Vec<UserIdFileItem>,
     pub users: Vec<UserUserPublicKey>,
     pub files: Vec<FileFileKeys>,

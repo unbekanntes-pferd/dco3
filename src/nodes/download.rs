@@ -18,7 +18,7 @@ use std::{cmp::min, io::Write};
 use tracing::debug;
 
 #[async_trait]
-impl<T: DownloadInternal + Sync + Send> Download for T {
+impl Download for Dracoon<Connected> {
     async fn download<'w>(
         &'w self,
         node: &Node,
@@ -308,9 +308,7 @@ mod tests {
 
         let download_url_str = "https://test.dracoon.com/not/real/download_url";
 
-        let (dracoon, mock_server) = get_connected_client().await;
-
-        let mut mock_server = mock_server;
+        let (dracoon, mut mock_server) = get_connected_client().await;
 
         let download_url_res = include_str!("../tests/responses/download/download_url_ok.json");
 
@@ -332,9 +330,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_file_key() {
 
-        let (dracoon, mock_server) = get_connected_client().await;
-
-        let mut mock_server = mock_server;
+        let (dracoon, mut mock_server) = get_connected_client().await;
 
         let file_key_res = include_str!("../tests/responses/download/file_key_ok.json");
 
@@ -362,9 +358,7 @@ mod tests {
     #[tokio::test]
     async fn test_download_unencrypted() {
 
-        let (dracoon, mock_server) = get_connected_client().await;
-
-        let mut mock_server = mock_server;
+        let (dracoon, mut mock_server) = get_connected_client().await;
 
         let content_length_mock = mock_server
             .mock("HEAD", "/some/download/url")
@@ -403,9 +397,7 @@ mod tests {
     #[tokio::test]
     async fn test_download_encrypted() {
 
-        let (dracoon, mock_server) = get_connected_client().await;
-
-        let mut mock_server = mock_server;
+        let (dracoon, mut mock_server) = get_connected_client().await;
 
         let content_length_mock = mock_server
             .mock("HEAD", "/some/download/url")
@@ -476,9 +468,7 @@ mod tests {
     async fn test_download_encrypted_no_keypair() {
 
 
-        let (dracoon, mock_server) = get_connected_client().await;
-
-        let mut mock_server = mock_server;
+        let (dracoon, mut mock_server) = get_connected_client().await;
 
         // create bytes for mocking byte response
         let mock_bytes: [u8; 16] = [0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44];
