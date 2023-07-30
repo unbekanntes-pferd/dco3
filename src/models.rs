@@ -2,8 +2,52 @@
 use std::fmt::Debug;
 
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, RwLock};
 
 use super::auth::errors::DracoonClientError;
+
+
+// struct for internal mutability 
+#[derive(Debug, Clone, Default)]
+pub struct Container <T: Clone> {
+    data: Arc<RwLock<Option<T>>>
+}
+
+impl <T: Clone> Container <T> {
+    pub fn new_from(data: T) -> Self {
+        Self {
+            data: Arc::new(RwLock::new(Some(data)))
+        }
+    }
+
+    pub fn new() -> Self {
+        Self {
+            data: Arc::new(RwLock::new(None))
+        }
+    }
+
+    pub fn set(&self, data: T) {
+        let mut lock = self.data.write().expect("Could not lock mutex");
+        *lock = Some(data);
+    }
+
+    pub fn get(&self) -> Option<T> {
+        let lock = self.data.read().expect("Could not lock mutex");
+        lock.clone()
+    }
+
+    pub fn is_some(&self) -> bool {
+        let lock = self.data.read().expect("Could not lock mutex");
+        lock.is_some()
+    }
+
+    pub fn is_none(&self) -> bool {
+        let lock = self.data.read().expect("Could not lock mutex");
+        lock.is_none()
+    }
+
+}
+
 
 
 #[derive(Debug)]

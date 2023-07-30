@@ -14,27 +14,49 @@ use crate::{
 pub use crate::user::UserAuthData;
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserData {
-    id: u64,
-    first_name: String,
-    last_name: String,
-    is_locked: bool,
-    avatar_uuid: String,
-    auth_data: UserAuthData,
-    email: Option<String>,
-    phone: Option<String>,
-    expire_at: Option<String>,
-    has_manageable_rooms: Option<bool>,
-    is_encryption_enabled: Option<bool>,
-    last_login_success_at: Option<String>,
-    home_room_id: Option<u64>,
-    public_key_container: Option<PublicKeyContainer>,
-    user_roles: Option<RoleList>,
-    is_mfa_enabled: Option<bool>,
-    is_mfa_enforced: Option<bool>,
+    pub id: u64,
+    pub user_name: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub is_locked: bool,
+    pub avatar_uuid: String,
+    pub auth_data: UserAuthData,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub expire_at: Option<String>,
+    pub has_manageable_rooms: Option<bool>,
+    pub is_encryption_enabled: Option<bool>,
+    pub last_login_success_at: Option<String>,
+    pub home_room_id: Option<u64>,
+    pub public_key_container: Option<PublicKeyContainer>,
+    pub user_roles: Option<RoleList>,
+    pub is_mfa_enabled: Option<bool>,
+    pub is_mfa_enforced: Option<bool>,
 }
 
-pub type UserList = RangedItems<UserData>;
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserItem {
+    pub id: u64,
+    pub user_name: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub is_locked: bool,
+    pub avatar_uuid: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub expire_at: Option<String>,
+    pub has_manageable_rooms: Option<bool>,
+    pub is_encryption_enabled: Option<bool>,
+    pub last_login_success_at: Option<String>,
+    pub home_room_id: Option<u64>,
+    pub public_key_container: Option<PublicKeyContainer>,
+    pub user_roles: Option<RoleList>,
+}
+
+pub type UserList = RangedItems<UserItem>;
 
 #[async_trait]
 impl FromResponse for UserList {
@@ -51,13 +73,14 @@ impl FromResponse for UserData {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LastAdminUserRoom {
-    id: u64,
-    name: String,
-    parent_path: String,
-    last_admin_in_group: bool,
-    parent_id: Option<u64>,
-    last_admin_in_group_id: Option<u64>,
+    pub id: u64,
+    pub name: String,
+    pub parent_path: String,
+    pub last_admin_in_group: bool,
+    pub parent_id: Option<u64>,
+    pub last_admin_in_group_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -73,6 +96,7 @@ impl FromResponse for LastAdminUserRoomList {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
     first_name: String,
     last_name: String,
@@ -199,6 +223,7 @@ impl CreateUserRequestBuilder {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
     first_name: Option<String>,
     last_name: Option<String>,
@@ -307,6 +332,7 @@ impl UpdateUserRequestBuilder {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserAuthDataUpdateRequest {
     auth_method: Option<String>,
     login: Option<String>,
@@ -564,27 +590,27 @@ impl FilterQuery for UsersFilter {
             },
             Self::UserName(op, value) => {
                 let op: String = op.into();
-                format!("username:{}:{}", op, value)
+                format!("userName:{}:{}", op, value)
             },
             Self::FirstName(op, value) => {
                 let op: String = op.into();
-                format!("first_name:{}:{}", op, value)
+                format!("firstName:{}:{}", op, value)
             },
             Self::LastName(op, value) => {
                 let op: String = op.into();
-                format!("last_name:{}:{}", op, value)
+                format!("lastName:{}:{}", op, value)
             },
             Self::IsLocked(op, value) => {
                 let op: String = op.into();
-                format!("is_locked:{}:{}", op, value)
+                format!("isLocked:{}:{}", op, value)
             },
             Self::EffectiveRoles(op, value) => {
                 let op: String = op.into();
-                format!("effective_roles:{}:{}", op, value)
+                format!("effectiveRoles:{}:{}", op, value)
             },
             Self::CreatedAt(op, value) => {
                 let op: String = op.into();
-                format!("created_at:{}:{}", op, value)
+                format!("createdAt:{}:{}", op, value)
             },
             Self::Phone(op, value) => {
                 let op: String = op.into();
@@ -592,11 +618,11 @@ impl FilterQuery for UsersFilter {
             },
             Self::IsEncryptionEnabled(op, value) => {
                 let op: String = op.into();
-                format!("is_encryption_enabled:{}:{}", op, value)
+                format!("isEncryptionEnabled:{}:{}", op, value)
             },
             Self::HasRole(op, value) => {
                 let op: String = op.into();
-                format!("has_role:{}:{}", op, value)
+                format!("hasRole:{}:{}", op, value)
             },
 
         }
@@ -673,7 +699,7 @@ impl SortQuery for UsersSortBy {
         match self {
             Self::UserName(order) => {
                 let order: String = order.into();
-                format!("username:{}", order)
+                format!("userName:{}", order)
             },
             Self::Email(order) => {
                 let order: String = order.into();
@@ -681,23 +707,23 @@ impl SortQuery for UsersSortBy {
             },
             Self::FirstName(order) => {
                 let order: String = order.into();
-                format!("first_name:{}", order)
+                format!("firstName:{}", order)
             },
             Self::LastName(order) => {
                 let order: String = order.into();
-                format!("last_name:{}", order)
+                format!("lastName:{}", order)
             },
             Self::IsLocked(order) => {
                 let order: String = order.into();
-                format!("is_locked:{}", order)
+                format!("isLocked:{}", order)
             },
             Self::ExpireAt(order) => {
                 let order: String = order.into();
-                format!("expire_at:{}", order)
+                format!("expireAt:{}", order)
             },
             Self::CreatedAt(order) => {
                 let order: String = order.into();
-                format!("created_at:{}", order)
+                format!("createdAt:{}", order)
             },
         }
     }

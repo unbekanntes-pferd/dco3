@@ -27,7 +27,7 @@ pub struct UserAccount {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub home_room_id: Option<u64>,
-    pub user_groups: Vec<UserGroup>,
+    pub user_groups: Option<Vec<UserGroup>>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -62,7 +62,7 @@ pub struct Role {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleList {
-    pub roles: Vec<Role>,
+    pub items: Vec<Role>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

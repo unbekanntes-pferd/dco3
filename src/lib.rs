@@ -40,7 +40,7 @@
 //!       .with_client_secret("client_secret")
 //!       .build()
 //!       .unwrap()
-//!       .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!       .connect(OAuth2Flow::password_flow("username", "password"))
 //!       .await
 //!       .unwrap();
 //! 
@@ -61,7 +61,7 @@
 //! async fn main() {
 //! 
 //!    // you can instantiate the required flow by using the `OAuth2Flow` enum
-//!    let password_flow = OAuth2Flow::PasswordFlow("username".into(), "password".into());
+//!    let password_flow = OAuth2Flow::password_flow("username", "password");
 //! 
 //!    let dracoon = Dracoon::builder()
 //!       .with_base_url("https://dracoon.team")
@@ -96,7 +96,7 @@
 //!    let auth_code = "some_auth_code";
 //! 
 //!    // you can instantiate the required flow by using the `OAuth2Flow` enum
-//!    let auth_code_flow = OAuth2Flow::AuthCodeFlow("auth_code".into());
+//!    let auth_code_flow = OAuth2Flow::authorization_code(auth_code);
 //! 
 //!    let dracoon = dracoon.connect(auth_code_flow).await.unwrap();
 //! }
@@ -118,7 +118,7 @@
 //!     .with_client_secret("client_secret")
 //!     .build()
 //!     .unwrap()
-//!     .connect(OAuth2Flow::RefreshToken(refresh_token.into()))
+//!     .connect(OAuth2Flow::refresh_token(refresh_token))
 //!     .await
 //!     .unwrap();
 //! 
@@ -283,23 +283,45 @@
 //! ```
 //! ## Cryptography support
 //! All API calls (specifically up- and downloads) support encryption and decryption.
-//! In order to use encryption, you need to get your keypair once the client is in `Connected` state.
+//! In order to use encryption, you can pass the encryption password while building the client.
 //! 
 //! ```no_run
-//! # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
-//! # #[tokio::main]
-//! # async fn main() {
-//! # let mut dracoon = Dracoon::builder()
-//! #  .with_base_url("https://dracoon.team")
-//! #  .with_client_id("client_id")
-//! #  .with_client_secret("client_secret")
-//! #  .build()
-//! #  .unwrap()
-//! #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
-//! #  .await
-//! #  .unwrap();
-//! // get the keypair (also after providing the secret once)
-//! dracoon.get_keypair(Some("my secret")).await.unwrap();
+//!  use dco3::{Dracoon, OAuth2Flow};
+//!  #[tokio::main]
+//!  async fn main() {
+//!  let dracoon = Dracoon::builder()
+//!   .with_base_url("https://dracoon.team")
+//!   .with_client_id("client_id")
+//!   .with_client_secret("client_secret")
+//!   .with_encryption_password("my secret")
+//!   .build()
+//!   .unwrap()
+//!   .connect(OAuth2Flow::password_flow("username", "password"))
+//!   .await
+//!   .unwrap();
+//! // keypair is now set and can be fetched without passing a secret
+//! let kp = dracoon.get_keypair(None).await.unwrap();
+//! # }
+//! ```
+//! 
+//! It is also possible to pass the encryption secret after connecting by using the `get_keypair` method.
+//! 
+//! ```no_run
+//!  use dco3::{Dracoon, OAuth2Flow};
+//!  #[tokio::main]
+//!  async fn main() {
+//!  let dracoon = Dracoon::builder()
+//!   .with_base_url("https://dracoon.team")
+//!   .with_client_id("client_id")
+//!   .with_client_secret("client_secret")
+//!   .build()
+//!   .unwrap()
+//!   .connect(OAuth2Flow::password_flow("username", "password"))
+//!   .await
+//!   .unwrap();
+//! // check and provide the keypair by passing the encryption secret
+//! let secret = "my secret".to_string();
+//! let kp = dracoon.get_keypair(Some(secret)).await.unwrap();
 //! # }
 //! ```
 //! ## Examples
@@ -313,7 +335,7 @@ use reqwest::Url;
 use self::{
     auth::{Connected, Disconnected},
     auth::{DracoonClient, DracoonClientBuilder},
-    user::{models::UserAccount},
+    user::models::UserAccount,
 };
 
 // re-export traits and base models
@@ -338,6 +360,7 @@ pub mod utils;
 pub mod groups;
 pub mod shares;
 pub mod users;
+mod tests;
 
 
 /// DRACOON struct - implements all API calls via traits
@@ -345,8 +368,9 @@ pub mod users;
 pub struct Dracoon<State = Disconnected> {
     client: DracoonClient<State>,
     state: PhantomData<State>,
-    user_info: Option<UserAccount>,
-    keypair: Option<PlainUserKeyPairContainer>,
+    user_info: Container<UserAccount>,
+    keypair: Container<PlainUserKeyPairContainer>,
+    encryption_secret: Option<String>,
 }
 
 /// Builder for the `Dracoon` struct.
@@ -356,6 +380,7 @@ pub struct Dracoon<State = Disconnected> {
 #[derive(Default)]
 pub struct DracoonBuilder {
     client_builder: DracoonClientBuilder,
+    encryption_secret: Option<String>,
 }
 
 impl DracoonBuilder {
@@ -364,7 +389,13 @@ impl DracoonBuilder {
         let client_builder = DracoonClientBuilder::new();
         Self {
             client_builder,
+            encryption_secret: None,
         }
+    }
+
+    pub fn with_encryption_password(mut self, encryption_secret: impl Into<String>) -> Self {
+        self.encryption_secret = Some(encryption_secret.into());
+        self
     }
 
     /// Sets the base url for the DRACOON instance
@@ -418,8 +449,9 @@ impl DracoonBuilder {
         Ok(Dracoon {
             client: dracoon,
             state: PhantomData,
-            user_info: None,
-            keypair: None,
+            user_info: Container::new(),
+            keypair: Container::new(),
+            encryption_secret: self.encryption_secret,
         })
     }
 }
@@ -436,12 +468,22 @@ impl Dracoon<Disconnected> {
     ) -> Result<Dracoon<Connected>, DracoonClientError> {
         let client = self.client.connect(oauth_flow).await?;
 
-        Ok(Dracoon {
+        let mut dracoon = Dracoon {
             client,
             state: PhantomData,
-            user_info: None,
-            keypair: None,
-        })
+            user_info: Container::new(),
+            keypair: Container::new(),
+            encryption_secret: self.encryption_secret,
+        };
+
+        if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
+            let kp = dracoon.get_user_keypair(&encryption_secret).await?;
+            dracoon.encryption_secret = None;
+            dracoon.keypair.set(kp);
+            drop(encryption_secret)
+        }
+
+        Ok(dracoon)
     }
 
     pub fn get_authorize_url(&mut self) -> String {
@@ -465,31 +507,38 @@ impl Dracoon<Connected> {
         self.client.get_base_url()
     }
 
-    pub fn get_refresh_token(&self) -> &str {
+    pub fn get_refresh_token(&self) -> String {
         self.client.get_refresh_token()
     }
 
-    pub async fn get_user_info(&mut self) -> Result<&UserAccount, DracoonClientError> {
-        if let Some(ref user_info) = self.user_info {
-            return Ok(user_info);
+    pub async fn get_user_info(&self) -> Result<UserAccount, DracoonClientError> {
+
+        if self.user_info.is_none() {
+            let user_info = self.get_user_account().await?;
+            self.user_info.set(user_info);
         }
 
-        let user_info = self.get_user_account().await?;
-        self.user_info = Some(user_info);
-        Ok(self.user_info.as_ref().expect("Just set user info"))
+        let user_info = self.user_info.get().expect("Just set user info");
+        Ok(user_info)
     }
 
     pub async fn get_keypair(
-        &mut self,
-        secret: Option<&str>,
-    ) -> Result<&PlainUserKeyPairContainer, DracoonClientError> {
-        if let Some(ref keypair) = self.keypair {
-            return Ok(keypair);
+        &self,
+        secret: Option<String>,
+    ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
+
+        if self.keypair.is_none() {
+            if let Some(secret) = secret {
+                let keypair = self.get_user_keypair(&secret).await?;
+                self.keypair.set(keypair);
+            } else {
+                return Err(DracoonClientError::MissingEncryptionSecret);
+            }
         }
 
-        let secret = secret.ok_or(DracoonClientError::MissingEncryptionSecret)?;
-        let keypair = self.get_user_keypair(secret).await?;
-        self.keypair = Some(keypair);
-        Ok(self.keypair.as_ref().expect("Just set keypair"))
+        let keypair = self.keypair.get().expect("Keypair is some");
+        Ok(keypair)
+
     }
 }
+

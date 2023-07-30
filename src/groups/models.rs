@@ -7,16 +7,15 @@ use crate::{nodes::models::UserInfo, user::models::RoleList, utils::{FromRespons
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Group {
-    id: u64,
-    name: String,
-    created_at: String,
-    created_by: UserInfo,
-    updated_at: Option<String>,
-    updated_by: Option<UserInfo>,
-    cnt_users: Option<u64>,
-    expire_at: Option<String>,
-    group_roles: Option<RoleList>
-
+    pub id: u64,
+    pub name: String,
+    pub created_at: String,
+    pub created_by: UserInfo,
+    pub updated_at: Option<String>,
+    pub updated_by: Option<UserInfo>,
+    pub cnt_users: Option<u64>,
+    pub expire_at: Option<String>,
+    pub group_roles: Option<RoleList>
 }
 
 #[async_trait]
@@ -108,16 +107,16 @@ impl ChangeGroupMembersRequest {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoomList {
-    items: Vec<LastAdminGroupRoom>
+    pub items: Vec<LastAdminGroupRoom>
 }
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoom {
-    id: u64,
-    name: String,
-    parent_path: String,
-    parent_id: Option<u64>
+    pub id: u64,
+    pub name: String,
+    pub parent_path: String,
+    pub parent_id: Option<u64>
 
 }
 
@@ -131,8 +130,8 @@ impl FromResponse for LastAdminGroupRoomList {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupUser {
-    user_info: UserInfo,
-    is_member: bool,
+    pub user_info: UserInfo,
+    pub is_member: bool,
 }
 
 pub type GroupUserList = RangedItems<GroupUser>;

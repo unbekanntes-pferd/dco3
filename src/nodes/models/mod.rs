@@ -212,7 +212,7 @@ impl NodeList {
 }
 
 /// A node in DRACOON - GET /nodes/{nodeId}
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub id: u64,
@@ -401,15 +401,28 @@ pub struct EncryptionInfo {
 }
 
 /// DRACOON user info on nodes (`created_by`, `updated_by`)
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
     pub id: u64,
-    pub user_type: String,
+    pub user_type: UserType,
+    pub user_name: Option<String>,
     pub avatar_uuid: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub email: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub enum UserType {
+    #[serde(rename="internal")]
+    Internal,
+    #[serde(rename="external")]
+    External,
+    #[serde(rename="system")]
+    System,
+    #[serde(rename="deleted")]
+    Deleted
 }
 
 #[async_trait]
@@ -485,9 +498,9 @@ impl FromResponse for FileKey {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileUploadResponse {
-    pub upload_url: Option<String>,
+    pub upload_url: String,
     pub upload_id: String,
-    pub token: Option<String>,
+    pub token: String,
 }
 
 #[async_trait]
@@ -527,7 +540,7 @@ pub struct S3FileUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub enum S3UploadStatus {
     #[serde(rename = "transfer")]
     Transfer,
@@ -1021,7 +1034,7 @@ pub struct FileFileKeys {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
-    pub range: Range,
+    pub range: Option<Range>,
     pub items: Vec<UserIdFileItem>,
     pub users: Vec<UserUserPublicKey>,
     pub files: Vec<FileFileKeys>,

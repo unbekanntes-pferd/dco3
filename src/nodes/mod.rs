@@ -178,11 +178,11 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let node_ids = vec![123, 456];
-    /// dracoon.delete_nodes(node_ids).await.unwrap();
+    /// dracoon.delete_nodes(node_ids.into()).await.unwrap();
     /// # }
     /// ```
-    // TODO: refactor - use DeleteNodesRequest
-    async fn delete_nodes(&self, node_ids: Vec<u64>) -> Result<(), DracoonClientError>;
+
+    async fn delete_nodes(&self, req: DeleteNodesRequest) -> Result<(), DracoonClientError>;
     /// Move nodes to a target parent node (folder or room).
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Nodes};
@@ -425,7 +425,7 @@ pub trait Rooms {
     /// Updates room groups by id.
     /// Gets groups of a room by id with optional params.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::{RoomGroupsAddBatchRequestItem, NodePermissions}};
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms, nodes::{RoomGroupsAddBatchRequestItem, NodePermissions}};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -452,7 +452,7 @@ pub trait Rooms {
     /// Deletes room groups by id.
     /// Gets groups of a room by id with optional params.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms};
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -478,7 +478,7 @@ pub trait Rooms {
     /// Gets users of a room by id with optional params.
     /// Gets groups of a room by id with optional params.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms};
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -503,7 +503,7 @@ pub trait Rooms {
     /// Updates room users by id.
     /// Gets groups of a room by id with optional params.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::{RoomUsersAddBatchRequestItem, NodePermissions}};
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms, nodes::{RoomUsersAddBatchRequestItem, NodePermissions}};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -529,7 +529,7 @@ pub trait Rooms {
     /// Deletes room users by id.
     /// Gets groups of a room by id with optional params.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms};
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -561,17 +561,19 @@ pub trait Download {
     /// Downloads a file (node) to the given writer buffer
     /// Example
     /// ```no_run
-    /// use dco3::{Dracoon, auth::OAuth2Flow, nodes::{Download, Nodes}};
+    /// use dco3::{Dracoon, OAuth2Flow, Download, Nodes};
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///    let mut client = Dracoon::builder()
+    ///    let client = Dracoon::builder()
     ///      .with_base_url("https://dracoon.team")
     ///      .with_client_id("client_id")
     ///      .with_client_secret("client_secret")
+    ///      // if you do not pass a password, encrypted uploads will fail with an error
+    ///      .with_encryption_password("encryption_password")
     ///      .build()
     ///      .unwrap()
-    ///      .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    ///      .connect(OAuth2Flow::password_flow("username", "password"))
     ///      .await
     ///      .unwrap();
     /// 
@@ -593,7 +595,7 @@ pub trait Download {
     ///
     ///
     async fn download<'w>(
-        &'w mut self,
+        &'w self,
         node: &Node,
         writer: &'w mut (dyn Write + Send),
         mut callback: Option<DownloadProgressCallback>,
@@ -609,17 +611,19 @@ pub trait Upload<R: AsyncRead> {
     /// Uploads a stream (buffered reader) with given file meta info to the given parent node
     /// # Example
     /// ```no_run
-    /// use dco3::{Dracoon, auth::OAuth2Flow, nodes::{Upload, Nodes, models::{FileMeta, UploadOptions, ResolutionStrategy}}};
+    /// use dco3::{Dracoon, OAuth2Flow, Upload, Nodes, nodes::{FileMeta, UploadOptions, ResolutionStrategy}};
     /// #[cfg(not(doctest))]
     /// #[tokio::main]
     /// async fn main() {
-    ///    let mut client = Dracoon::builder()
+    ///    let client = Dracoon::builder()
     ///      .with_base_url("https://dracoon.team")
     ///      .with_client_id("client_id")
     ///      .with_client_secret("client_secret")
+    ///      // if you do not pass a password, encrypted uploads will fail with an error
+    ///      .with_encryption_password("encryption_password")
     ///      .build()
     ///      .unwrap()
-    ///      .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    ///      .connect(OAuth2Flow::password_flow("username", "password"))
     ///      .await
     ///      .unwrap();
     /// 
@@ -665,7 +669,7 @@ pub trait Upload<R: AsyncRead> {
     ///
     ///
     async fn upload<'r>(
-        &'r mut self,
+        &'r self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,

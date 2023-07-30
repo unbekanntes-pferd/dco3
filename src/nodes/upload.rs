@@ -1,4 +1,4 @@
-use std::{time::Duration, cmp::min};
+use std::{cmp::min, time::Duration};
 
 use super::{
     models::{
@@ -28,9 +28,9 @@ use reqwest::{header, Body};
 use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
 
 #[async_trait]
-impl<C: UploadInternal<R> + Sync + Send, R: AsyncRead + Sync + Send + 'static> Upload<R> for C {
+impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connected> {
     async fn upload<'r>(
-        &'r mut self,
+        &'r self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -100,7 +100,7 @@ trait UploadInternal<R: AsyncRead> {
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError>;
     async fn upload_to_s3_encrypted(
-        &mut self,
+        &self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -153,6 +153,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         let url_part = format!("{DRACOON_API_PREFIX}/{NODES_BASE}/{FILES_BASE}/{FILES_UPLOAD}");
 
         let api_url = self.build_api_url(&url_part);
+
         let res = self
             .client
             .http
@@ -371,6 +372,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         url_req,
                     )
                     .await?;
+
                 let url = url.urls.first().expect("Creating S3 url failed");
 
                 // truncation is safe because chunk_size is 32 MB
@@ -441,7 +443,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
     #[allow(clippy::too_many_lines)]
     async fn upload_to_s3_encrypted(
-        &mut self,
+        &self,
         file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
@@ -449,7 +451,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError> {
-        let keypair = self.get_keypair(None).await?.clone();
+        let keypair = self.get_keypair(None).await?;
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
@@ -602,6 +604,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         url_req,
                     )
                     .await?;
+
                 let url = url.urls.first().expect("Creating S3 url failed");
 
                 // truncation is safe because chunk_size is 32 MB
@@ -689,8 +692,13 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                     drop(plain_file_key);
                     // set file keys
-                    <Dracoon<Connected> as UploadInternal<R>>::set_file_keys(self, key_reqs.into())
+                    if !key_reqs.is_empty() {
+                        <Dracoon<Connected> as UploadInternal<R>>::set_file_keys(
+                            self,
+                            key_reqs.into(),
+                        )
                         .await?;
+                    }
 
                     return Ok(status_response
                         .node
@@ -747,7 +755,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
         let res = self
             .client
-            .http
+            .stream_http
             .put(&url.url)
             .body(body)
             .header(header::CONTENT_LENGTH, chunk_size)
@@ -866,4 +874,460 @@ fn calculate_s3_url_count(total_size: u64, chunk_size: u64) -> (u32, u64) {
         urls.try_into().expect("overflow size to chunk"),
         total_size % chunk_size,
     )
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::io::Cursor;
+
+    use crate::tests::dracoon::get_connected_client;
+    use crate::tests::nodes::tests::assert_node;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_upload_channel() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
+
+        let upload_channel_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads")
+            .with_status(200)
+            .with_body(channel_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let channel_req = CreateFileUploadRequest::builder(123, "test".into()).build();
+
+        let upload_channel =
+            <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::create_upload_channel(
+                &client,
+                channel_req,
+            )
+            .await
+            .unwrap();
+
+        upload_channel_mock.assert();
+
+        assert_eq!(upload_channel.upload_id, "string");
+        assert_eq!(upload_channel.upload_url, "string");
+        assert_eq!(upload_channel.token, "string");
+    }
+
+    #[tokio::test]
+    async fn test_create_s3_upload_urls() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let s3_urls_res = include_str!("../tests/responses/upload/s3_urls_ok.json");
+
+        let s3_urls_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads/123/s3_urls")
+            .with_status(200)
+            .with_body(s3_urls_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let s3_urls_req = GeneratePresignedUrlsRequest::new(123456, 1, 1);
+
+        let s3_urls =
+            <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::create_s3_upload_urls(
+                &client,
+                "123".into(),
+                s3_urls_req,
+            )
+            .await
+            .unwrap();
+
+        s3_urls_mock.assert();
+
+        assert_eq!(s3_urls.urls.len(), 1);
+        assert_eq!(
+            s3_urls.urls.get(0).unwrap().url,
+            "https://test.dracoon.com/not/real/upload_url"
+        );
+        assert_eq!(s3_urls.urls.get(0).unwrap().part_number, 1);
+    }
+
+    #[tokio::test]
+    async fn test_finalize_upload() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let finalize_mock = mock_server
+            .mock("PUT", "/api/v4/nodes/files/uploads/123/s3")
+            .with_status(202)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let req =
+            CompleteS3FileUploadRequest::builder(vec![S3FileUploadPart::new(1, "123".into())])
+                .build();
+
+        <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::finalize_upload(
+            &client,
+            "123".into(),
+            req,
+        )
+        .await
+        .unwrap();
+
+        finalize_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_get_upload_status() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let status_res = include_str!("../tests/responses/upload/upload_status_ok.json");
+
+        let status_mock = mock_server
+            .mock("GET", "/api/v4/nodes/files/uploads/123")
+            .with_status(200)
+            .with_body(status_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let upload_status =
+            <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::get_upload_status(
+                &client,
+                "123".into(),
+            )
+            .await
+            .unwrap();
+
+        status_mock.assert();
+
+        assert_eq!(upload_status.status, S3UploadStatus::Done);
+
+        assert_node(&upload_status.node.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_get_upload_status_pending() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let status_res = include_str!("../tests/responses/upload/upload_status_pending_ok.json");
+
+        let status_mock = mock_server
+            .mock("GET", "/api/v4/nodes/files/uploads/123")
+            .with_status(200)
+            .with_body(status_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let upload_status =
+            <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::get_upload_status(
+                &client,
+                "123".into(),
+            )
+            .await
+            .unwrap();
+
+        status_mock.assert();
+
+        assert_eq!(upload_status.status, S3UploadStatus::Finishing);
+    }
+
+    #[tokio::test]
+    async fn test_get_missing_file_keys() {
+        let (client, mut mock_server) = get_connected_client().await;
+        let missing_keys_res = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
+
+        let missing_keys_mock = mock_server
+            .mock("GET", "/api/v4/nodes/missingFileKeys?file_id=123&limit=50")
+            .with_status(200)
+            .with_body(missing_keys_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let missing_keys =
+            <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::get_missing_file_keys(
+                &client, 123,
+            )
+            .await
+            .unwrap();
+
+        missing_keys_mock.assert();
+
+        assert_eq!(missing_keys.items.len(), 1);
+        assert_eq!(missing_keys.users.len(), 1);
+        assert_eq!(missing_keys.files.len(), 1);
+        assert_eq!(missing_keys.items.get(0).unwrap().file_id, 3);
+        assert_eq!(missing_keys.items.get(0).unwrap().user_id, 2);
+        assert_eq!(missing_keys.users.get(0).unwrap().id, 2);
+        assert_eq!(missing_keys.files.get(0).unwrap().id, 3);
+        assert_eq!(
+            missing_keys.files.get(0).unwrap().file_key_container.key,
+            "string"
+        );
+        assert_eq!(
+            missing_keys.files.get(0).unwrap().file_key_container.iv,
+            "string"
+        );
+        // assert_eq!(missing_keys.files.get(0).unwrap().file_key_container.version, FileKeyVersion::RSA4096_AES256GCM); needs PartialEq
+    }
+
+    #[tokio::test]
+    async fn test_set_file_keys() {}
+
+    #[tokio::test]
+    async fn test_upload_stream_to_s3() {
+        let mock_bytes: [u8; 16] = [
+            0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
+        ];
+
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let chunk = bytes::Bytes::from(mock_bytes.to_vec());
+
+        let stream: async_stream::__private::AsyncStream<Result<bytes::Bytes, std::io::Error>, _> = async_stream::stream! {
+            yield Ok(chunk);
+        };
+
+        let upload_mock = mock_server
+            .mock("PUT", "/some/upload/url")
+            .with_status(202)
+            .with_header("etag", "string")
+            .create();
+
+        let upload_url = format!("{}some/upload/url", client.get_base_url());
+
+        let upload_url = PresignedUrl {
+            url: upload_url,
+            part_number: 1,
+        };
+
+        let file_meta = FileMeta::builder()
+            .with_name("test".into())
+            .with_size(16)
+            .build();
+
+        let e_tag = <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::upload_stream_to_s3(
+            &client,
+            Box::pin(stream),
+            &upload_url,
+            file_meta,
+            16,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+        upload_mock.assert();
+        assert_eq!(e_tag, "string".to_string());
+    }
+
+    #[tokio::test]
+    async fn test_upload_to_s3_unencrypted() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let parent_node: Node =
+            serde_json::from_str(include_str!("../tests/responses/nodes/node_ok.json")).unwrap();
+
+        let mock_bytes: Vec<u8> = vec![
+            0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
+        ];
+
+        let reader = Cursor::new(mock_bytes);
+        let reader_clone = BufReader::new(reader);
+
+        let file_meta = FileMeta::builder()
+            .with_name("test".into())
+            .with_size(16)
+            .build();
+
+        let upload_options = UploadOptions::default();
+
+        // mock upload channel
+        let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
+
+        let upload_channel_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads")
+            .with_status(201)
+            .with_body(channel_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        // mock S3 urls
+        let s3_urls_response =
+            include_str!("../tests/responses/upload/s3_urls_ok_with_placeholder.json");
+        let s3_urls_response =
+            s3_urls_response.replace("$base_url/", client.get_base_url().as_str());
+
+        let s3_urls_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads/string/s3_urls")
+            .with_status(201)
+            .with_body(s3_urls_response.clone())
+            .with_header("content-type", "application/json")
+            .create();
+
+        let upload_res =
+            serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
+
+        // mock upload to S3
+        let upload_mock = mock_server
+            .mock("PUT", "/upload_url")
+            .with_status(202)
+            .with_header("etag", "string")
+            .create();
+
+        // mock finalize upload
+        let finalize_mock = mock_server
+            .mock("PUT", "/api/v4/nodes/files/uploads/string/s3")
+            .with_status(202)
+            .create();
+
+        // mock upload status
+        let status_res = include_str!("../tests/responses/upload/upload_status_ok.json");
+        let status_mock = mock_server
+            .mock("GET", "/api/v4/nodes/files/uploads/string")
+            .with_status(200)
+            .with_body(status_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let node =
+            <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
+                &client,
+                file_meta,
+                &parent_node,
+                upload_options,
+                reader_clone,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        upload_channel_mock.assert();
+        s3_urls_mock.assert();
+        upload_mock.assert();
+        finalize_mock.assert();
+        status_mock.assert();
+
+        assert_node(&node);
+    }
+
+    #[tokio::test]
+    async fn test_upload_to_s3_encrypted() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let parent_node: Node =
+            serde_json::from_str(include_str!("../tests/responses/nodes/node_ok.json")).unwrap();
+
+        let mock_bytes: Vec<u8> = vec![
+            0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
+        ];
+
+        let reader = Cursor::new(mock_bytes);
+        let reader_clone = BufReader::new(reader);
+
+        let keypair =
+            DracoonCrypto::create_plain_user_keypair(dco3_crypto::UserKeyPairVersion::RSA4096)
+                .unwrap();
+        let enc_keypair =
+            DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
+        let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
+
+        let keypair_mock = mock_server
+            .mock("GET", "/api/v4/user/account/keypair")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(enc_keypair_json)
+            .create();
+
+        let _kp = client
+            .get_keypair(Some("TopSecret1234!".into()))
+            .await
+            .unwrap();
+
+        keypair_mock.assert();
+
+        let file_meta = FileMeta::builder()
+            .with_name("test".into())
+            .with_size(16)
+            .build();
+
+        let upload_options = UploadOptions::default();
+
+        // mock upload channel
+        let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
+
+        let upload_channel_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads")
+            .with_status(201)
+            .with_body(channel_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        // mock S3 urls
+        let s3_urls_response =
+            include_str!("../tests/responses/upload/s3_urls_ok_with_placeholder.json");
+        let s3_urls_response =
+            s3_urls_response.replace("$base_url/", client.get_base_url().as_str());
+
+        let s3_urls_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/uploads/string/s3_urls")
+            .with_status(201)
+            .with_body(s3_urls_response.clone())
+            .with_header("content-type", "application/json")
+            .create();
+
+        let upload_res =
+            serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
+
+        // mock upload to S3
+        let upload_mock = mock_server
+            .mock("PUT", "/upload_url")
+            .with_status(202)
+            .with_header("etag", "string")
+            .create();
+
+        // mock finalize upload
+        let finalize_mock = mock_server
+            .mock("PUT", "/api/v4/nodes/files/uploads/string/s3")
+            .with_status(202)
+            .create();
+
+        // mock upload status
+        let status_res = include_str!("../tests/responses/upload/upload_status_ok.json");
+        let status_mock = mock_server
+            .mock("GET", "/api/v4/nodes/files/uploads/string")
+            .with_status(200)
+            .with_body(status_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        // mock missing file keys
+        let missing_keys = include_str!("../tests/responses/nodes/missing_file_keys_empty_ok.json");
+        let keys_mock = mock_server
+            .mock("GET", "/api/v4/nodes/missingFileKeys?file_id=2&limit=50")
+            .with_status(200)
+            .with_body(missing_keys)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
+            &client,
+            file_meta,
+            &parent_node,
+            upload_options,
+            reader_clone,
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+
+        upload_channel_mock.assert();
+        s3_urls_mock.assert();
+        upload_mock.assert();
+        finalize_mock.assert();
+        status_mock.assert();
+        keys_mock.assert();
+
+        assert_node(&node);
+    }
 }

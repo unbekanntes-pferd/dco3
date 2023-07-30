@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{errors::DracoonClientError, models::DracoonErrorResponse},
-    models::{RangedItems},
+    models::RangedItems,
     nodes::models::{NodePermissions, UserInfo},
     utils::{parse_body, FromResponse},
 };
@@ -31,7 +31,7 @@ pub struct CreateRoomRequest {
     timestamp_modification: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub enum GroupMemberAcceptance {
     #[serde(rename = "autoallow")]
     AutoAllow,
@@ -209,7 +209,10 @@ impl UpdateRoomRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+    pub fn with_timestamp_modification(
+        mut self,
+        timestamp_modification: impl Into<String>,
+    ) -> Self {
         self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
@@ -371,7 +374,6 @@ impl EncryptRoomRequestBuilder {
     }
 }
 
-
 pub type RoomGroupList = RangedItems<RoomGroup>;
 
 #[async_trait]
@@ -384,11 +386,11 @@ impl FromResponse for RoomGroupList {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroup {
-    id: u64,
-    name: String,
-    is_granted: bool,
-    new_group_member_acceptance: Option<GroupMemberAcceptance>,
-    permissions: Option<NodePermissions>,
+    pub id: u64,
+    pub name: String,
+    pub is_granted: bool,
+    pub new_group_member_acceptance: Option<GroupMemberAcceptance>,
+    pub permissions: Option<NodePermissions>,
 }
 
 #[derive(Debug, Serialize)]
@@ -534,11 +536,10 @@ impl FromResponse for RoomUserList {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUser {
-    id: u64,
-    user_info: UserInfo,
-    is_granted: bool,
-    permissions: Option<NodePermissions>,
-    public_key_container: Option<PublicKeyContainer>,
+    pub user_info: UserInfo,
+    pub is_granted: bool,
+    pub permissions: Option<NodePermissions>,
+    pub public_key_container: Option<PublicKeyContainer>,
 }
 
 #[derive(Debug, Serialize)]
