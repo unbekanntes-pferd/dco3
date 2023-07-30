@@ -1,5 +1,7 @@
 # dco3 - DRACOON API wrapper in Rust
 
+![tests](https://github.com/unbekanntes-pferd/dco3/actions/workflows/ci.yml/badge.svg)
+
 ## What is this?
 This is an async wrapper around the DRACOON API [dracoon.com](https://dracoon.com).
 
