@@ -692,7 +692,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                     drop(plain_file_key);
                     // set file keys
-                    if key_reqs.len() > 0 {
+                    if !key_reqs.is_empty() {
                         <Dracoon<Connected> as UploadInternal<R>>::set_file_keys(
                             self,
                             key_reqs.into(),

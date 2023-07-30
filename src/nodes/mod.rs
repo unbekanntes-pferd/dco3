@@ -178,7 +178,7 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let node_ids = vec![123, 456];
-    /// dracoon.delete_nodes(node_ids).await.unwrap();
+    /// dracoon.delete_nodes(node_ids.into()).await.unwrap();
     /// # }
     /// ```
 
