@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::{
         tests::dracoon::get_connected_client,
         user::UserAuthData,
@@ -7,7 +7,7 @@ mod tests {
         ListAllParams, SortOrder, Users,
     };
 
-    fn assert_user_item(user: &UserItem) {
+    pub fn assert_user_item(user: &UserItem) {
         assert_eq!(user.id, 1);
         assert_eq!(user.user_name, "string");
         assert_eq!(user.first_name, "string");

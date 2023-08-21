@@ -77,12 +77,19 @@ pub struct UserGroup {
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct UpdateUserAccountRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     user_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     accept_EULA: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     first_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     last_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     phone: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     language: Option<String>,
 }
 

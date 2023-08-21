@@ -26,6 +26,7 @@
 //! * [UploadShares] - for upload share operations
 //! * [Groups] - for group operations
 //! * [Users] - for user management operations
+//! * [CustomerProvisioning] - for customer provisioning operations
 //! 
 //! 
 //! ### Example
@@ -324,11 +325,37 @@
 //! let kp = dracoon.get_keypair(Some(secret)).await.unwrap();
 //! # }
 //! ```
+//! ## Provisioning
+//! In order to use the provisioning API to manage customers of a tenant, you can instantiate
+//! a client with the `Provisioning` state.
+//! All API calls are implemented in the [CustomerProvisioning] trait.
+//! 
+//! ```no_run
+//! 
+//! use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+//! 
+//! #[tokio::main]
+//! async fn main() {
+//! // the client only requires passing the base url and a provisioning token
+//! // other API calls are *not* supported in this state.
+//! let dracoon = Dracoon::builder()
+//!    .with_base_url("https://dracoon.team")
+//!    .with_provisioning_token("some_token")
+//!    .build_provisioning()
+//!    .unwrap();
+//! 
+//! // the client is now in the provisioning state and can be used to manage customers
+//! let customers = dracoon.get_customers(None).await.unwrap();
+//! 
+//! }
+//! ```
+//! 
 //! ## Examples
 //! For an example client implementation, see the [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) repository.
 
 use std::marker::PhantomData;
 
+use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
 use reqwest::Url;
 
@@ -347,6 +374,7 @@ pub use self::{
     groups::Groups,
     shares::{DownloadShares, UploadShares},
     users::Users,
+    provisioning::CustomerProvisioning,
     models::*,
 };
 
@@ -360,6 +388,7 @@ pub mod utils;
 pub mod groups;
 pub mod shares;
 pub mod users;
+pub mod provisioning;
 mod tests;
 
 
@@ -393,6 +422,10 @@ impl DracoonBuilder {
         }
     }
 
+    /// Sets the encryption password - it is *not* permanently stored in the client.
+    /// The secret will be consumed, once a connection is tried to establish via the `connect` method.
+    /// The client will then either fail to connect due to wrong encryption secret or permanently store 
+    /// a user's keypair. 
     pub fn with_encryption_password(mut self, encryption_secret: impl Into<String>) -> Self {
         self.encryption_secret = Some(encryption_secret.into());
         self
@@ -422,27 +455,37 @@ impl DracoonBuilder {
         self
     }
 
+    /// Sets a custom user agent prefix for the client
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
         self.client_builder = self.client_builder.with_user_agent(user_agent);
         self
     }
 
+    /// Sets a custom max. retry count (default: 5)
     pub fn with_max_retries(mut self, max_retries: u32) -> Self {
         self.client_builder = self.client_builder.with_max_retries(max_retries);
         self
     }
 
+    /// Sets a custom min. retry delay 
     pub fn with_min_retry_delay(mut self, min_retry_delay: u64) -> Self {
         self.client_builder = self.client_builder.with_min_retry_delay(min_retry_delay);
         self
     }
 
+    /// Sets a custom max. retry delay 
     pub fn with_max_retry_delay(mut self, max_retry_delay: u64) -> Self {
         self.client_builder = self.client_builder.with_max_retry_delay(max_retry_delay);
         self
     }
 
-    /// Builds the `Dracoon` struct - fails, if any of the required fields are missing
+    /// Sets X-SDS-Service-token for DRACOON customer provisioning
+    pub fn with_provisioning_token(mut self, provisioning_token: impl Into<String>) -> Self {
+        self.client_builder = self.client_builder.with_provisioning_token(provisioning_token);
+        self
+    }
+
+    /// Builds the [Dracoon] struct - fails, if any of the required fields are missing
     pub fn build(self) -> Result<Dracoon<Disconnected>, DracoonClientError> {
         let dracoon = self.client_builder.build()?;
 
@@ -454,6 +497,19 @@ impl DracoonBuilder {
             encryption_secret: self.encryption_secret,
         })
     }
+
+    /// Builds the [Dracoon] struct set up for provisioning - fails if any of the required fields are missing
+    pub fn build_provisioning(self) -> Result<Dracoon<Provisioning>, DracoonClientError> {
+        let dracoon = self.client_builder.build_provisioning()?;
+
+        Ok(Dracoon {
+            client: dracoon,
+            state: PhantomData,
+            user_info: Container::new(),
+            keypair: Container::new(),
+            encryption_secret: None
+        })
+    }
 }
 
 impl Dracoon<Disconnected> {
@@ -461,6 +517,7 @@ impl Dracoon<Disconnected> {
     pub fn builder() -> DracoonBuilder {
         DracoonBuilder::new()
     }
+
 
     pub async fn connect(
         self,
@@ -539,6 +596,19 @@ impl Dracoon<Connected> {
         let keypair = self.keypair.get().expect("Keypair is some");
         Ok(keypair)
 
+    }
+}
+
+impl Dracoon<Provisioning> {
+    pub fn get_service_token(&self) -> String {
+        self.client.get_service_token()
+    }
+
+    pub fn build_api_url(&self, url_part: &str) -> Url {
+        self.client
+            .get_base_url()
+            .join(url_part)
+            .expect("Correct base url")
     }
 }
 
