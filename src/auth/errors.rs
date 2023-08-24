@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
-use reqwest_middleware::{Error as ReqError};
 use reqwest::{Error as ClientError, Response};
+use reqwest_middleware::Error as ReqError;
 use thiserror::Error;
 
 use crate::{nodes::models::S3ErrorResponse, utils::FromResponse};
@@ -20,8 +20,8 @@ pub enum DracoonClientError {
     InvalidUrl(String),
     #[error("Invalid DRACOON path")]
     InvalidPath(String),
-    #[error("Connection to DRACOON failed")]
-    ConnectionFailed,
+    #[error("Connection to DRACOON failed: {0}")]
+    ConnectionFailed(String),
     #[error("Unknown error")]
     Unknown,
     #[error("Internal error")]
@@ -44,46 +44,37 @@ pub enum DracoonClientError {
 
 impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
-
         match value {
             ReqError::Middleware(error) => {
-                DracoonClientError::ConnectionFailed
-
+            DracoonClientError::ConnectionFailed("Error in middleware".into())
             },
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed
+                    return DracoonClientError::ConnectionFailed("Timeout".into());
                 }
 
                 if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed
+                    return DracoonClientError::ConnectionFailed("Connection failed".into());
                 }
-
- 
-                DracoonClientError::Unknown
-            
-            },
+                DracoonClientError::ConnectionFailed("Unknown".into())
+            }
         }
     }
 }
-
 
 impl From<ClientError> for DracoonClientError {
-    fn from(value: ClientError) -> Self {
-
-        if value.is_timeout() {
-            return DracoonClientError::ConnectionFailed;
+    fn from(error: ClientError) -> Self {
+        if error.is_timeout() {
+            return DracoonClientError::ConnectionFailed("Timeout".into());
         }
 
-        if value.is_connect() {
-            return DracoonClientError::ConnectionFailed;
+        if error.is_connect() {
+            return DracoonClientError::ConnectionFailed("Connection failed".into());
         }
-
-        DracoonClientError::Unknown
+        
+        DracoonClientError::ConnectionFailed("Unknown".into())
     }
 }
-
-
 
 #[async_trait]
 impl FromResponse for DracoonClientError {
@@ -92,7 +83,6 @@ impl FromResponse for DracoonClientError {
             let error = value.json::<DracoonErrorResponse>().await?;
             return Ok(DracoonClientError::Http(error));
         }
-
         Err(DracoonClientError::Unknown)
     }
 }
@@ -145,7 +135,7 @@ impl DracoonClientError {
             _ => false,
         }
     }
-    
+
     /// Check if the error is an 409 Conflict error
     pub fn is_conflict(&self) -> bool {
         match self {

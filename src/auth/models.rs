@@ -1,12 +1,14 @@
-use std::fmt::{Formatter, Display};
-
+use std::fmt::{Display, Formatter};
 use url::ParseError;
 
 use chrono::Utc;
 use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
-use crate::{constants::{GRANT_TYPE_REFRESH_TOKEN, GRANT_TYPE_AUTH_CODE, GRANT_TYPE_PASSWORD}, utils::parse_body};
+use crate::{
+    constants::{GRANT_TYPE_AUTH_CODE, GRANT_TYPE_PASSWORD, GRANT_TYPE_REFRESH_TOKEN},
+    utils::parse_body,
+};
 
 use super::{errors::DracoonClientError, Connection};
 
@@ -118,7 +120,12 @@ pub struct DracoonErrorResponse {
 impl Display for DracoonErrorResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let dbg_info = self.debug_info.as_deref().unwrap_or("No details");
-        write!(f, "{} - {dbg_info} ({})", self.message, self.code)
+        let error_code = self.error_code.unwrap_or(0);
+        write!(
+            f,
+            "{} {} - {dbg_info} ({})",
+            self.code, self.message, error_code
+        )
     }
 }
 
@@ -132,7 +139,7 @@ impl DracoonErrorResponse {
             error_code: None,
         }
     }
-    
+
     /// Checks if error is 403 Forbidden
     pub fn is_forbidden(&self) -> bool {
         self.code == 403
@@ -142,12 +149,12 @@ impl DracoonErrorResponse {
     pub fn is_not_found(&self) -> bool {
         self.code == 404
     }
-   
+
     /// Checks if error is 409 Conflict
     pub fn is_conflict(&self) -> bool {
         self.code == 409
     }
-    
+
     /// Checks if error is 429 Too Many Requests
     pub fn is_too_many_requests(&self) -> bool {
         self.code == 429
@@ -157,12 +164,12 @@ impl DracoonErrorResponse {
     pub fn is_server_error(&self) -> bool {
         self.code >= 500
     }
-    
+
     /// Checks if error is a client error (4xx)
     pub fn is_client_error(&self) -> bool {
         self.code >= 400 && self.code < 500
     }
-    
+
     /// Checks if error is 401 Unauthorized
     pub fn is_unauthorized(&self) -> bool {
         self.code == 401
@@ -172,22 +179,33 @@ impl DracoonErrorResponse {
     pub fn is_bad_request(&self) -> bool {
         self.code == 400
     }
-    
+
     /// Checks if error is 402 Payment Required
     pub fn is_payment_required(&self) -> bool {
         self.code == 402
     }
-    
+
     /// Checks if error is 412 Precondition Failed
     pub fn is_precondition_failed(&self) -> bool {
         self.code == 412
     }
-    
+
+    // Returns DRACOON API error code if available
+    pub fn error_code(&self) -> Option<i32> {
+        self.error_code
+    }
+
+    /// Returns the HTTP status code
+    pub fn code(&self) -> i32 {
+        self.code
+    }
+
     /// Returns the error message
     pub fn error_message(&self) -> String {
         self.message.clone()
     }
 
+    /// Returns the debug info
     pub fn debug_info(&self) -> Option<String> {
         self.debug_info.clone()
     }
@@ -201,10 +219,16 @@ pub struct DracoonAuthErrorResponse {
     error_description: Option<String>,
 }
 
-
 impl Display for DracoonAuthErrorResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Error: {} ({})", self.error_description.clone().unwrap_or_else(|| "Unknown".to_string()), self.error)
+        write!(
+            f,
+            "Error: {} ({})",
+            self.error_description
+                .clone()
+                .unwrap_or_else(|| "Unknown".to_string()),
+            self.error
+        )
     }
 }
 
@@ -221,14 +245,17 @@ impl OAuth2TokenResponse {
 /// - Error: 4xx or 5xx
 pub enum StatusCodeState {
     Ok(StatusCode),
-    Error(StatusCode)
+    Error(StatusCode),
 }
 
 impl From<StatusCode> for StatusCodeState {
     /// transforms a status code into a status code state
     fn from(value: StatusCode) -> Self {
         match value {
-            StatusCode::OK | StatusCode::CREATED | StatusCode::ACCEPTED | StatusCode::NO_CONTENT => StatusCodeState::Ok(value),
+            StatusCode::OK
+            | StatusCode::CREATED
+            | StatusCode::ACCEPTED
+            | StatusCode::NO_CONTENT => StatusCodeState::Ok(value),
             _ => StatusCodeState::Error(value),
         }
     }
@@ -260,11 +287,9 @@ impl From<DracoonErrorResponse> for DracoonClientError {
     }
 }
 
-
 impl From<ParseError> for DracoonClientError {
     /// transforms a URL parse error into a DRACOON client error
     fn from(_v: ParseError) -> Self {
-
         Self::InvalidUrl("parsing url failed (invalid)".to_string())
     }
 }

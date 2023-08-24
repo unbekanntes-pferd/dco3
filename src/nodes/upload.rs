@@ -26,6 +26,7 @@ use dco3_crypto::{ChunkedEncryption, DracoonCrypto, DracoonRSACrypto, Encrypter}
 use futures_util::{Stream, StreamExt};
 use reqwest::{header, Body};
 use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
+use tracing::error;
 
 #[async_trait]
 impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connected> {
@@ -273,7 +274,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             '_,
             '_,
         >(self, file_upload_req)
-        .await?;
+        .await
+        .map_err(|err| {
+            error!("Error creating upload channel: {}", err);
+            err
+        })?;
 
         let fm = &file_meta.clone();
         let mut s3_parts = Vec::new();
@@ -333,7 +338,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
                         url_part += 1;
                     }
-                    Err(_) => return Err(DracoonClientError::IoError),
+                    Err(err) => {
+                        error!("Error reading file: {}", err);
+                        return Err(DracoonClientError::IoError);
+                    }
                 }
             }
         }
@@ -370,7 +378,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         upload_channel.upload_id.clone(),
                         url_req,
                     )
-                    .await?;
+                    .await
+                    .map_err(|err| {
+                        error!("Error creating S3 upload urls: {}", err);
+                        err
+                    })?;
 
                 let url = url.urls.first().expect("Creating S3 url failed");
 
@@ -391,7 +403,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
-            Err(_) => return Err(DracoonClientError::IoError),
+            Err(err) => {
+                error!("Error reading file: {}", err);
+                return Err(DracoonClientError::IoError);
+            }
         }
 
         // finalize upload
@@ -405,7 +420,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             upload_channel.upload_id.clone(),
             complete_upload_req,
         )
-        .await?;
+        .await
+        .map_err(|err| {
+            error!("Error finalizing upload: {}", err);
+            err
+        })?;
 
         // get upload status
         // return node if upload is done
@@ -417,7 +436,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 self,
                 upload_channel.upload_id.clone(),
             )
-            .await?;
+            .await
+            .map_err(|err| {
+                error!("Error getting upload status: {}", err);
+                err
+            })?;
 
             match status_response.status {
                 S3UploadStatus::Done => {
@@ -426,11 +449,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         .expect("Node must be set if status is done"));
                 }
                 S3UploadStatus::Error => {
-                    return Err(DracoonClientError::Http(
-                        status_response
-                            .error_details
-                            .expect("Error message must be set if status is error"),
-                    ));
+                    let response = status_response
+                        .error_details
+                        .expect("Error message must be set if status is error");
+                    error!("Error uploading file: {}", response);
+                    return Err(DracoonClientError::Http(response));
                 }
                 _ => {
                     tokio::time::sleep(Duration::from_millis(sleep_duration)).await;
@@ -504,7 +527,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             '_,
             '_,
         >(self, file_upload_req)
-        .await?;
+        .await
+        .map_err(|err| {
+            error!("Error creating upload channel: {}", err);
+            err
+        })?;
 
         let fm = &file_meta.clone();
         let mut s3_parts = Vec::new();
@@ -544,7 +571,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             >(
                                 self, upload_channel.upload_id.clone(), url_req
                             )
-                            .await?;
+                            .await
+                            .map_err(|err| {
+                                error!("Error creating S3 upload urls: {}", err);
+                                err
+                            })?;
                         let url = url.urls.first().expect("Creating S3 url failed");
 
                         // truncation is safe because chunk_size is 32 MB
@@ -560,7 +591,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             Some(curr_pos),
                             cloneable_callback.clone(),
                         )
-                        .await?;
+                        .await
+                        .map_err(|err| {
+                            error!("Error uploading stream to S3: {}", err);
+                            err
+                        })?;
 
                         s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
                         url_part += 1;
@@ -601,7 +636,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         upload_channel.upload_id.clone(),
                         url_req,
                     )
-                    .await?;
+                    .await
+                    .map_err(|err| {
+                        error!("Error creating S3 upload urls: {}", err);
+                        err
+                    })?;
 
                 let url = url.urls.first().expect("Creating S3 url failed");
 
@@ -618,12 +657,19 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                     Some(curr_pos),
                     cloneable_callback.clone(),
                 )
-                .await?;
+                .await
+                .map_err(|err| {
+                    error!("Error uploading stream to S3: {}", err);
+                    err
+                })?;
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
 
-            Err(err) => return Err(DracoonClientError::IoError),
+            Err(err) => {
+                error!("Error reading file: {}", err);
+                return Err(DracoonClientError::IoError);
+            }
         }
 
         // finalize upload
@@ -638,7 +684,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             upload_channel.upload_id.clone(),
             complete_upload_req,
         )
-        .await?;
+        .await.map_err(|err| {
+            error!("Error finalizing upload: {}", err);
+            err
+        })?;
 
         // get upload status
         // return node if upload is done
@@ -650,7 +699,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 self,
                 upload_channel.upload_id.clone(),
             )
-            .await?;
+            .await.map_err(|err| {
+                error!("Error getting upload status: {}", err);
+                err
+            })?;
 
             match status_response.status {
                 S3UploadStatus::Done => {
@@ -664,7 +716,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                                 .expect("Node must be set if status is done")
                                 .id,
                         )
-                        .await?;
+                        .await.map_err(|err| {
+                            error!("Error getting missing file keys: {}", err);
+                            err
+                        })?;
 
                     // encrypt plain file key for each user
                     let key_reqs = missing_keys
@@ -695,7 +750,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             self,
                             key_reqs.into(),
                         )
-                        .await?;
+                        .await.map_err(|err| {
+                            error!("Error setting file keys: {}", err);
+                            err
+                        })?;
                     }
 
                     return Ok(status_response
@@ -758,10 +816,15 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             .body(body)
             .header(header::CONTENT_LENGTH, chunk_size)
             .send()
-            .await?;
+            .await
+            .map_err(|e| {
+                error!("Connection error (S3 upload): {:?}", e);
+                e
+            })?;
 
         // handle error
         if res.error_for_status_ref().is_err() {
+            error!("Error uploading file to S3: {:?}", res.error_for_status_ref().unwrap_err());
             let error = build_s3_error(res).await;
             return Err(error);
         }
@@ -1214,7 +1277,7 @@ mod tests {
 
         let parent_node: Node =
             serde_json::from_str(include_str!("../tests/responses/nodes/node_ok.json")).unwrap();
-        
+
         // test 0KB file
         let mock_bytes: Vec<u8> = vec![];
 
