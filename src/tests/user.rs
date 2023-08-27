@@ -4,7 +4,7 @@ mod tests {
 
     use crate::{
         tests::dracoon::{get_connected_client, assert_user_account}, user::UpdateUserAccountRequest, User,
-        UserAccountKeypairs,
+        UserAccountKeyPairs,
     };
 
     #[tokio::test]

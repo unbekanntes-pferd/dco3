@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
-use reqwest_middleware::{Error as ReqError};
 use reqwest::{Error as ClientError, Response};
+use reqwest_middleware::Error as ReqError;
 use thiserror::Error;
 
 use crate::{nodes::models::S3ErrorResponse, utils::FromResponse};
 
 use super::models::{DracoonAuthErrorResponse, DracoonErrorResponse};
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub enum DracoonClientError {
     #[error("Client id required")]
     MissingClientId,
@@ -44,33 +44,25 @@ pub enum DracoonClientError {
 
 impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
-
         match value {
-            ReqError::Middleware(error) => {
-                DracoonClientError::ConnectionFailed
-
-            },
+            ReqError::Middleware(error) => DracoonClientError::ConnectionFailed,
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed
+                    return DracoonClientError::ConnectionFailed;
                 }
 
                 if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed
+                    return DracoonClientError::ConnectionFailed;
                 }
 
- 
                 DracoonClientError::Unknown
-            
-            },
+            }
         }
     }
 }
 
-
 impl From<ClientError> for DracoonClientError {
     fn from(value: ClientError) -> Self {
-
         if value.is_timeout() {
             return DracoonClientError::ConnectionFailed;
         }
@@ -82,8 +74,6 @@ impl From<ClientError> for DracoonClientError {
         DracoonClientError::Unknown
     }
 }
-
-
 
 #[async_trait]
 impl FromResponse for DracoonClientError {
@@ -145,7 +135,7 @@ impl DracoonClientError {
             _ => false,
         }
     }
-    
+
     /// Check if the error is an 409 Conflict error
     pub fn is_conflict(&self) -> bool {
         match self {

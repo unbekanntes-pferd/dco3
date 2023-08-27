@@ -42,7 +42,7 @@ impl Nodes for Dracoon<Connected> {
             .extend_pairs(room_manager.map(|v| ("room_manager", v.to_string())))
             .extend_pairs(parent_id.map(|v| ("parent_id", v.to_string())))
             .finish();
-        
+
         let response = self
             .client
             .http
@@ -59,16 +59,10 @@ impl Nodes for Dracoon<Connected> {
         // TODO: refactor and make use of search_nodes
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{NODES_SEARCH}");
 
-        debug!("Looking up node - path: {}", path);
-
         let (parent_path, name, depth) = parse_node_path(path).map_err(|_| {
             error!("Failed to parse path: {}", path);
             DracoonClientError::InvalidPath(path.to_string())
         })?;
-
-        debug!("Looking up node - parent_path: {}", parent_path);
-        debug!("Parsed name: {}", name);
-        debug!("Calculated depth: {}", depth);
 
         let mut api_url = self.build_api_url(&url_part);
 
@@ -252,15 +246,18 @@ pub fn parse_node_path(path: &str) -> Result<ParsedPath, DracoonClientError> {
     if path == "/" {
         return Ok((String::from("/"), String::new(), 0));
     }
-    
+
     let path_parts: Vec<&str> = path.trim_end_matches('/').split('/').collect();
-    let name = String::from(*path_parts.last().ok_or(DracoonClientError::InvalidPath(path.to_string()))?);
+    let name = String::from(
+        *path_parts
+            .last()
+            .ok_or(DracoonClientError::InvalidPath(path.to_string()))?,
+    );
     let parent_path = format!("{}/", path_parts[..path_parts.len() - 1].join("/"));
     let depth = path_parts.len().saturating_sub(2) as u64;
-    
+
     Ok((parent_path, name, depth))
 }
-
 
 #[cfg(test)]
 mod tests {
