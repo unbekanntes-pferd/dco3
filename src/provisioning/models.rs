@@ -14,8 +14,8 @@ impl CustomerAttributes {
         CustomerAttributes::default()
     }
 
-    pub fn add_attribute(&mut self, key: String, value: String) {
-        let attrib = KeyValueEntry { key, value };
+    pub fn add_attribute(&mut self, key: impl Into<String>, value: impl Into<String>) {
+        let attrib = KeyValueEntry { key: key.into(), value: value.into() };
         self.items.push(attrib);
     }
 }

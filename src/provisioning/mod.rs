@@ -16,37 +16,181 @@ use crate::{
 };
 
 #[async_trait]
+/// This trait contains all methods for customer provisioning.
+/// To use this trait, you need to create a client in `Provisioning` state.
+/// 
+/// ```no_run
+/// 
+/// use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+/// 
+/// #[tokio::main]
+/// async fn main() {
+/// // the client only requires passing the base url and a provisioning token
+/// // other API calls are *not* supported in this state.
+/// let dracoon = Dracoon::builder()
+///    .with_base_url("https://dracoon.team")
+///    .with_provisioning_token("some_token")
+///    .build_provisioning()
+///    .unwrap();
+/// 
+/// // now you can use the client in provisioning state
+/// let customers = dracoon.get_customers(None).await.unwrap();
+/// 
+/// }
 pub trait CustomerProvisioning {
+    /// Returns a list of customers
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let customers = dracoon.get_customers(None).await.unwrap();
+    /// # }
     async fn get_customers(
         &self,
         params: Option<ListAllParams>,
     ) -> Result<CustomerList, DracoonClientError>;
+    /// Creates a new customer
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning, provisioning::{FirstAdminUser, NewCustomerRequest}};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let first_admin = FirstAdminUser::new_local("admin", "admin", None, "admin@localhost", None);
+    /// let customer = NewCustomerRequest::builder("pay", 100000, 100, first_admin).build();
+    /// let customer = dracoon.create_customer(customer).await.unwrap();
+    /// # }
     async fn create_customer(
         &self,
         req: NewCustomerRequest,
     ) -> Result<NewCustomerResponse, DracoonClientError>;
+    /// Gets a customer by id
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning, provisioning::{FirstAdminUser, NewCustomerRequest}};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let customer = dracoon.get_customer(123, None).await.unwrap();
+    /// 
+    /// // include attributes
+    /// let customer = dracoon.get_customer(123, Some(true)).await.unwrap();
+    /// # }
     async fn get_customer(
         &self,
         id: u64,
         include_attributes: Option<bool>,
     ) -> Result<Customer, DracoonClientError>;
+    /// Updates a customer by id
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning, provisioning::UpdateCustomerRequest};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// 
+    /// let update = UpdateCustomerRequest::builder()
+    ///    .with_company_name("Foo Inc.")
+    ///    .build();
+            
+    /// let customer = dracoon.update_customer(123, update).await.unwrap();
+    /// 
+    /// # }
     async fn update_customer(
         &self,
         id: u64,
         req: UpdateCustomerRequest,
     ) -> Result<UpdateCustomerResponse, DracoonClientError>;
+    /// Deletes a customer by id
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// 
+    /// dracoon.delete_customer(123).await.unwrap();
+    /// 
+    /// # }
     async fn delete_customer(&self, id: u64) -> Result<(), DracoonClientError>;
+    /// Returns a list of customer users
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let users = dracoon.get_customer_users(123, None).await.unwrap();
+    /// # }
     async fn get_customer_users(&self, id: u64, params: Option<ListAllParams>) -> Result<UserList, DracoonClientError>;
+    /// Returns a list of customer attributes
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let attributes = dracoon.get_customer_attributes(123, None).await.unwrap();
+    /// # }
     async fn get_customer_attributes(
         &self,
         id: u64,
         params: Option<ListAllParams>,
     ) -> Result<AttributesResponse, DracoonClientError>;
+    /// Updates / sets customer attributes
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning, provisioning::CustomerAttributes};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// let mut attributes = CustomerAttributes::new();
+    /// attributes.add_attribute("foo", "bar");
+    /// let customer = dracoon.update_customer_attributes(123, attributes).await.unwrap();
+    /// # }
     async fn update_customer_attributes(
         &self,
         id: u64,
         req: CustomerAttributes,
     ) -> Result<Customer, DracoonClientError>;
+    /// Deletes customer attribute by key
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #   .with_base_url("https://dracoon.team")
+    /// #   .with_provisioning_token("some_token")
+    /// #   .build_provisioning()
+    /// #   .unwrap();
+    /// dracoon.delete_customer_attribute(123, "foo".to_string()).await.unwrap();
+    /// # }
     async fn delete_customer_attribute(
         &self,
         id: u64,
