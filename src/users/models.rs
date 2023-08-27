@@ -132,7 +132,10 @@ impl From<bool> for MfaConfig {
 }
 
 impl CreateUserRequest {
-    pub fn builder(first_name: impl Into<String>, last_name: impl Into<String>) -> CreateUserRequestBuilder {
+    pub fn builder(
+        first_name: impl Into<String>,
+        last_name: impl Into<String>,
+    ) -> CreateUserRequestBuilder {
         CreateUserRequestBuilder::new(first_name, last_name)
     }
 }
@@ -416,7 +419,6 @@ impl UserAuthData {
     }
 
     pub fn new_basic(password: Option<String>) -> Self {
-
         let must_change_password = password.is_some();
 
         Self {
@@ -432,7 +434,11 @@ impl UserAuthData {
     pub fn new_oidc(login: impl Into<String>, oid_config_id: u64) -> Self {
         let login: String = login.into();
         Self {
-            method: AuthMethod::OpenIdConnect{ login: login.clone(), oid_config_id }.into(),
+            method: AuthMethod::OpenIdConnect {
+                login: login.clone(),
+                oid_config_id,
+            }
+            .into(),
             login: Some(login),
             ad_config_id: None,
             oid_config_id: Some(oid_config_id),
@@ -444,7 +450,11 @@ impl UserAuthData {
     pub fn new_ad(login: impl Into<String>, ad_config_id: u64) -> Self {
         let login: String = login.into();
         Self {
-            method: AuthMethod::ActiveDirectory{ login: login.clone(), ad_config_id }.into(),
+            method: AuthMethod::ActiveDirectory {
+                login: login.clone(),
+                ad_config_id,
+            }
+            .into(),
             login: Some(login),
             ad_config_id: Some(ad_config_id),
             oid_config_id: None,
@@ -453,8 +463,6 @@ impl UserAuthData {
         }
     }
 }
-
-
 
 #[derive(Debug, Clone)]
 pub enum AuthMethod {
@@ -584,7 +592,6 @@ impl UserAuthDataBuilder {
     }
 }
 
-
 #[derive(Debug)]
 pub enum UsersFilter {
     Email(FilterOperator, String),
@@ -605,44 +612,43 @@ impl FilterQuery for UsersFilter {
             Self::Email(op, value) => {
                 let op: String = op.into();
                 format!("email:{}:{}", op, value)
-            },
+            }
             Self::UserName(op, value) => {
                 let op: String = op.into();
                 format!("userName:{}:{}", op, value)
-            },
+            }
             Self::FirstName(op, value) => {
                 let op: String = op.into();
                 format!("firstName:{}:{}", op, value)
-            },
+            }
             Self::LastName(op, value) => {
                 let op: String = op.into();
                 format!("lastName:{}:{}", op, value)
-            },
+            }
             Self::IsLocked(op, value) => {
                 let op: String = op.into();
                 format!("isLocked:{}:{}", op, value)
-            },
+            }
             Self::EffectiveRoles(op, value) => {
                 let op: String = op.into();
                 format!("effectiveRoles:{}:{}", op, value)
-            },
+            }
             Self::CreatedAt(op, value) => {
                 let op: String = op.into();
                 format!("createdAt:{}:{}", op, value)
-            },
+            }
             Self::Phone(op, value) => {
                 let op: String = op.into();
                 format!("phone:{}:{}", op, value)
-            },
+            }
             Self::IsEncryptionEnabled(op, value) => {
                 let op: String = op.into();
                 format!("isEncryptionEnabled:{}:{}", op, value)
-            },
+            }
             Self::HasRole(op, value) => {
                 let op: String = op.into();
                 format!("hasRole:{}:{}", op, value)
-            },
-
+            }
         }
     }
 }
@@ -718,31 +724,31 @@ impl SortQuery for UsersSortBy {
             Self::UserName(order) => {
                 let order: String = order.into();
                 format!("userName:{}", order)
-            },
+            }
             Self::Email(order) => {
                 let order: String = order.into();
                 format!("email:{}", order)
-            },
+            }
             Self::FirstName(order) => {
                 let order: String = order.into();
                 format!("firstName:{}", order)
-            },
+            }
             Self::LastName(order) => {
                 let order: String = order.into();
                 format!("lastName:{}", order)
-            },
+            }
             Self::IsLocked(order) => {
                 let order: String = order.into();
                 format!("isLocked:{}", order)
-            },
+            }
             Self::ExpireAt(order) => {
                 let order: String = order.into();
                 format!("expireAt:{}", order)
-            },
+            }
             Self::CreatedAt(order) => {
                 let order: String = order.into();
                 format!("createdAt:{}", order)
-            },
+            }
         }
     }
 }

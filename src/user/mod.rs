@@ -1,16 +1,15 @@
-//! This module implements a subset of the DRACOON user API. 
+//! This module implements a subset of the DRACOON user API.
 //! Documentation can be found here: <https://download.dracoon.com/api/swagger-ui/index.html?configUrl=/api/spec_v4/swagger-config#/user>
 
 use async_trait::async_trait;
-use dco3_crypto::{PlainUserKeyPairContainer};
+use dco3_crypto::PlainUserKeyPairContainer;
 
 pub use self::models::*;
 use super::auth::errors::DracoonClientError;
 
-pub mod models;
 pub mod account;
 pub mod keypairs;
-
+pub mod models;
 
 #[async_trait]
 pub trait User {
@@ -32,7 +31,7 @@ pub trait User {
     /// # }
     /// ```
     async fn get_user_account(&self) -> Result<UserAccount, DracoonClientError>;
-      /// Update the user account information.
+    /// Update the user account information.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, User, user::{UpdateUserAccountRequest}};
     /// # #[tokio::main]
@@ -46,25 +45,28 @@ pub trait User {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// 
+    ///
     /// let update = UpdateUserAccountRequest::builder()
     ///                      .with_first_name("Jane")
     ///                      .with_last_name("Doe")
     ///                      .with_email("jane.doe@localhost")
     ///                      .build();
-    /// 
+    ///
     /// let account = dracoon.update_user_account(update).await.unwrap();
     /// # }
     /// ```  
-    async fn update_user_account(&self, update: UpdateUserAccountRequest) -> Result<UserAccount, DracoonClientError>;
+    async fn update_user_account(
+        &self,
+        update: UpdateUserAccountRequest,
+    ) -> Result<UserAccount, DracoonClientError>;
 }
 
 #[async_trait]
 #[allow(clippy::module_name_repetitions)]
-pub trait UserAccountKeypairs {
+pub trait UserAccountKeyPairs {
     /// Get the plain user keypair container.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeypairs};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeyPairs};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -81,10 +83,13 @@ pub trait UserAccountKeypairs {
     /// // is handled by the dracoon client for up- and downloads.
     /// # }
     /// ```
-    async fn get_user_keypair(&self, secret: &str) -> Result<PlainUserKeyPairContainer, DracoonClientError>;
+    async fn get_user_keypair(
+        &self,
+        secret: &str,
+    ) -> Result<PlainUserKeyPairContainer, DracoonClientError>;
     /// Set the user keypair container.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeypairs};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeyPairs};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -103,7 +108,7 @@ pub trait UserAccountKeypairs {
     async fn set_user_keypair(&self, secret: &str) -> Result<(), DracoonClientError>;
     /// Delete the user keypair container.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeypairs};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, UserAccountKeyPairs};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()

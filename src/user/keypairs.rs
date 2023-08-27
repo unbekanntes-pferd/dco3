@@ -1,4 +1,4 @@
-use super::UserAccountKeypairs;
+use super::UserAccountKeyPairs;
 use crate::{
     auth::{errors::DracoonClientError, Connected},
     constants::{DRACOON_API_PREFIX, USER_ACCOUNT, USER_ACCOUNT_KEYPAIR, USER_BASE},
@@ -12,7 +12,7 @@ use dco3_crypto::{
 use reqwest::header;
 
 #[async_trait]
-impl UserAccountKeypairs for Dracoon<Connected> {
+impl UserAccountKeyPairs for Dracoon<Connected> {
     async fn get_user_keypair(
         &self,
         secret: &str,

@@ -77,6 +77,10 @@ pub const PROVISIONING_CUSTOMER_ATTRIBUTES: &str = "customerAttributes";
 pub const PROVISIONING_CUSTOMER_USERS: &str = "users";
 pub const PROVISIONING_TOKEN_HEADER: &str = "X-Sds-Service-Token";
 
+// SETTINGS
+pub const SETTINGS_BASE: &str = "settings";
+pub const SETTINGS_KEYPAIR: &str = "keypair";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 

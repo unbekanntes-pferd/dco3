@@ -1096,3 +1096,25 @@ impl UserFileKeySetRequest {
         }
     }
 }
+
+
+#[derive(Debug, Clone)]
+pub enum UseKey {
+    RoomRescueKey,
+    SystemRescueKey,
+    PreviousUserKey,
+    PreviousRoomRescueKey,
+    PreviousSystemRescueKey,
+}
+
+impl From<UseKey> for String {
+    fn from(use_key: UseKey) -> Self {
+        match use_key {
+            UseKey::RoomRescueKey => "room_rescue_key".to_string(),
+            UseKey::SystemRescueKey => "system_rescue_key".to_string(),
+            UseKey::PreviousUserKey => "previous_user_key".to_string(),
+            UseKey::PreviousRoomRescueKey => "previous_room_rescue_key".to_string(),
+            UseKey::PreviousSystemRescueKey => "previous_system_rescue_key".to_string(),
+        }
+    }
+}
