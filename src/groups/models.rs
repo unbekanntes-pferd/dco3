@@ -38,6 +38,7 @@ impl FromResponse for GroupList {
 #[serde(rename_all = "camelCase")]
 pub struct CreateGroupRequest {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>
 }
 
@@ -53,7 +54,9 @@ impl CreateGroupRequest {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGroupRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>
 }
 

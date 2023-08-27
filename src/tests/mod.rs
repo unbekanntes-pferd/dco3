@@ -4,6 +4,7 @@ mod rooms;
 mod shares;
 mod users;
 mod user;
+mod provisioning;
 
 
 #[cfg(test)]
@@ -142,5 +143,19 @@ pub mod dracoon {
 
         assert_user_account(&user_info);
         
+    }
+
+    #[tokio::test]
+    async fn test_get_provisioning_token() {
+        let client = Dracoon::builder()
+                 .with_base_url("https://dracoon.team")
+                 .with_provisioning_token("token")
+                 .build_provisioning()
+                 .unwrap();
+
+        let token = client.get_service_token();
+
+        assert_eq!(token, "token");
+ 
     }
 }

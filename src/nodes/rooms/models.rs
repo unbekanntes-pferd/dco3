@@ -17,17 +17,29 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct CreateRoomRequest {
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     parent_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     recycle_bin_retention_period: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     quota: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     inherit_permissions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     admin_ids: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     admin_group_ids: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     new_group_member_acceptance: Option<GroupMemberAcceptance>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     has_activities_log: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classification: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_creation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_modification: Option<String>,
 }
 
@@ -161,10 +173,15 @@ impl CreateRoomRequestBuilder {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRoomRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     quota: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_creation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_modification: Option<String>,
 }
 
@@ -231,13 +248,21 @@ impl UpdateRoomRequestBuilder {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     recycle_bin_retention_period: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     inherit_permissions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     take_over_permissions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     admin_ids: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     admin_group_ids: Option<Vec<u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     new_group_member_acceptance: Option<GroupMemberAcceptance>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     has_activities_log: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classification: Option<u8>,
 }
 
@@ -329,7 +354,9 @@ impl ConfigRoomRequestBuilder {
 #[serde(rename_all = "camelCase")]
 pub struct EncryptRoomRequest {
     is_encrypted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     use_data_space_rescue_key: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     data_room_rescue_key: Option<UserKeyPairContainer>,
 }
 

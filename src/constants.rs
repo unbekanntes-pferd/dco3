@@ -70,6 +70,13 @@ pub const GROUPS_LAST_ADMIN_ROOMS: &str = "last_admin_rooms";
 pub const USERS_BASE: &str = "users";
 pub const USERS_LAST_ADMIN_ROOMS: &str = "last_admin_rooms";
 
+// PROVISIONING
+pub const PROVISIONING_BASE: &str = "provisioning";
+pub const PROVISIONING_CUSTOMERS: &str = "customers";
+pub const PROVISIONING_CUSTOMER_ATTRIBUTES: &str = "customerAttributes";
+pub const PROVISIONING_CUSTOMER_USERS: &str = "users";
+pub const PROVISIONING_TOKEN_HEADER: &str = "X-Sds-Service-Token";
+
 // SETTINGS
 pub const SETTINGS_BASE: &str = "settings";
 pub const SETTINGS_KEYPAIR: &str = "keypair";

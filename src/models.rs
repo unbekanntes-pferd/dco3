@@ -249,10 +249,18 @@ impl <T> IntoIterator for RangedItems<T> {
 
 pub trait FilterQuery: Debug + Send + Sync {
     fn to_filter_string(&self) -> String;
+
+    fn builder() -> FilterQueryBuilder where Self: Sized {
+        FilterQueryBuilder::new()
+    }
 }
 
 pub trait SortQuery: Debug + Send + Sync {
     fn to_sort_string(&self) -> String;
+
+    fn builder() -> SortQueryBuilder where Self: Sized {
+        SortQueryBuilder::new()
+    }
 }
 
 pub type FilterQueries = Vec<Box<dyn FilterQuery>>;
@@ -314,6 +322,8 @@ impl From<&SortOrder> for String {
         }
     }
 }
+
+
 
 #[derive(Default)]
 pub struct FilterQueryBuilder {
@@ -417,6 +427,12 @@ impl From<String> for Box<dyn SortQuery> {
     fn from(value: String) -> Self {
         Box::new(value)
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KeyValueEntry {
+    pub key: String,
+    pub value: String,
 }
 
 

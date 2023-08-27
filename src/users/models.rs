@@ -100,14 +100,23 @@ impl FromResponse for LastAdminUserRoomList {
 pub struct CreateUserRequest {
     first_name: String,
     last_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     user_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     phone: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     receiver_language: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     auth_data: Option<UserAuthData>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     email: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notify_user: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     is_nonmember_viewer: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     mfa_config: Option<MfaConfig>,
 }
 
@@ -228,15 +237,24 @@ impl CreateUserRequestBuilder {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     first_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     last_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     user_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     phone: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     receiver_language: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     auth_data: Option<UserAuthDataUpdateRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     email: Option<String>,
-    mf_config: Option<MfaConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mfa_config: Option<MfaConfig>,
 }
 
 impl UpdateUserRequest {
@@ -329,7 +347,7 @@ impl UpdateUserRequestBuilder {
             receiver_language: self.receiver_language,
             auth_data: self.auth_data,
             email: self.email,
-            mf_config: self.mf_config,
+            mfa_config: self.mf_config,
         }
     }
 }

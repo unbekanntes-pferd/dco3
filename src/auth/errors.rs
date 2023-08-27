@@ -20,8 +20,8 @@ pub enum DracoonClientError {
     InvalidUrl(String),
     #[error("Invalid DRACOON path")]
     InvalidPath(String),
-    #[error("Connection to DRACOON failed")]
-    ConnectionFailed,
+    #[error("Connection to DRACOON failed: {0}")]
+    ConnectionFailed(String),
     #[error("Unknown error")]
     Unknown,
     #[error("Internal error")]
@@ -45,33 +45,34 @@ pub enum DracoonClientError {
 impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
         match value {
-            ReqError::Middleware(error) => DracoonClientError::ConnectionFailed,
+            ReqError::Middleware(error) => {
+            DracoonClientError::ConnectionFailed("Error in middleware".into())
+            },
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed;
+                    return DracoonClientError::ConnectionFailed("Timeout".into());
                 }
 
                 if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed;
+                    return DracoonClientError::ConnectionFailed("Connection failed".into());
                 }
-
-                DracoonClientError::Unknown
+                DracoonClientError::ConnectionFailed("Unknown".into())
             }
         }
     }
 }
 
 impl From<ClientError> for DracoonClientError {
-    fn from(value: ClientError) -> Self {
-        if value.is_timeout() {
-            return DracoonClientError::ConnectionFailed;
+    fn from(error: ClientError) -> Self {
+        if error.is_timeout() {
+            return DracoonClientError::ConnectionFailed("Timeout".into());
         }
 
-        if value.is_connect() {
-            return DracoonClientError::ConnectionFailed;
+        if error.is_connect() {
+            return DracoonClientError::ConnectionFailed("Connection failed".into());
         }
-
-        DracoonClientError::Unknown
+        
+        DracoonClientError::ConnectionFailed("Unknown".into())
     }
 }
 
@@ -82,7 +83,6 @@ impl FromResponse for DracoonClientError {
             let error = value.json::<DracoonErrorResponse>().await?;
             return Ok(DracoonClientError::Http(error));
         }
-
         Err(DracoonClientError::Unknown)
     }
 }

@@ -4,10 +4,7 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-use std::{
-    marker::PhantomData,
-    time::Duration,
-};
+use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
 use base64::{
@@ -25,11 +22,11 @@ use crate::{
     auth::models::{
         OAuth2AuthCodeFlow, OAuth2PasswordFlow, OAuth2TokenResponse, OAuth2TokenRevoke,
     },
-    models::Container,
     constants::{
         DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, EXPONENTIAL_BACKOFF_BASE, MAX_RETRIES,
         MAX_RETRY_DELAY, MIN_RETRY_DELAY, TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
+    models::Container,
 };
 
 use self::{errors::DracoonClientError, models::OAuth2RefreshTokenFlow};
@@ -62,6 +59,10 @@ pub struct Connected;
 /// disconnected state of [DracoonClient]
 #[derive(Debug, Clone)]
 pub struct Disconnected;
+
+/// provisioning state of [DracoonClient]
+#[derive(Debug, Clone)]
+pub struct Provisioning;
 
 /// represents a connection to DRACOON (`OAuth2` tokens)
 #[derive(Debug, Clone)]
@@ -114,6 +115,7 @@ pub struct DracoonClient<State = Disconnected> {
     pub stream_http: Client,
     connection: Container<Connection>,
     connected: PhantomData<State>,
+    provisioning_token: Option<String>,
 }
 
 /// Builder for the [DracoonClient] struct.
@@ -127,6 +129,7 @@ pub struct DracoonClientBuilder {
     max_retries: Option<u32>,
     min_retry_delay: Option<u64>,
     max_retry_delay: Option<u64>,
+    provisioning_token: Option<String>,
 }
 
 impl DracoonClientBuilder {
@@ -141,6 +144,7 @@ impl DracoonClientBuilder {
             max_retries: None,
             min_retry_delay: None,
             max_retry_delay: None,
+            provisioning_token: None,
         }
     }
 
@@ -168,24 +172,91 @@ impl DracoonClientBuilder {
         self
     }
 
+    /// Sets the user agent (custom string)
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
         self.user_agent = Some(user_agent.into());
         self
     }
 
+    /// Sets max retries
     pub fn with_max_retries(mut self, max_retries: u32) -> Self {
         self.max_retries = Some(max_retries);
         self
     }
 
+    /// Sets min retry delay
     pub fn with_min_retry_delay(mut self, min_retry_delay: u64) -> Self {
         self.min_retry_delay = Some(min_retry_delay);
         self
     }
 
+    /// Sets max retry delay
     pub fn with_max_retry_delay(mut self, max_retry_delay: u64) -> Self {
         self.max_retry_delay = Some(max_retry_delay);
         self
+    }
+
+    pub fn with_provisioning_token(mut self, token: impl Into<String>) -> Self {
+        self.provisioning_token = Some(token.into());
+        self
+    }
+
+    pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
+        let Some(provisioning_token) = self.provisioning_token else {
+            return Err(DracoonClientError::MissingArgument)
+        };
+
+        let max_retries = self
+            .max_retries
+            .unwrap_or(MAX_RETRIES)
+            .clamp(1, MAX_RETRIES);
+        let min_retry_delay = self
+            .min_retry_delay
+            .unwrap_or(MIN_RETRY_DELAY)
+            .clamp(300, MIN_RETRY_DELAY);
+        let max_retry_delay = self
+            .max_retry_delay
+            .unwrap_or(MAX_RETRY_DELAY)
+            .clamp(min_retry_delay, MAX_RETRY_DELAY);
+
+        let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
+            .backoff_exponent(EXPONENTIAL_BACKOFF_BASE)
+            .retry_bounds(
+                Duration::from_millis(min_retry_delay),
+                Duration::from_millis(max_retry_delay),
+            )
+            .build_with_max_retries(max_retries);
+
+        let user_agent = match self.user_agent {
+            Some(user_agent) => format!("{}|{}", user_agent, APP_USER_AGENT),
+            None => APP_USER_AGENT.to_string(),
+        };
+
+        let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
+        let upload_http = http.clone();
+
+        let http = ClientBuilder::new(http)
+            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+            .build();
+
+        let Some(base_url) = self.base_url.clone() else {
+        error!("Missing base url");
+        return Err(DracoonClientError::MissingBaseUrl)
+    };
+
+        let base_url = Url::parse(&base_url)?;
+
+        Ok(DracoonClient {
+            base_url,
+            redirect_uri: None,
+            client_id: String::new(),
+            client_secret: String::new(),
+            http,
+            stream_http: upload_http,
+            connected: PhantomData,
+            connection: Container::new(),
+            provisioning_token: Some(provisioning_token),
+        })
     }
 
     /// Builds the [DracoonClient] struct - returns an error if any of the required fields are missing
@@ -256,13 +327,18 @@ impl DracoonClientBuilder {
             connection: Container::<Connection>::new(),
             connected: PhantomData,
             http,
-            stream_http: upload_http
+            stream_http: upload_http,
+            provisioning_token: None,
         })
     }
 }
 
 /// [DracoonClient] implementation for Disconnected state
 impl DracoonClient<Disconnected> {
+    pub fn builder() -> DracoonClientBuilder {
+        DracoonClientBuilder::new()
+    }
+
     /// Connects to DRACOON using any of the supported OAuth2 flows
     pub async fn connect(
         self,
@@ -291,7 +367,8 @@ impl DracoonClient<Disconnected> {
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
             http: self.http,
-            stream_http: self.stream_http
+            stream_http: self.stream_http,
+            provisioning_token: None,
         })
     }
 
@@ -446,6 +523,7 @@ impl DracoonClient<Connected> {
             connected: PhantomData,
             http: self.http,
             stream_http: self.stream_http,
+            provisioning_token: None,
         })
     }
 
@@ -568,6 +646,21 @@ impl DracoonClient<Connected> {
     }
 }
 
+impl DracoonClient<Provisioning> {
+    /// Returns the X-SDS-Service-Token for provisioning API calls
+    pub fn get_service_token(&self) -> String {
+        self.provisioning_token
+            .as_ref()
+            .expect("Provisioning client has no token")
+            .to_string()
+    }
+
+    /// Returns the base url of the DRACOON instance
+    pub fn get_base_url(&self) -> &Url {
+        &self.base_url
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use tokio_test::assert_ok;
@@ -659,13 +752,7 @@ mod tests {
             .unwrap()
             .refresh_token();
 
-        let expires_in = res
-            .as_ref()
-            .unwrap()
-            .connection
-            .get()
-            .unwrap()
-            .expires_in();
+        let expires_in = res.as_ref().unwrap().connection.get().unwrap().expires_in();
 
         assert_eq!(access_token, "access_token");
         assert_eq!(refresh_token, "refresh_token");
@@ -834,5 +921,27 @@ mod tests {
         auth_mock.assert();
 
         assert_eq!(header, "Bearer access_token");
+    }
+
+    #[tokio::test]
+    async fn test_get_service_token() {
+        let dracoon = DracoonClient::builder()
+            .with_base_url("https://test.dracoon.com")
+            .with_provisioning_token("TopSecret1234!")
+            .build_provisioning();
+
+        assert!(dracoon.is_ok());
+        let dracoon = dracoon.unwrap();
+
+        assert_eq!(dracoon.get_service_token(), "TopSecret1234!");
+    }
+
+    #[tokio::test]
+    async fn test_fail_build_with_missing_token() {
+        let dracoon = DracoonClient::builder()
+            .with_base_url("https://test.dracoon.com")
+            .build_provisioning();
+
+        assert!(dracoon.is_err());
     }
 }

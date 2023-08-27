@@ -882,9 +882,13 @@ impl TransferNode {
 pub struct CreateFolderRequest {
     name: String,
     parent_id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_creation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_modification: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classification: Option<u8>,
 }
 
@@ -946,10 +950,15 @@ impl CreateFolderRequestBuilder {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateFolderRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_creation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_modification: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classification: Option<u8>,
 }
 
