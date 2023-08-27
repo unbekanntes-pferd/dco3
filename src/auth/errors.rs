@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
 use reqwest::{Error as ClientError, Response};
 use reqwest_middleware::Error as ReqError;
-use reqwest_middleware::Error as ReqError;
 use thiserror::Error;
 
 use crate::{nodes::models::S3ErrorResponse, utils::FromResponse};
