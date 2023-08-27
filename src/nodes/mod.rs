@@ -1,11 +1,9 @@
 //! This module implements a subset of the nodes DRACOON API.
 //! Documentation can be found here: <https://download.dracoon.com/api/swagger-ui/index.html?configUrl=/api/spec_v4/swagger-config#/nodes>
-pub use self::{
-    models::*,
-    rooms::models::*,
-};
+pub use self::{models::*, rooms::models::*};
 use super::{auth::errors::DracoonClientError, models::ListAllParams};
 use async_trait::async_trait;
+
 use std::io::Write;
 use tokio::io::{AsyncRead, BufReader};
 
@@ -16,11 +14,10 @@ pub mod nodes;
 pub mod rooms;
 pub mod upload;
 
-
 /// This trait provides methods to manage nodes.
-/// Specifically, there's a method to obtain a node for a given path and 
+/// Specifically, there's a method to obtain a node for a given path and
 /// all relevant methods to list nodes (get, search), move, copy and deleted nodes.
-/// 
+///
 /// To download a node, use the [Download] trait.
 /// To upload a node, use the [Upload] trait.
 /// To manage rooms, use the [Rooms] trait.
@@ -42,20 +39,20 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let nodes = dracoon.get_nodes(None, None, None).await.unwrap();
-    /// 
+    ///
     /// // get all nodes for a parent
     /// let nodes = dracoon.get_nodes(Some(123), None, None).await.unwrap();
-    /// 
+    ///
     /// // get all nodes visible as room manager / admin
     /// let nodes = dracoon.get_nodes(None, Some(true), None).await.unwrap();
-    /// 
-    /// // use filtering and sorting 
+    ///
+    /// // use filtering and sorting
     /// let params = ListAllParams::builder()
     ///    .with_filter(NodesFilter::is_file())
     ///    .with_filter(NodesFilter::name_contains("foo"))
     ///    .with_sort(NodesSortBy::name(SortOrder::Desc))
     ///    .build();
-    /// 
+    ///
     /// let nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
     /// # }
     /// ```
@@ -103,13 +100,13 @@ pub trait Nodes {
     /// #  .unwrap();
     /// // search for nodes ("*" is wildcard)
     /// let nodes = dracoon.search_nodes("foo", None, None, None).await.unwrap();
-    /// 
+    ///
     /// // search for nodes in a parent
     /// let nodes = dracoon.search_nodes("foo", Some(123), None, None).await.unwrap();
-    /// 
+    ///
     /// // search for nodes in a parent with a depth level (-1 is full tree)
     /// let nodes = dracoon.search_nodes("foo", Some(123), Some(1), None).await.unwrap();
-    /// 
+    ///
     /// // use filtering and sorting
     /// let params = ListAllParams::builder()
     ///                .with_filter(NodesSearchFilter::is_file())
@@ -230,6 +227,7 @@ pub trait Nodes {
         target_parent_id: u64,
     ) -> Result<Node, DracoonClientError>;
 }
+
 #[async_trait]
 pub trait Folders {
     /// Creates a folder in the provided parent room.
@@ -282,7 +280,7 @@ pub trait Folders {
     ) -> Result<Node, DracoonClientError>;
 }
 /// This trait provides methods to manage rooms.
-/// 
+///
 ///  - Create a room
 ///  - Update a room
 ///  - Configure a room
@@ -437,7 +435,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// 
+    ///
     /// // add a a list of updates
     /// let group_updates = vec![RoomGroupsAddBatchRequestItem::new(123, NodePermissions::new_with_read_permissions(), None)];
     /// dracoon.update_room_groups(123, group_updates.into()).await.unwrap();
@@ -464,7 +462,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// // You can use a vec 
+    /// // You can use a vec
     /// let group_ids = vec![1, 2, 3];
     /// dracoon.delete_room_groups(123, group_ids.into()).await.unwrap();
     /// # }
@@ -515,7 +513,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// 
+    ///
     /// // add a a list of updates
     /// let user_updates = vec![RoomUsersAddBatchRequestItem::new(123, NodePermissions::new_with_read_permissions())];
     /// dracoon.update_room_users(123, user_updates.into()).await.unwrap();
@@ -541,7 +539,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// // You can use a vec 
+    /// // You can use a vec
     /// let user_ids = vec![1, 2, 3];
     /// dracoon.delete_room_users(123, user_ids.into()).await.unwrap();
     /// # }
@@ -576,7 +574,7 @@ pub trait Download {
     ///      .connect(OAuth2Flow::password_flow("username", "password"))
     ///      .await
     ///      .unwrap();
-    /// 
+    ///
     ///   let node_id = 123u64;
     ///
     ///   let node = client.get_node(node_id).await.unwrap();
@@ -626,7 +624,7 @@ pub trait Upload<R: AsyncRead> {
     ///      .connect(OAuth2Flow::password_flow("username", "password"))
     ///      .await
     ///      .unwrap();
-    /// 
+    ///
     /// let file = tokio::fs::File::open("test.txt").await.unwrap();
     /// let file_meta = FileMeta::builder()
     /// .with_name("test.txt".into())
@@ -636,19 +634,19 @@ pub trait Upload<R: AsyncRead> {
     ///
     ///
     /// let parent_node_id = 123u64;
-    /// 
+    ///
     /// let parent_node = client.get_node(parent_node_id).await.unwrap();
-    /// 
+    ///
     /// let reader = tokio::io::BufReader::new(file);
-    /// 
+    ///
     /// let options = UploadOptions::builder()
     ///               .with_resolution_strategy(ResolutionStrategy::AutoRename)
     ///               .build();
-    /// 
+    ///
     /// let chunk_size = 1024 * 1024 * 10; // 10 MB - DEFAULT is 32 MB
-    /// 
+    ///
     /// client.upload(file_meta, &parent_node, options, reader, None, Some(chunk_size)).await.unwrap();
-    /// 
+    ///
     /// // or with progress callback (boxed closure)
     /// let file = tokio::fs::File::open("test.txt").await.unwrap();
     /// let file_meta = FileMeta::builder()

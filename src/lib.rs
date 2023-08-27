@@ -16,7 +16,7 @@
 //! Currently, the following traits are implemented:
 //! 
 //! * [User] - for user account management
-//! * [UserAccountKeypairs] - for user keypair management
+//! * [UserAccountKeyPairs] - for user keypair management
 //! * [Nodes] - for node operations (folders, rooms, upload and download are excluded)
 //! * [Download] - for downloading files
 //! * [Upload] - for uploading files
@@ -26,6 +26,7 @@
 //! * [UploadShares] - for upload share operations
 //! * [Groups] - for group operations
 //! * [Users] - for user management operations
+//! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! 
 //! 
 //! ### Example
@@ -341,12 +342,13 @@ use self::{
 // re-export traits and base models
 pub use self::{
     nodes::{Download, Folders, Nodes, Rooms, Upload},
-    user::{User, UserAccountKeypairs},
+    user::{User, UserAccountKeyPairs},
     auth::errors::DracoonClientError,
     auth::OAuth2Flow,
     groups::Groups,
     shares::{DownloadShares, UploadShares},
     users::Users,
+    settings::RescueKeyPair,
     models::*,
 };
 
@@ -360,6 +362,7 @@ pub mod utils;
 pub mod groups;
 pub mod shares;
 pub mod users;
+pub mod settings;
 mod tests;
 
 
