@@ -334,7 +334,7 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -365,7 +365,7 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -402,7 +402,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&room_id=1",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&room_id=1",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
@@ -436,7 +436,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&file_id=3",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&file_id=3",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
@@ -470,7 +470,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&user_id=2",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&user_id=2",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
