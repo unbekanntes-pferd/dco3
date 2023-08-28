@@ -11,7 +11,7 @@ use crate::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,
     },
-    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UserFileKeySetRequest},
+    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UserFileKeySetRequest, UseKey},
     utils::FromResponse,
     Dracoon, DracoonClientError, ListAllParams,
 };
@@ -143,8 +143,11 @@ impl RescueKeypairInternal for Dracoon<Connected> {
 
         let sorts = params.sort_to_string();
 
+        let rescue_key: String = UseKey::SystemRescueKey.into();
+
         api_url
             .query_pairs_mut()
+            .extend_pairs(Some(("use_key", rescue_key)))
             .extend_pairs(Some(("limit", limit.to_string())))
             .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
             .extend_pairs(params.sort.map(|_| ("sort", sorts)))
@@ -235,7 +238,7 @@ mod tests {
         let response = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
