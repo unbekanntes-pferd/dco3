@@ -19,9 +19,6 @@ pub mod models;
 pub use models::*;
 
 use crate::{
-    auth::models::{
-        OAuth2AuthCodeFlow, OAuth2PasswordFlow, OAuth2TokenResponse, OAuth2TokenRevoke,
-    },
     constants::{
         DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, EXPONENTIAL_BACKOFF_BASE, MAX_RETRIES,
         MAX_RETRY_DELAY, MIN_RETRY_DELAY, TOKEN_TYPE_HINT_ACCESS_TOKEN,
@@ -29,7 +26,7 @@ use crate::{
     models::Container,
 };
 
-use self::{errors::DracoonClientError, models::OAuth2RefreshTokenFlow};
+use self::errors::DracoonClientError;
 use super::constants::{APP_USER_AGENT, TOKEN_TYPE_HINT_REFRESH_TOKEN};
 
 /// represents the possible `OAuth2` flows
