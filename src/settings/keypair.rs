@@ -103,8 +103,6 @@ trait RescueKeypairInternal {
                     .file_key_container
                     .clone();
 
-                debug!("File key: {:?}", file_key);
-
                 let plain_file_key =
                     DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
                         error!("Could not decrypt file key: {:?}", err);
