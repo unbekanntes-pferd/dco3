@@ -3,6 +3,7 @@ use dco3_crypto::{
     DracoonCrypto, DracoonRSACrypto, PlainUserKeyPairContainer, UserKeyPairContainer,
 };
 use reqwest::header;
+use tracing::{error, debug};
 
 use crate::{
     auth::Connected,
@@ -46,7 +47,6 @@ impl RescueKeyPair for Dracoon<Connected> {
             self.set_file_keys(key_reqs.into()).await?;
         }
 
-
         Ok(remaining_keys)
     }
 }
@@ -86,23 +86,38 @@ trait RescueKeypairInternal {
                     .users
                     .iter()
                     .find(|u| u.id == user_id)
-                    .expect("User not found") // this is safe because the user id is in the response
+                    .ok_or_else(|| {
+                        error!("User not found in response: {}", user_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the user id is in the response
                     .public_key_container
                     .clone();
                 let file_key = missing_keys
                     .files
                     .iter()
                     .find(|f| f.id == file_id)
-                    .expect("File not found") // this is safe because the file id is in the response
+                    .ok_or_else(|| {
+                        error!("File not found in response: {}", file_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the file id is in the response
                     .file_key_container
                     .clone();
 
-                let plain_file_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
-                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key)?;
+                let plain_file_key =
+                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                        error!("Could not decrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key).map_err(|err| {
+                    error!("Could not encrypt file key: {:?}", err);
+                    DracoonClientError::CryptoError(err)
+                })?;
                 let set_key_req = UserFileKeySetRequest::new(file_id, user_id, file_key);
                 Ok(set_key_req)
             })
             .collect::<Vec<_>>();
+
+        debug!("Built {} key requests", reqs.len());
 
         Ok(reqs)
     }
@@ -135,8 +150,6 @@ impl RescueKeypairInternal for Dracoon<Connected> {
             .extend_pairs(room_id.map(|id| ("room_id", id.to_string())))
             .extend_pairs(file_id.map(|id| ("file_id", id.to_string())))
             .finish();
-
-        println!("URL: {}", api_url);
 
         let response = self
             .client
