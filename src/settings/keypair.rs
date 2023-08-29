@@ -112,7 +112,7 @@ trait RescueKeypairInternal {
                     error!("Could not encrypt file key: {:?}", err);
                     DracoonClientError::CryptoError(err)
                 })?;
-                let set_key_req = UserFileKeySetRequest::new(file_id, user_id, file_key);
+                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
                 Ok(set_key_req)
             })
             .collect::<Vec<_>>();
