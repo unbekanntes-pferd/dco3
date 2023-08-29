@@ -3,6 +3,7 @@ use dco3_crypto::{
     DracoonCrypto, DracoonRSACrypto, PlainUserKeyPairContainer, UserKeyPairContainer,
 };
 use reqwest::header;
+use tracing::{error, debug};
 
 use crate::{
     auth::Connected,
@@ -10,7 +11,7 @@ use crate::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,
     },
-    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UserFileKeySetRequest},
+    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UserFileKeySetRequest, UseKey},
     utils::FromResponse,
     Dracoon, DracoonClientError, ListAllParams,
 };
@@ -45,7 +46,6 @@ impl RescueKeyPair for Dracoon<Connected> {
         if !key_reqs.is_empty() {
             self.set_file_keys(key_reqs.into()).await?;
         }
-
 
         Ok(remaining_keys)
     }
@@ -86,23 +86,38 @@ trait RescueKeypairInternal {
                     .users
                     .iter()
                     .find(|u| u.id == user_id)
-                    .expect("User not found") // this is safe because the user id is in the response
+                    .ok_or_else(|| {
+                        error!("User not found in response: {}", user_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the user id is in the response
                     .public_key_container
                     .clone();
                 let file_key = missing_keys
                     .files
                     .iter()
                     .find(|f| f.id == file_id)
-                    .expect("File not found") // this is safe because the file id is in the response
+                    .ok_or_else(|| {
+                        error!("File not found in response: {}", file_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the file id is in the response
                     .file_key_container
                     .clone();
 
-                let plain_file_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
-                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key)?;
-                let set_key_req = UserFileKeySetRequest::new(file_id, user_id, file_key);
+                let plain_file_key =
+                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                        error!("Could not decrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key).map_err(|err| {
+                    error!("Could not encrypt file key: {:?}", err);
+                    DracoonClientError::CryptoError(err)
+                })?;
+                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
                 Ok(set_key_req)
             })
             .collect::<Vec<_>>();
+
+        debug!("Built {} key requests", reqs.len());
 
         Ok(reqs)
     }
@@ -126,8 +141,11 @@ impl RescueKeypairInternal for Dracoon<Connected> {
 
         let sorts = params.sort_to_string();
 
+        let rescue_key: String = UseKey::SystemRescueKey.into();
+
         api_url
             .query_pairs_mut()
+            .extend_pairs(Some(("use_key", rescue_key)))
             .extend_pairs(Some(("limit", limit.to_string())))
             .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
             .extend_pairs(params.sort.map(|_| ("sort", sorts)))
@@ -135,8 +153,6 @@ impl RescueKeypairInternal for Dracoon<Connected> {
             .extend_pairs(room_id.map(|id| ("room_id", id.to_string())))
             .extend_pairs(file_id.map(|id| ("file_id", id.to_string())))
             .finish();
-
-        println!("URL: {}", api_url);
 
         let response = self
             .client
@@ -220,7 +236,7 @@ mod tests {
         let response = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -316,7 +332,7 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -347,7 +363,7 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -384,7 +400,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&room_id=1",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&room_id=1",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
@@ -418,7 +434,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&file_id=3",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&file_id=3",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
@@ -452,7 +468,7 @@ mod tests {
         let missing_keys_mock = mock_server
             .mock(
                 "GET",
-                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&user_id=2",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0&user_id=2",
             )
             .with_body(response)
             .with_header("content-type", "application/json")
