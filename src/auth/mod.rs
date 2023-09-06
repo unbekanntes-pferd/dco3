@@ -379,7 +379,7 @@ impl DracoonClient<Disconnected> {
     }
 
     /// Returns the authorize url for the OAuth2 auth code flow
-    pub fn get_authorize_url(&mut self) -> String {
+    pub fn get_authorize_url(&self) -> String {
         let default_redirect = self
             .base_url
             .join("oauth/callback")
@@ -389,8 +389,6 @@ impl DracoonClient<Disconnected> {
             .as_ref()
             .unwrap_or(&default_redirect)
             .clone();
-
-        self.redirect_uri = Some(redirect_uri.clone());
 
         let mut authorize_url = self
             .base_url

@@ -546,7 +546,7 @@ impl Dracoon<Disconnected> {
         Ok(dracoon)
     }
 
-    pub fn get_authorize_url(&mut self) -> String {
+    pub fn get_authorize_url(&self) -> String {
         self.client.get_authorize_url()
     }
 }
