@@ -3,8 +3,13 @@
 pub mod filters;
 pub mod sorts;
 
+use dco3_crypto::DracoonCrypto;
+use dco3_crypto::DracoonRSACrypto;
+use dco3_crypto::PlainUserKeyPairContainer;
 pub use filters::*;
 pub use sorts::*;
+use tracing::debug;
+use tracing::error;
 
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -415,14 +420,14 @@ pub struct UserInfo {
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum UserType {
-    #[serde(rename="internal")]
+    #[serde(rename = "internal")]
     Internal,
-    #[serde(rename="external")]
+    #[serde(rename = "external")]
     External,
-    #[serde(rename="system")]
+    #[serde(rename = "system")]
     System,
-    #[serde(rename="deleted")]
-    Deleted
+    #[serde(rename = "deleted")]
+    Deleted,
 }
 
 #[async_trait]
@@ -925,7 +930,10 @@ impl CreateFolderRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+    pub fn with_timestamp_modification(
+        mut self,
+        timestamp_modification: impl Into<String>,
+    ) -> Self {
         self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
@@ -998,7 +1006,10 @@ impl UpdateFolderRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+    pub fn with_timestamp_modification(
+        mut self,
+        timestamp_modification: impl Into<String>,
+    ) -> Self {
         self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
@@ -1071,6 +1082,61 @@ impl UserFileKeySetBatchRequest {
         self.items
             .push(UserFileKeySetRequest::new(user_id, file_id, file_key));
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn try_new_from_missing_keys(
+        missing_keys: MissingKeysResponse,
+        keypair: &PlainUserKeyPairContainer,
+    ) -> Result<Self, DracoonClientError> {
+        let reqs = missing_keys
+            .items
+            .into_iter()
+            .flat_map::<Result<UserFileKeySetRequest, DracoonClientError>, _>(|item| {
+                let file_id = item.file_id;
+                let user_id = item.user_id;
+                let public_key = missing_keys
+                    .users
+                    .iter()
+                    .find(|u| u.id == user_id)
+                    .ok_or_else(|| {
+                        error!("User not found in response: {}", user_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the user id is in the response
+                    .public_key_container
+                    .clone();
+                let file_key = missing_keys
+                    .files
+                    .iter()
+                    .find(|f| f.id == file_id)
+                    .ok_or_else(|| {
+                        error!("File not found in response: {}", file_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the file id is in the response
+                    .file_key_container
+                    .clone();
+
+                let plain_file_key =
+                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                        error!("Could not decrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key)
+                    .map_err(|err| {
+                        error!("Could not encrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
+                Ok(set_key_req)
+            })
+            .collect::<Vec<_>>();
+
+        debug!("Built {} key requests", reqs.len());
+
+        Ok(reqs.into())
+    }
 }
 
 impl From<Vec<UserFileKeySetRequest>> for UserFileKeySetBatchRequest {
@@ -1096,7 +1162,6 @@ impl UserFileKeySetRequest {
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum UseKey {

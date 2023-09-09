@@ -3,7 +3,6 @@ use dco3_crypto::{
     DracoonCrypto, DracoonRSACrypto, PlainUserKeyPairContainer, UserKeyPairContainer,
 };
 use reqwest::header;
-use tracing::{error, debug};
 
 use crate::{
     auth::Connected,
@@ -11,7 +10,7 @@ use crate::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,
     },
-    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UserFileKeySetRequest, UseKey},
+    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UseKey},
     utils::FromResponse,
     Dracoon, DracoonClientError, ListAllParams,
 };
@@ -41,10 +40,10 @@ impl RescueKeyPair for Dracoon<Connected> {
             missing_keys.range.as_ref().unwrap().total
         };
 
-        let key_reqs = self.prepare_key_requests(missing_keys, &keypair)?;
+        let key_reqs = UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;
 
         if !key_reqs.is_empty() {
-            self.set_file_keys(key_reqs.into()).await?;
+            self.set_file_keys(key_reqs).await?;
         }
 
         Ok(remaining_keys)
@@ -70,57 +69,6 @@ trait RescueKeypairInternal {
         &self,
         secret: &str,
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError>;
-
-    fn prepare_key_requests(
-        &self,
-        missing_keys: MissingKeysResponse,
-        keypair: &PlainUserKeyPairContainer,
-    ) -> Result<Vec<UserFileKeySetRequest>, DracoonClientError> {
-        let reqs = missing_keys
-            .items
-            .into_iter()
-            .flat_map::<Result<UserFileKeySetRequest, DracoonClientError>, _>(|item| {
-                let file_id = item.file_id;
-                let user_id = item.user_id;
-                let public_key = missing_keys
-                    .users
-                    .iter()
-                    .find(|u| u.id == user_id)
-                    .ok_or_else(|| {
-                        error!("User not found in response: {}", user_id);
-                        DracoonClientError::Unknown
-                    })? // this is safe because the user id is in the response
-                    .public_key_container
-                    .clone();
-                let file_key = missing_keys
-                    .files
-                    .iter()
-                    .find(|f| f.id == file_id)
-                    .ok_or_else(|| {
-                        error!("File not found in response: {}", file_id);
-                        DracoonClientError::Unknown
-                    })? // this is safe because the file id is in the response
-                    .file_key_container
-                    .clone();
-
-                let plain_file_key =
-                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
-                        error!("Could not decrypt file key: {:?}", err);
-                        DracoonClientError::CryptoError(err)
-                    })?;
-                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key).map_err(|err| {
-                    error!("Could not encrypt file key: {:?}", err);
-                    DracoonClientError::CryptoError(err)
-                })?;
-                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
-                Ok(set_key_req)
-            })
-            .collect::<Vec<_>>();
-
-        debug!("Built {} key requests", reqs.len());
-
-        Ok(reqs)
-    }
 }
 
 #[async_trait]
@@ -218,12 +166,11 @@ impl RescueKeypairInternal for Dracoon<Connected> {
 #[cfg(test)]
 mod tests {
     use dco3_crypto::{
-        DracoonCrypto, DracoonCryptoError, DracoonRSACrypto, FileKeyVersion, UserKeyPairContainer,
+        DracoonCryptoError, FileKeyVersion,
         UserKeyPairVersion,
     };
 
     use crate::{
-        nodes::MissingKeysResponse,
         settings::{keypair::RescueKeypairInternal, RescueKeyPair},
         tests::dracoon::get_connected_client,
         DracoonClientError,
@@ -305,24 +252,6 @@ mod tests {
         keypair_mock.assert();
     }
 
-    #[ignore = "needs updating mock file key response"]
-    #[tokio::test]
-    async fn test_prepare_key_requests() {
-        let (client, _) = get_connected_client().await;
-
-        let response = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
-        let missing_keypairs: MissingKeysResponse = serde_json::from_str(response).unwrap();
-        let keypair_response = include_str!("../tests/responses/keypair_ok.json");
-        let keypair: UserKeyPairContainer = serde_json::from_str(keypair_response).unwrap();
-        let plain_keypair = DracoonCrypto::decrypt_private_key("TopSecret1234!", keypair).unwrap();
-
-        let key_reqs = client
-            .prepare_key_requests(missing_keypairs, &plain_keypair)
-            .unwrap();
-
-        // TODO: update mock file key response - currently no request is built because file key is not decrypted
-        assert_eq!(key_reqs.len(), 1);
-    }
 
     #[tokio::test]
     async fn test_distribute_missing_keys() {
