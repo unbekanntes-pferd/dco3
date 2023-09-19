@@ -81,6 +81,13 @@ pub const PROVISIONING_TOKEN_HEADER: &str = "X-Sds-Service-Token";
 pub const SETTINGS_BASE: &str = "settings";
 pub const SETTINGS_KEYPAIR: &str = "keypair";
 
+// SYSTEM
+pub const SYSTEM_BASE: &str = "system";
+pub const SYSTEM_AUTH_BASE: &str = "auth";
+pub const SYSTEM_AUTH_OPENID: &str = "openid";
+pub const SYSTEM_AUTH_OPENID_IDPS: &str = "idps";
+pub const SYSTEM_AUTH_ADS: &str = "ads";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 
