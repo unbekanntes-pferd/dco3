@@ -26,14 +26,3 @@ pub fn from_response_derive(input: TokenStream) -> TokenStream {
     // Return the generated code
     TokenStream::from(expanded)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
