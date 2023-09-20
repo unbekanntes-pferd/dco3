@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use dco3_crypto::UserKeyPairContainer;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -11,7 +12,7 @@ use crate::{
     DracoonClientError,
 };
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadShare {
     pub id: u64,
@@ -181,13 +182,6 @@ pub struct UpdateDownloadSharesBulkRequest {
 impl UpdateDownloadSharesBulkRequest {
     pub fn builder(object_ids: Vec<u64>) -> UpdateDownloadSharesBulkRequestBuilder {
         UpdateDownloadSharesBulkRequestBuilder::new(object_ids)
-    }
-}
-
-#[async_trait]
-impl FromResponse for DownloadShare {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
     }
 }
 

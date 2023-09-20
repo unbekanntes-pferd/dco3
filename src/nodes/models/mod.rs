@@ -6,6 +6,7 @@ pub mod sorts;
 use dco3_crypto::DracoonCrypto;
 use dco3_crypto::DracoonRSACrypto;
 use dco3_crypto::PlainUserKeyPairContainer;
+use dco3_derive::FromResponse;
 pub use filters::*;
 pub use sorts::*;
 use tracing::debug;
@@ -217,7 +218,7 @@ impl NodeList {
 }
 
 /// A node in DRACOON - GET /nodes/{nodeId}
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub id: u64,
@@ -261,12 +262,7 @@ pub struct Node {
     pub auth_parent_id: Option<u64>,
 }
 
-#[async_trait]
-impl FromResponse for Node {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
+
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum NodeType {
@@ -439,18 +435,10 @@ impl FromResponse for NodeList {
 }
 
 /// Response for download url of a node - POST /nodes/files/{nodeId}/download
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadUrlResponse {
     pub download_url: String,
-}
-
-#[async_trait]
-impl FromResponse for DownloadUrlResponse {
-    /// transforms a response into a DownloadUrlResponse
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 /// Error response for S3 requests (XML)
@@ -500,20 +488,12 @@ impl FromResponse for FileKey {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileUploadResponse {
     pub upload_url: String,
     pub upload_id: String,
     pub token: String,
-}
-
-#[async_trait]
-impl FromResponse for CreateFileUploadResponse {
-    /// transforms a response into a `CreateFileUploadResponse`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -523,21 +503,14 @@ pub struct PresignedUrl {
     pub part_number: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrlList {
     pub urls: Vec<PresignedUrl>,
 }
 
-#[async_trait]
-impl FromResponse for PresignedUrlList {
-    /// transforms a response into a `PresignedUrlList`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
-}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadStatus {
     pub status: S3UploadStatus,
@@ -555,14 +528,6 @@ pub enum S3UploadStatus {
     Done,
     #[serde(rename = "error")]
     Error,
-}
-
-#[async_trait]
-impl FromResponse for S3FileUploadStatus {
-    /// transforms a response into a `S3FileUploadStatus`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -1051,7 +1016,7 @@ pub struct FileFileKeys {
     pub file_key_container: FileKey,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
     pub range: Option<Range>,
@@ -1060,12 +1025,6 @@ pub struct MissingKeysResponse {
     pub files: Vec<FileFileKeys>,
 }
 
-#[async_trait]
-impl FromResponse for MissingKeysResponse {
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
-}
 
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]

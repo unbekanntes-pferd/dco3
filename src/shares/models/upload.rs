@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,7 @@ use crate::{
     DracoonClientError,
 };
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadShare {
     pub id: u64,
@@ -37,13 +38,6 @@ pub struct UploadShare {
     pub target_type: Option<String>,
     pub show_creator_name: Option<bool>,
     pub show_creator_username: Option<bool>,
-}
-
-#[async_trait]
-impl FromResponse for UploadShare {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
 }
 
 #[async_trait]

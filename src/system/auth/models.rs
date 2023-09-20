@@ -1,10 +1,15 @@
 use async_trait::async_trait;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::Deserialize;
 
-use crate::{utils::{FromResponse, parse_body}, DracoonClientError, auth::DracoonErrorResponse};
+use crate::{
+    auth::DracoonErrorResponse,
+    utils::{parse_body, FromResponse},
+    DracoonClientError,
+};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveDirectoryConfig {
     pub id: u64,
@@ -21,12 +26,12 @@ pub struct ActiveDirectoryConfig {
     pub ssl_finger_print: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 pub struct ActiveDirectoryConfigList {
-    pub items: Vec<ActiveDirectoryConfig>
+    pub items: Vec<ActiveDirectoryConfig>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenIdIdpConfig {
     pub id: u64,
@@ -49,25 +54,10 @@ pub struct OpenIdIdpConfig {
     pub user_import_enabled: Option<bool>,
     pub user_import_group: Option<u64>,
     pub user_update_enabled: Option<bool>,
-    pub user_management_url: Option<String>
+    pub user_management_url: Option<String>,
 }
 
-#[async_trait]
-impl FromResponse for ActiveDirectoryConfigList {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
-
-
-#[async_trait]
-impl FromResponse for OpenIdIdpConfig {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
-
-
+// this is needed because no type alias exists
 #[async_trait]
 impl FromResponse for Vec<OpenIdIdpConfig> {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {

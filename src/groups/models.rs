@@ -1,10 +1,11 @@
 use async_trait::async_trait;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{nodes::models::UserInfo, user::models::RoleList, utils::{FromResponse, parse_body}, auth::DracoonErrorResponse, DracoonClientError, models::{RangedItems, ObjectExpiration, FilterOperator, FilterQuery, SortOrder, SortQuery}};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Group {
     pub id: u64,
@@ -16,13 +17,6 @@ pub struct Group {
     pub cnt_users: Option<u64>,
     pub expire_at: Option<String>,
     pub group_roles: Option<RoleList>
-}
-
-#[async_trait]
-impl FromResponse for Group {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
 }
 
 pub type GroupList = RangedItems<Group>;
@@ -107,7 +101,7 @@ impl ChangeGroupMembersRequest {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoomList {
     pub items: Vec<LastAdminGroupRoom>
@@ -121,13 +115,6 @@ pub struct LastAdminGroupRoom {
     pub parent_path: String,
     pub parent_id: Option<u64>
 
-}
-
-#[async_trait]
-impl FromResponse for LastAdminGroupRoomList {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }   
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use dco3_crypto::PublicKeyContainer;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ use crate::{
 
 pub use crate::user::UserAuthData;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
     pub id: u64,
@@ -65,12 +66,6 @@ impl FromResponse for UserList {
     }
 }
 
-#[async_trait]
-impl FromResponse for UserData {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -83,17 +78,11 @@ pub struct LastAdminUserRoom {
     pub last_admin_in_group_id: Option<u64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, FromResponse)]
 pub struct LastAdminUserRoomList {
     items: Vec<LastAdminUserRoom>,
 }
 
-#[async_trait]
-impl FromResponse for LastAdminUserRoomList {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

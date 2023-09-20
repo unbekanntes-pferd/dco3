@@ -93,6 +93,5 @@ pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARG
 
 // retry config
 pub const MAX_RETRIES: u32 = 5;
-pub const EXPONENTIAL_BACKOFF_BASE: u32 = 3;
 pub const MIN_RETRY_DELAY: u64 = 600; // in milliseconds (0.6 seconds)
 pub const MAX_RETRY_DELAY: u64 = 20 * 1000; // in milliseconds (20 seconds)

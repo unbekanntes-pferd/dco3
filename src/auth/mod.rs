@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use retry_policies::Jitter;
 use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
@@ -20,8 +21,8 @@ pub use models::*;
 
 use crate::{
     constants::{
-        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, EXPONENTIAL_BACKOFF_BASE, MAX_RETRIES,
-        MAX_RETRY_DELAY, MIN_RETRY_DELAY, TOKEN_TYPE_HINT_ACCESS_TOKEN,
+        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MIN_RETRY_DELAY,
+        TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
     models::Container,
 };
@@ -200,7 +201,7 @@ impl DracoonClientBuilder {
 
     pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
         let Some(provisioning_token) = self.provisioning_token else {
-            return Err(DracoonClientError::MissingArgument)
+            return Err(DracoonClientError::MissingArgument);
         };
 
         let max_retries = self
@@ -217,7 +218,7 @@ impl DracoonClientBuilder {
             .clamp(min_retry_delay, MAX_RETRY_DELAY);
 
         let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
-            .backoff_exponent(EXPONENTIAL_BACKOFF_BASE)
+            .jitter(Jitter::Bounded)
             .retry_bounds(
                 Duration::from_millis(min_retry_delay),
                 Duration::from_millis(max_retry_delay),
@@ -237,9 +238,9 @@ impl DracoonClientBuilder {
             .build();
 
         let Some(base_url) = self.base_url.clone() else {
-        error!("Missing base url");
-        return Err(DracoonClientError::MissingBaseUrl)
-    };
+            error!("Missing base url");
+            return Err(DracoonClientError::MissingBaseUrl);
+        };
 
         let base_url = Url::parse(&base_url)?;
 
@@ -272,7 +273,7 @@ impl DracoonClientBuilder {
             .clamp(min_retry_delay, MAX_RETRY_DELAY);
 
         let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
-            .backoff_exponent(EXPONENTIAL_BACKOFF_BASE)
+            .jitter(Jitter::Bounded)
             .retry_bounds(
                 Duration::from_millis(min_retry_delay),
                 Duration::from_millis(max_retry_delay),
@@ -293,19 +294,19 @@ impl DracoonClientBuilder {
 
         let Some(base_url) = self.base_url.clone() else {
             error!("Missing base url");
-            return Err(DracoonClientError::MissingBaseUrl)
+            return Err(DracoonClientError::MissingBaseUrl);
         };
 
         let base_url = Url::parse(&base_url)?;
 
         let Some(client_id) = self.client_id else {
             error!("Missing client id");
-            return Err(DracoonClientError::MissingClientId)
+            return Err(DracoonClientError::MissingClientId);
         };
 
         let Some(client_secret) = self.client_secret else {
             error!("Missing client secret");
-            return Err(DracoonClientError::MissingClientSecret)
+            return Err(DracoonClientError::MissingClientSecret);
         };
 
         let redirect_uri = match self.redirect_uri {

@@ -393,6 +393,7 @@ pub mod users;
 pub mod provisioning;
 pub mod settings;
 pub mod system;
+pub mod config;
 mod tests;
 
 

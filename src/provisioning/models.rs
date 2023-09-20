@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +23,7 @@ impl CustomerAttributes {
 
 pub type AttributesResponse = RangedItems<KeyValueEntry>;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Customer {
     pub id: u64,
@@ -53,26 +54,6 @@ impl FromResponse for CustomerList {
 }
 
 
-#[async_trait]
-impl FromResponse for Customer {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
-
-#[async_trait]
-impl FromResponse for NewCustomerResponse {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
-
-#[async_trait]
-impl FromResponse for UpdateCustomerResponse {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
 
 #[async_trait]
 impl FromResponse for AttributesResponse {
@@ -248,7 +229,7 @@ impl NewCustomerRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCustomerResponse {
     pub id: u64,
@@ -265,7 +246,7 @@ pub struct NewCustomerResponse {
     pub webhooks_max: Option<u64>
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCustomerResponse {
     pub id: u64,

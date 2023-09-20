@@ -1,11 +1,15 @@
 use async_trait::async_trait;
 use dco3_crypto::UserKeyPairContainer;
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
-use crate::{utils::{FromResponse, parse_body}, auth::{errors::DracoonClientError, models::DracoonErrorResponse}};
+use crate::{
+    auth::{errors::DracoonClientError, models::DracoonErrorResponse},
+    utils::{parse_body, FromResponse},
+};
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct UserAccount {
@@ -40,7 +44,6 @@ pub struct UserAuthData {
     pub ad_config_id: Option<u64>,
     pub oid_config_id: Option<u64>,
 }
-
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -166,19 +169,8 @@ impl UpdateUserAccountRequestBuilder {
 }
 
 #[async_trait]
-impl FromResponse for UserAccount {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-
-        parse_body::<Self, DracoonErrorResponse>(response).await
-        
-    }
-}
-
-#[async_trait]
 impl FromResponse for UserKeyPairContainer {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-
         parse_body::<Self, DracoonErrorResponse>(response).await
-        
     }
 }
