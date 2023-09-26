@@ -377,6 +377,7 @@ pub use self::{
     users::Users,
     provisioning::CustomerProvisioning,
     settings::RescueKeyPair,
+    config::Config,
     models::*,
 };
 

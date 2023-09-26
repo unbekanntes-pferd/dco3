@@ -88,6 +88,18 @@ pub const SYSTEM_AUTH_OPENID: &str = "openid";
 pub const SYSTEM_AUTH_OPENID_IDPS: &str = "idps";
 pub const SYSTEM_AUTH_ADS: &str = "ads";
 
+// CONFIG
+pub const CONFIG_BASE: &str = "config/info";
+pub const CONFIG_GENERAL: &str = "general";
+pub const CONFIG_DEFAULTS: &str = "defaults";
+pub const CONFIG_INFRASTRUCTURE: &str = "infrastructure";
+pub const CONFIG_ALGORITHMS: &str = "algorithms";
+pub const CONFIG_POLICIES: &str = "policies";
+pub const CONFIG_PASSWORD_POLICIES: &str = "passwords";
+pub const CONFIG_PRODUCT_PACKAGES: &str = "product_packages";
+pub const CONFIG_S3_TAGS: &str = "s3_tags";
+pub const CONFIG_PRODUCT_PACKAGES_CURRENT: &str = "current";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 
