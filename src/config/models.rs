@@ -70,21 +70,37 @@ pub struct AlgorithmVersionInfoList {
     pub key_pair_algorithms: Vec<AlgorithmVersionInfo>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(from = "u8")]
+
 pub enum MinimumClassification {
-    NoPassword,
-    Public,
-    Internal,
-    Confidential,
-    StrictlyConfidential,
+    NoPassword = 0,
+    Public = 1,
+    Internal = 2,
+    Confidential = 3,
+    StrictlyConfidential = 4,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ShareClassificationPolicies {
-    pub classification_requires_share_password: u8,
+    pub classification_requires_share_password: MinimumClassification,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl From<u8> for MinimumClassification {
+    fn from(num: u8) -> Self {
+        match num {
+            1 => MinimumClassification::Public,
+            2 => MinimumClassification::Internal,
+            3 => MinimumClassification::Confidential,
+            4 => MinimumClassification::StrictlyConfidential,
+            _ => MinimumClassification::NoPassword,
+        }
+    }
+}
+
+
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassificationPoliciesConfig {
     pub share_classification_policies: Option<ShareClassificationPolicies>,

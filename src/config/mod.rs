@@ -6,7 +6,7 @@ use reqwest::header;
 use crate::constants::{
     CONFIG_ALGORITHMS, CONFIG_BASE, CONFIG_INFRASTRUCTURE, CONFIG_PASSWORD_POLICIES,
     CONFIG_POLICIES, DRACOON_API_PREFIX, CONFIG_DEFAULTS, CONFIG_PRODUCT_PACKAGES,
-    CONFIG_GENERAL, CONFIG_S3_TAGS, CONFIG_PRODUCT_PACKAGES_CURRENT,
+    CONFIG_GENERAL, CONFIG_S3_TAGS, CONFIG_PRODUCT_PACKAGES_CURRENT, CONFIG_CLASSIFICATION_POLICIES
 };
 use crate::utils::FromResponse;
 use crate::{auth::Connected, Dracoon, DracoonClientError};
@@ -24,6 +24,8 @@ pub trait Config {
     ) -> Result<InfrastructureProperties, DracoonClientError>;
 
     async fn get_password_policies(&self) -> Result<PasswordPoliciesConfig, DracoonClientError>;
+
+    async fn get_classification_policies(&self) -> Result<ClassificationPoliciesConfig, DracoonClientError>;
 
     async fn get_algorithms(&self) -> Result<AlgorithmVersionInfoList, DracoonClientError>;
 
@@ -89,6 +91,23 @@ impl Config for Dracoon<Connected> {
 
         InfrastructureProperties::from_response(response).await
        
+    }
+
+    async fn get_classification_policies(&self) -> Result<ClassificationPoliciesConfig, DracoonClientError> {
+            
+            let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_CLASSIFICATION_POLICIES}");
+    
+            let api_url = self.build_api_url(&url_part);
+    
+            let response = self
+                .client
+                .http
+                .get(api_url)
+                .header(header::AUTHORIZATION, self.get_auth_header().await?)
+                .send()
+                .await?;
+    
+            ClassificationPoliciesConfig::from_response(response).await
     }
 
     async fn get_password_policies(&self) -> Result<PasswordPoliciesConfig, DracoonClientError> {
@@ -185,7 +204,7 @@ impl Config for Dracoon<Connected> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        config::{AlgorithmStatus, CharacterRule},
+        config::{AlgorithmStatus, CharacterRule, MinimumClassification},
         nodes::UserType,
         tests::dracoon::get_connected_client,
         Config,
@@ -302,6 +321,29 @@ mod tests {
         );
         assert_eq!(infrastructure_properties.is_dracoon_cloud, Some(true));
         assert_eq!(infrastructure_properties.tenant_uuid, Some("string".into()));
+    }
+
+    #[tokio::test]
+    async fn test_get_classification_policies() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let classification_policies_res =
+            include_str!("../tests/responses/config/classification_policies_ok.json");
+
+        let classification_policies_mock = mock_server
+            .mock("GET", "/api/v4/config/info/policies/classifications")
+            .with_status(200)
+            .with_body(classification_policies_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let classification_policies = client.get_classification_policies().await.unwrap();
+
+        classification_policies_mock.assert();
+
+        assert!(classification_policies.share_classification_policies.is_some());
+        let share_classification_policies = classification_policies.share_classification_policies.as_ref().unwrap();
+        assert_eq!(share_classification_policies.classification_requires_share_password, MinimumClassification::NoPassword);
     }
 
     #[tokio::test]

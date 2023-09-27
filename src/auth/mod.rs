@@ -67,7 +67,7 @@ pub struct Provisioning;
 pub struct Connection {
     access_token: String,
     refresh_token: String,
-    expires_in: u32,
+    expires_in: u64,
     connected_at: DateTime<Utc>,
 }
 
@@ -80,7 +80,7 @@ impl Connection {
         self.access_token.clone()
     }
 
-    pub fn expires_in(&self) -> u32 {
+    pub fn expires_in(&self) -> u64 {
         self.expires_in
     }
 
@@ -384,7 +384,7 @@ impl DracoonClient<Disconnected> {
         let default_redirect = self
             .base_url
             .join("oauth/callback")
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
         let redirect_uri = self
             .redirect_uri
             .as_ref()
@@ -394,7 +394,7 @@ impl DracoonClient<Disconnected> {
         let mut authorize_url = self
             .base_url
             .join("oauth/authorize")
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
         let authorize_url = authorize_url
             .query_pairs_mut()
             .append_pair("response_type", "code")
@@ -410,7 +410,7 @@ impl DracoonClient<Disconnected> {
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
-            .expect("Correct base url")
+            .expect("Base url cannot be parsed")
     }
 
     /// Connects to DRACOON using the password flow
@@ -532,7 +532,7 @@ impl DracoonClient<Connected> {
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
-            .expect("Correct base url")
+            .expect("Base url cannot be parsed")
     }
 
     /// Revokes the access token
@@ -540,14 +540,14 @@ impl DracoonClient<Connected> {
         let access_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .access_token
             .clone();
 
         let api_url = self
             .base_url
             .join(DRACOON_TOKEN_REVOKE_URL)
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
@@ -566,7 +566,7 @@ impl DracoonClient<Connected> {
         let refresh_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token
             .clone();
 
@@ -594,7 +594,7 @@ impl DracoonClient<Connected> {
         let refresh_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token
             .clone();
 
@@ -609,18 +609,14 @@ impl DracoonClient<Connected> {
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
         if self.is_connection_expired() {
             let new_connection = self.connect_refresh_token().await?;
-            let mut connection = self.connection.get();
-            let connection = connection
-                .as_mut()
-                .expect("Connected client has a connection");
-            connection.update_tokens(new_connection);
+            self.connection.set(new_connection);
         }
 
         Ok(format!(
             "Bearer {}",
             self.connection
                 .get()
-                .expect("Connected client has a connection")
+                .expect("Connected client has no connection")
                 .access_token
         ))
     }
@@ -629,7 +625,7 @@ impl DracoonClient<Connected> {
     pub fn get_refresh_token(&self) -> String {
         self.connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token()
     }
 
@@ -637,7 +633,7 @@ impl DracoonClient<Connected> {
     fn is_connection_expired(&self) -> bool {
         self.connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .is_expired()
     }
 }

@@ -99,6 +99,7 @@ pub const CONFIG_PASSWORD_POLICIES: &str = "passwords";
 pub const CONFIG_PRODUCT_PACKAGES: &str = "product_packages";
 pub const CONFIG_S3_TAGS: &str = "s3_tags";
 pub const CONFIG_PRODUCT_PACKAGES_CURRENT: &str = "current";
+pub const CONFIG_CLASSIFICATION_POLICIES: &str = "classifications";
 
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
