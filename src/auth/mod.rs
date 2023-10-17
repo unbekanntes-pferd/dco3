@@ -655,7 +655,6 @@ impl DracoonClient<Provisioning> {
 
 #[cfg(test)]
 mod tests {
-    use tokio_test::assert_ok;
 
     use super::*;
 
@@ -698,7 +697,7 @@ mod tests {
         let res = dracoon.connect(auth_code).await;
 
         auth_mock.assert();
-        assert_ok!(&res);
+        assert!(&res.is_ok());
 
         assert!(res.unwrap().connection.is_some());
     }
@@ -724,7 +723,7 @@ mod tests {
         let res = dracoon.connect(refresh_token_auth).await;
 
         auth_mock.assert();
-        assert_ok!(&res);
+        assert!(&res.is_ok());
 
         assert!(res.as_ref().unwrap().connection.is_some());
 
