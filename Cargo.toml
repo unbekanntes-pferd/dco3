@@ -46,7 +46,7 @@ tracing = "0.1.39"
 url = "2.4.1"
 base64 = "0.21.4"
 chrono = "0.4.31"
-dco3_derive = { path = "dco3_derive" }
+dco3_derive = { path = "dco3_derive", version = "0.1.0"}
 
 
 [dev-dependencies]
