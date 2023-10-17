@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use retry_policies::Jitter;
 use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
@@ -20,8 +21,8 @@ pub use models::*;
 
 use crate::{
     constants::{
-        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, EXPONENTIAL_BACKOFF_BASE, MAX_RETRIES,
-        MAX_RETRY_DELAY, MIN_RETRY_DELAY, TOKEN_TYPE_HINT_ACCESS_TOKEN,
+        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MIN_RETRY_DELAY,
+        TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
     models::Container,
 };
@@ -66,7 +67,7 @@ pub struct Provisioning;
 pub struct Connection {
     access_token: String,
     refresh_token: String,
-    expires_in: u32,
+    expires_in: u64,
     connected_at: DateTime<Utc>,
 }
 
@@ -79,7 +80,7 @@ impl Connection {
         self.access_token.clone()
     }
 
-    pub fn expires_in(&self) -> u32 {
+    pub fn expires_in(&self) -> u64 {
         self.expires_in
     }
 
@@ -200,7 +201,7 @@ impl DracoonClientBuilder {
 
     pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
         let Some(provisioning_token) = self.provisioning_token else {
-            return Err(DracoonClientError::MissingArgument)
+            return Err(DracoonClientError::MissingArgument);
         };
 
         let max_retries = self
@@ -217,7 +218,7 @@ impl DracoonClientBuilder {
             .clamp(min_retry_delay, MAX_RETRY_DELAY);
 
         let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
-            .backoff_exponent(EXPONENTIAL_BACKOFF_BASE)
+            .jitter(Jitter::Bounded)
             .retry_bounds(
                 Duration::from_millis(min_retry_delay),
                 Duration::from_millis(max_retry_delay),
@@ -237,9 +238,9 @@ impl DracoonClientBuilder {
             .build();
 
         let Some(base_url) = self.base_url.clone() else {
-        error!("Missing base url");
-        return Err(DracoonClientError::MissingBaseUrl)
-    };
+            error!("Missing base url");
+            return Err(DracoonClientError::MissingBaseUrl);
+        };
 
         let base_url = Url::parse(&base_url)?;
 
@@ -272,7 +273,7 @@ impl DracoonClientBuilder {
             .clamp(min_retry_delay, MAX_RETRY_DELAY);
 
         let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
-            .backoff_exponent(EXPONENTIAL_BACKOFF_BASE)
+            .jitter(Jitter::Bounded)
             .retry_bounds(
                 Duration::from_millis(min_retry_delay),
                 Duration::from_millis(max_retry_delay),
@@ -293,19 +294,19 @@ impl DracoonClientBuilder {
 
         let Some(base_url) = self.base_url.clone() else {
             error!("Missing base url");
-            return Err(DracoonClientError::MissingBaseUrl)
+            return Err(DracoonClientError::MissingBaseUrl);
         };
 
         let base_url = Url::parse(&base_url)?;
 
         let Some(client_id) = self.client_id else {
             error!("Missing client id");
-            return Err(DracoonClientError::MissingClientId)
+            return Err(DracoonClientError::MissingClientId);
         };
 
         let Some(client_secret) = self.client_secret else {
             error!("Missing client secret");
-            return Err(DracoonClientError::MissingClientSecret)
+            return Err(DracoonClientError::MissingClientSecret);
         };
 
         let redirect_uri = match self.redirect_uri {
@@ -379,23 +380,21 @@ impl DracoonClient<Disconnected> {
     }
 
     /// Returns the authorize url for the OAuth2 auth code flow
-    pub fn get_authorize_url(&mut self) -> String {
+    pub fn get_authorize_url(&self) -> String {
         let default_redirect = self
             .base_url
             .join("oauth/callback")
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
         let redirect_uri = self
             .redirect_uri
             .as_ref()
             .unwrap_or(&default_redirect)
             .clone();
 
-        self.redirect_uri = Some(redirect_uri.clone());
-
         let mut authorize_url = self
             .base_url
             .join("oauth/authorize")
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
         let authorize_url = authorize_url
             .query_pairs_mut()
             .append_pair("response_type", "code")
@@ -411,7 +410,7 @@ impl DracoonClient<Disconnected> {
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
-            .expect("Correct base url")
+            .expect("Base url cannot be parsed")
     }
 
     /// Connects to DRACOON using the password flow
@@ -533,7 +532,7 @@ impl DracoonClient<Connected> {
     fn get_token_url(&self) -> Url {
         self.base_url
             .join(DRACOON_TOKEN_URL)
-            .expect("Correct base url")
+            .expect("Base url cannot be parsed")
     }
 
     /// Revokes the access token
@@ -541,14 +540,14 @@ impl DracoonClient<Connected> {
         let access_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .access_token
             .clone();
 
         let api_url = self
             .base_url
             .join(DRACOON_TOKEN_REVOKE_URL)
-            .expect("Correct base url");
+            .expect("Base url cannot be parsed");
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
@@ -567,7 +566,7 @@ impl DracoonClient<Connected> {
         let refresh_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token
             .clone();
 
@@ -595,7 +594,7 @@ impl DracoonClient<Connected> {
         let refresh_token = self
             .connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token
             .clone();
 
@@ -610,18 +609,14 @@ impl DracoonClient<Connected> {
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
         if self.is_connection_expired() {
             let new_connection = self.connect_refresh_token().await?;
-            let mut connection = self.connection.get();
-            let connection = connection
-                .as_mut()
-                .expect("Connected client has a connection");
-            connection.update_tokens(new_connection);
+            self.connection.set(new_connection);
         }
 
         Ok(format!(
             "Bearer {}",
             self.connection
                 .get()
-                .expect("Connected client has a connection")
+                .expect("Connected client has no connection")
                 .access_token
         ))
     }
@@ -630,7 +625,7 @@ impl DracoonClient<Connected> {
     pub fn get_refresh_token(&self) -> String {
         self.connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .refresh_token()
     }
 
@@ -638,7 +633,7 @@ impl DracoonClient<Connected> {
     fn is_connection_expired(&self) -> bool {
         self.connection
             .get()
-            .expect("Connected client has a connection")
+            .expect("Connected client has no connection")
             .is_expired()
     }
 }
@@ -660,7 +655,6 @@ impl DracoonClient<Provisioning> {
 
 #[cfg(test)]
 mod tests {
-    use tokio_test::assert_ok;
 
     use super::*;
 
@@ -703,7 +697,7 @@ mod tests {
         let res = dracoon.connect(auth_code).await;
 
         auth_mock.assert();
-        assert_ok!(&res);
+        assert!(&res.is_ok());
 
         assert!(res.unwrap().connection.is_some());
     }
@@ -729,7 +723,7 @@ mod tests {
         let res = dracoon.connect(refresh_token_auth).await;
 
         auth_mock.assert();
-        assert_ok!(&res);
+        assert!(&res.is_ok());
 
         assert!(res.as_ref().unwrap().connection.is_some());
 

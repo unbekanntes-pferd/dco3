@@ -8,7 +8,6 @@ pub use models::*;
 
 use crate::{models::ListAllParams, DracoonClientError};
 
-
 #[async_trait]
 pub trait Users {
     /// Get a list of all users.
@@ -32,10 +31,15 @@ pub trait Users {
     ///     .build();
     /// // optionally include roles and attributes
     /// let users = dracoon.get_users(Some(params), None, None).await.unwrap();
-    /// 
+    ///
     /// # }
     /// ```
-    async fn get_users(&self, params: Option<ListAllParams>, include_roles: Option<bool>, include_attributes: Option<bool>) -> Result<UserList, DracoonClientError>;
+    async fn get_users(
+        &self,
+        params: Option<ListAllParams>,
+        include_roles: Option<bool>,
+        include_attributes: Option<bool>,
+    ) -> Result<UserList, DracoonClientError>;
     /// Create a new user.
     /// ```no_run
     /// # use dco3::{Dracoon, OAuth2Flow, Users, users::{CreateUserRequest, UserAuthData}};
@@ -58,7 +62,7 @@ pub trait Users {
     ///    .with_auth_data(auth)
     ///    .build();
     /// let user = dracoon.create_user(user).await.unwrap();
-    /// 
+    ///
     /// // creating an OIDC user
     /// let auth = UserAuthData::new_oidc("jane.doe", 4);
     /// let user = CreateUserRequest::builder("Jane", "Doe")
@@ -87,7 +91,11 @@ pub trait Users {
     /// let user = dracoon.get_user(123, None).await.unwrap();
     /// # }
     /// ```
-    async fn get_user(&self, user_id: u64, effective_roles: Option<bool>) -> Result<UserData, DracoonClientError>;
+    async fn get_user(
+        &self,
+        user_id: u64,
+        effective_roles: Option<bool>,
+    ) -> Result<UserData, DracoonClientError>;
     /// Update a user by id.
     /// ```no_run
     /// # use dco3::{Dracoon, OAuth2Flow, Users, users::UpdateUserRequest};
@@ -104,12 +112,16 @@ pub trait Users {
     /// #  .unwrap();
     /// let update = UpdateUserRequest::builder()
     ///    .with_first_name("Jane")
-    ///    .with_last_name("Doe") 
+    ///    .with_last_name("Doe")
     ///    .build();
     /// let user = dracoon.update_user(123, update).await.unwrap();
     /// # }
     /// ```
-    async fn update_user(&self, user_id: u64, req: UpdateUserRequest) -> Result<UserData, DracoonClientError>;
+    async fn update_user(
+        &self,
+        user_id: u64,
+        req: UpdateUserRequest,
+    ) -> Result<UserData, DracoonClientError>;
     /// Deletes a user by id.
     /// ```no_run
     /// # use dco3::{Dracoon, Users, OAuth2Flow};
@@ -125,7 +137,7 @@ pub trait Users {
     /// #  .await
     /// #  .unwrap();
     /// dracoon.delete_user(123).await.unwrap();
-    /// 
+    ///
     /// # }
     /// ```
     async fn delete_user(&self, user_id: u64) -> Result<(), DracoonClientError>;
@@ -145,7 +157,9 @@ pub trait Users {
     /// #  .unwrap();
     /// let rooms = dracoon.get_user_last_admin_rooms(123).await.unwrap();
     /// # }
-    /// ``` 
-    async fn get_user_last_admin_rooms(&self, user_id: u64) -> Result<LastAdminUserRoomList, DracoonClientError>;
-
+    /// ```
+    async fn get_user_last_admin_rooms(
+        &self,
+        user_id: u64,
+    ) -> Result<LastAdminUserRoomList, DracoonClientError>;
 }

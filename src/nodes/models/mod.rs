@@ -3,8 +3,14 @@
 pub mod filters;
 pub mod sorts;
 
+use dco3_crypto::DracoonCrypto;
+use dco3_crypto::DracoonRSACrypto;
+use dco3_crypto::PlainUserKeyPairContainer;
+use dco3_derive::FromResponse;
 pub use filters::*;
 pub use sorts::*;
+use tracing::debug;
+use tracing::error;
 
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -212,7 +218,7 @@ impl NodeList {
 }
 
 /// A node in DRACOON - GET /nodes/{nodeId}
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
     pub id: u64,
@@ -256,12 +262,7 @@ pub struct Node {
     pub auth_parent_id: Option<u64>,
 }
 
-#[async_trait]
-impl FromResponse for Node {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
-}
+
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum NodeType {
@@ -415,14 +416,14 @@ pub struct UserInfo {
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum UserType {
-    #[serde(rename="internal")]
+    #[serde(rename = "internal")]
     Internal,
-    #[serde(rename="external")]
+    #[serde(rename = "external")]
     External,
-    #[serde(rename="system")]
+    #[serde(rename = "system")]
     System,
-    #[serde(rename="deleted")]
-    Deleted
+    #[serde(rename = "deleted")]
+    Deleted,
 }
 
 #[async_trait]
@@ -434,18 +435,10 @@ impl FromResponse for NodeList {
 }
 
 /// Response for download url of a node - POST /nodes/files/{nodeId}/download
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadUrlResponse {
     pub download_url: String,
-}
-
-#[async_trait]
-impl FromResponse for DownloadUrlResponse {
-    /// transforms a response into a DownloadUrlResponse
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 /// Error response for S3 requests (XML)
@@ -495,20 +488,12 @@ impl FromResponse for FileKey {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileUploadResponse {
     pub upload_url: String,
     pub upload_id: String,
     pub token: String,
-}
-
-#[async_trait]
-impl FromResponse for CreateFileUploadResponse {
-    /// transforms a response into a `CreateFileUploadResponse`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -518,21 +503,14 @@ pub struct PresignedUrl {
     pub part_number: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrlList {
     pub urls: Vec<PresignedUrl>,
 }
 
-#[async_trait]
-impl FromResponse for PresignedUrlList {
-    /// transforms a response into a `PresignedUrlList`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
-}
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadStatus {
     pub status: S3UploadStatus,
@@ -550,14 +528,6 @@ pub enum S3UploadStatus {
     Done,
     #[serde(rename = "error")]
     Error,
-}
-
-#[async_trait]
-impl FromResponse for S3FileUploadStatus {
-    /// transforms a response into a `S3FileUploadStatus`
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -925,7 +895,10 @@ impl CreateFolderRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+    pub fn with_timestamp_modification(
+        mut self,
+        timestamp_modification: impl Into<String>,
+    ) -> Self {
         self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
@@ -998,7 +971,10 @@ impl UpdateFolderRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: impl Into<String>) -> Self {
+    pub fn with_timestamp_modification(
+        mut self,
+        timestamp_modification: impl Into<String>,
+    ) -> Self {
         self.timestamp_modification = Some(timestamp_modification.into());
         self
     }
@@ -1040,7 +1016,7 @@ pub struct FileFileKeys {
     pub file_key_container: FileKey,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
     pub range: Option<Range>,
@@ -1049,12 +1025,6 @@ pub struct MissingKeysResponse {
     pub files: Vec<FileFileKeys>,
 }
 
-#[async_trait]
-impl FromResponse for MissingKeysResponse {
-    async fn from_response(res: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(res).await
-    }
-}
 
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -1070,6 +1040,61 @@ impl UserFileKeySetBatchRequest {
     pub fn add(&mut self, user_id: u64, file_id: u64, file_key: FileKey) {
         self.items
             .push(UserFileKeySetRequest::new(user_id, file_id, file_key));
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
+    pub fn try_new_from_missing_keys(
+        missing_keys: MissingKeysResponse,
+        keypair: &PlainUserKeyPairContainer,
+    ) -> Result<Self, DracoonClientError> {
+        let reqs = missing_keys
+            .items
+            .into_iter()
+            .flat_map::<Result<UserFileKeySetRequest, DracoonClientError>, _>(|item| {
+                let file_id = item.file_id;
+                let user_id = item.user_id;
+                let public_key = missing_keys
+                    .users
+                    .iter()
+                    .find(|u| u.id == user_id)
+                    .ok_or_else(|| {
+                        error!("User not found in response: {}", user_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the user id is in the response
+                    .public_key_container
+                    .clone();
+                let file_key = missing_keys
+                    .files
+                    .iter()
+                    .find(|f| f.id == file_id)
+                    .ok_or_else(|| {
+                        error!("File not found in response: {}", file_id);
+                        DracoonClientError::Unknown
+                    })? // this is safe because the file id is in the response
+                    .file_key_container
+                    .clone();
+
+                let plain_file_key =
+                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                        error!("Could not decrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key)
+                    .map_err(|err| {
+                        error!("Could not encrypt file key: {:?}", err);
+                        DracoonClientError::CryptoError(err)
+                    })?;
+                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
+                Ok(set_key_req)
+            })
+            .collect::<Vec<_>>();
+
+        debug!("Built {} key requests", reqs.len());
+
+        Ok(reqs.into())
     }
 }
 
@@ -1096,7 +1121,6 @@ impl UserFileKeySetRequest {
         }
     }
 }
-
 
 #[derive(Debug, Clone)]
 pub enum UseKey {

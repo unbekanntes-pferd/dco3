@@ -81,11 +81,30 @@ pub const PROVISIONING_TOKEN_HEADER: &str = "X-Sds-Service-Token";
 pub const SETTINGS_BASE: &str = "settings";
 pub const SETTINGS_KEYPAIR: &str = "keypair";
 
+// SYSTEM
+pub const SYSTEM_BASE: &str = "system";
+pub const SYSTEM_AUTH_BASE: &str = "auth";
+pub const SYSTEM_AUTH_OPENID: &str = "openid";
+pub const SYSTEM_AUTH_OPENID_IDPS: &str = "idps";
+pub const SYSTEM_AUTH_ADS: &str = "ads";
+
+// CONFIG
+pub const CONFIG_BASE: &str = "config/info";
+pub const CONFIG_GENERAL: &str = "general";
+pub const CONFIG_DEFAULTS: &str = "defaults";
+pub const CONFIG_INFRASTRUCTURE: &str = "infrastructure";
+pub const CONFIG_ALGORITHMS: &str = "algorithms";
+pub const CONFIG_POLICIES: &str = "policies";
+pub const CONFIG_PASSWORD_POLICIES: &str = "passwords";
+pub const CONFIG_PRODUCT_PACKAGES: &str = "product_packages";
+pub const CONFIG_S3_TAGS: &str = "s3_tags";
+pub const CONFIG_PRODUCT_PACKAGES_CURRENT: &str = "current";
+pub const CONFIG_CLASSIFICATION_POLICIES: &str = "classifications";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 
 // retry config
 pub const MAX_RETRIES: u32 = 5;
-pub const EXPONENTIAL_BACKOFF_BASE: u32 = 3;
 pub const MIN_RETRY_DELAY: u64 = 600; // in milliseconds (0.6 seconds)
 pub const MAX_RETRY_DELAY: u64 = 20 * 1000; // in milliseconds (20 seconds)

@@ -377,6 +377,7 @@ pub use self::{
     users::Users,
     provisioning::CustomerProvisioning,
     settings::RescueKeyPair,
+    config::Config,
     models::*,
 };
 
@@ -392,6 +393,8 @@ pub mod shares;
 pub mod users;
 pub mod provisioning;
 pub mod settings;
+pub mod system;
+pub mod config;
 mod tests;
 
 
@@ -546,7 +549,7 @@ impl Dracoon<Disconnected> {
         Ok(dracoon)
     }
 
-    pub fn get_authorize_url(&mut self) -> String {
+    pub fn get_authorize_url(&self) -> String {
         self.client.get_authorize_url()
     }
 }

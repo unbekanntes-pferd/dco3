@@ -268,7 +268,7 @@ impl From<OAuth2TokenResponse> for Connection {
             connected_at: Utc::now(),
             access_token: value.access_token,
             refresh_token: value.refresh_token,
-            expires_in: value.expires_in.try_into().expect("only positive numbers"),
+            expires_in: value.expires_in,
         }
     }
 }
