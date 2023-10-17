@@ -386,9 +386,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                 let url = url.urls.first().expect("Creating S3 url failed");
 
-                // truncation is safe because chunk_size is 32 MB
-                #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((url_part - 1) * (CHUNK_SIZE as u32)) as u64;
+                let curr_pos: u64 = (url_part - 1) as u64 * (CHUNK_SIZE as u64);
 
                 let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
                     self,
@@ -578,9 +576,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             })?;
                         let url = url.urls.first().expect("Creating S3 url failed");
 
-                        // truncation is safe because chunk_size is 32 MB
-                        #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                        let curr_pos: u64 = ((url_part - 1) * (chunk_size as u32)) as u64;
+                        let curr_pos: u64 = (url_part - 1) as u64 * (chunk_size as u64);
 
                         let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
                             self,
