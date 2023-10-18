@@ -786,20 +786,27 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     ) -> Result<String, DracoonClientError> {
         // Initialize a variable to keep track of the number of bytes read
         let mut bytes_read = curr_pos.unwrap_or(0);
+        let granularity = 1024; // 1 KB TOD: move to constants if working
         let file_size = file_meta.1;
         // Create an async stream from the reader
         let async_stream = async_stream::stream! {
 
             while let Some(chunk) = stream.next().await {
-                if let Ok(chunk) = &chunk {
-                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
-                    bytes_read = processed;
-
+                let mut offset = 0;
+                let chunk_size = chunk.as_ref().map(|c| c.len()).unwrap_or(0) as u64;
+                
+                while offset < chunk_size {
+                    let end = min(offset + granularity, chunk_size);
+                    bytes_read += end - offset;
+                    
                     if let Some(cb) = callback.clone() {
-                        cb.call(bytes_read, file_meta.1);
+                        cb.call(bytes_read, file_size);
                     }
+                    
+                    offset = end;
                 }
-                yield chunk
+    
+                yield chunk;
             }
         };
 
