@@ -546,6 +546,7 @@ pub struct CreateFileUploadRequest {
 }
 
 impl CreateFileUploadRequest {
+    #[cfg(not(feature = "nfs-upload"))]
     pub fn builder(parent_id: u64, name: String) -> CreateFileUploadRequestBuilder {
         CreateFileUploadRequestBuilder {
             parent_id,
@@ -555,6 +556,21 @@ impl CreateFileUploadRequest {
             classification: None,
             expiration: None,
             direct_s3_upload: Some(true),
+            timestamp_creation: None,
+            timestamp_modification: None,
+        }
+    }
+
+    #[cfg(feature = "nfs-upload")]
+    pub fn builder(parent_id: u64, name: String) -> CreateFileUploadRequestBuilder {
+        CreateFileUploadRequestBuilder {
+            parent_id,
+            name,
+            size: None,
+            notes: None,
+            classification: None,
+            expiration: None,
+            direct_s3_upload: None,
             timestamp_creation: None,
             timestamp_modification: None,
         }
