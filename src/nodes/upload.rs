@@ -381,7 +381,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
         let node = <Dracoon<Connected> as UploadInternalNfs<R>>::finalize_upload::<'_, '_>(
             self,
-            upload_channel.upload_id.clone(),
+            upload_channel.token.clone(),
             complete_upload_req,
         )
         .await
@@ -570,7 +570,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
         let node = <Dracoon<Connected> as UploadInternalNfs<R>>::finalize_upload::<'_, '_>(
             self,
-            upload_channel.upload_id.clone(),
+            upload_channel.token.clone(),
             complete_upload_req,
         )
         .await
