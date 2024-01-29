@@ -37,6 +37,9 @@ pub const ROOMS_ENCRYPT: &str = "encrypt";
 pub const ROOMS_USERS: &str = "users";
 pub const ROOMS_GROUPS: &str = "groups";
 
+#[cfg(feature = "nfs-upload")]
+pub const UPLOADS_BASE: &str = "uploads";
+
 // SHARES
 pub const SHARES_BASE: &str = "shares";
 pub const SHARES_EMAIL: &str = "email";

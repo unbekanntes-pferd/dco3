@@ -537,6 +537,7 @@ pub struct CreateFileUploadRequest {
     parent_id: u64,
     name: String,
     size: Option<u64>,
+    notes: Option<String>,
     classification: Option<u8>,
     expiration: Option<ObjectExpiration>,
     direct_S3_upload: Option<bool>,
@@ -550,6 +551,7 @@ impl CreateFileUploadRequest {
             parent_id,
             name,
             size: None,
+            notes: None,
             classification: None,
             expiration: None,
             direct_s3_upload: Some(true),
@@ -563,6 +565,7 @@ pub struct CreateFileUploadRequestBuilder {
     parent_id: u64,
     name: String,
     size: Option<u64>,
+    notes: Option<String>,
     classification: Option<u8>,
     expiration: Option<ObjectExpiration>,
     direct_s3_upload: Option<bool>,
@@ -593,11 +596,17 @@ impl CreateFileUploadRequestBuilder {
         self.timestamp_modification = Some(timestamp_modification.to_rfc3339());
         self
     }
+
+    pub fn with_notes(mut self, notes: String) -> Self {
+        self.notes = Some(notes);
+        self
+    }
     pub fn build(self) -> CreateFileUploadRequest {
         CreateFileUploadRequest {
             parent_id: self.parent_id,
             name: self.name,
             size: self.size,
+            notes: self.notes,
             classification: self.classification,
             expiration: self.expiration,
             direct_S3_upload: self.direct_s3_upload,
@@ -633,6 +642,69 @@ pub struct CompleteS3FileUploadRequest {
     file_name: Option<String>,
     keep_share_links: Option<bool>,
     file_key: Option<FileKey>,
+}
+
+#[cfg(feature = "nfs-upload")]
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompleteUploadRequest {
+    resolution_strategy: Option<ResolutionStrategy>,
+    file_name: Option<String>,
+    keep_share_links: Option<bool>,
+    file_key: Option<FileKey>,
+}
+
+#[cfg(feature = "nfs-upload")]
+pub struct CompleteUploadRequestBuilder {
+    resolution_strategy: Option<ResolutionStrategy>,
+    file_name: Option<String>,
+    keep_share_links: Option<bool>,
+    file_key: Option<FileKey>,
+}
+
+#[cfg(feature = "nfs-upload")]
+impl CompleteUploadRequest {
+    pub fn builder() -> CompleteUploadRequestBuilder {
+        CompleteUploadRequestBuilder {
+            resolution_strategy: None,
+            file_name: None,
+            keep_share_links: None,
+            file_key: None,
+        }
+    }
+}
+
+#[cfg(feature = "nfs-upload")]
+impl CompleteUploadRequestBuilder {
+    pub fn with_resolution_strategy(mut self, resolution_strategy: ResolutionStrategy) -> Self {
+        self.resolution_strategy = Some(resolution_strategy);
+        self
+    }
+
+    pub fn with_file_name(mut self, file_name: String) -> Self {
+        self.file_name = Some(file_name);
+        self
+    }
+
+    pub fn with_keep_share_links(mut self, keep_share_links: bool) -> Self {
+        self.keep_share_links = Some(keep_share_links);
+        self
+    }
+
+    pub fn with_file_key(mut self, file_key: FileKey) -> Self {
+        self.file_key = Some(file_key);
+        self
+    }
+
+    pub fn build(self) -> CompleteUploadRequest {
+        CompleteUploadRequest {
+            resolution_strategy: self.resolution_strategy,
+            file_name: self.file_name,
+            keep_share_links: self.keep_share_links,
+            file_key: self.file_key,
+        }
+    }
+
 }
 
 pub struct CompleteS3FileUploadRequestBuilder {
