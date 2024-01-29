@@ -597,7 +597,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
                 let file_id = node.id;
                 let public_key = user.public_key_container;
                 let file_key = DracoonCrypto::encrypt_file_key(plain_file_key.clone(), public_key)?;
-                let set_key_req = UserFileKeySetRequest::new(file_id, user_id, file_key);
+                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
                 Ok(set_key_req)
             })
             .collect::<Vec<_>>();
