@@ -31,6 +31,7 @@ use tracing::error;
 
 #[async_trait]
 impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connected> {
+    #[cfg(not(feature = "nfs-upload"))]
     async fn upload<'r>(
         &'r self,
         file_meta: FileMeta,
@@ -79,7 +80,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
     }
 
     #[cfg(feature = "nfs-upload")]
-    async fn upload_nfs<'r>(
+    async fn upload<'r>(
         &'r self,
         file_meta: FileMeta,
         parent_node: &Node,
