@@ -450,7 +450,7 @@ pub trait Rooms {
     /// #  .unwrap();
     /// let policy = PoliciesRoomRequest::builder()
     ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
-    ///                            .with_is_virus_protection_enabled()
+    ///                            .with_virus_protection_enabled()
     ///                            .build();
     /// let _ = dracoon.update_room_policies(123, policy).await.unwrap();
     /// # }

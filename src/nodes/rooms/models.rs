@@ -251,21 +251,21 @@ pub struct PoliciesRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     default_expiration_period: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    is_virus_protection_enabled: Option<bool>,
+    virus_protection_enabled: Option<bool>,
 }
 
 impl PoliciesRoomRequest {
     pub fn builder() -> PoliciesRoomRequestBuilder {
         PoliciesRoomRequestBuilder {
             default_expiration_period: None,
-            is_virus_protection_enabled: None,
+            virus_protection_enabled: None,
         }
     }
 }
 
 pub struct PoliciesRoomRequestBuilder {
     default_expiration_period: Option<u64>,
-    is_virus_protection_enabled: Option<bool>,
+    virus_protection_enabled: Option<bool>,
 }
 
 impl PoliciesRoomRequestBuilder {
@@ -274,15 +274,15 @@ impl PoliciesRoomRequestBuilder {
         self
     }
     
-    pub fn with_is_virus_protection_enabled(mut self, enable_virus_protection: bool) -> Self {
-        self.is_virus_protection_enabled = Some(enable_virus_protection);
+    pub fn with_virus_protection_enabled(mut self, enable_virus_protection: bool) -> Self {
+        self.virus_protection_enabled = Some(enable_virus_protection);
         self
     }
 
     pub fn build(self) -> PoliciesRoomRequest {
         PoliciesRoomRequest {
             default_expiration_period: self.default_expiration_period,
-            is_virus_protection_enabled: self.is_virus_protection_enabled,
+            virus_protection_enabled: self.virus_protection_enabled,
         }
     }
 }

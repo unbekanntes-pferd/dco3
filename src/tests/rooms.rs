@@ -183,7 +183,7 @@ mod tests {
 
         let policy = PoliciesRoomRequest::builder()
             .with_default_expiration_period(60 * 60 * 24 * 7)
-            .with_is_virus_protection_enabled(true)
+            .with_virus_protection_enabled(true)
             .build();
 
         let no_response_body = client.update_room_policies(123, policy).await.unwrap();
