@@ -82,7 +82,7 @@ impl Rooms for Dracoon<Connected> {
         Node::from_response(response).await
     }
 
-    async fn policy_room(
+    async fn update_room_policy(
         &self, 
         room_id: u64,
         policy_room_req: PolicyRoomRequest

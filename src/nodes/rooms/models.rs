@@ -287,6 +287,20 @@ impl PolicyRoomRequestBuilder {
     }
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PolicyRoom {
+    pub default_expiration_period: u64,
+    pub is_virus_protection_enabled: bool,
+}
+
+#[async_trait]
+impl FromResponse for PolicyRoom {
+    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
+        parse_body::<Self, DracoonErrorResponse>(response).await
+    }
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {

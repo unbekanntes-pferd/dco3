@@ -152,7 +152,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_policy_room() {
+    async fn test_update_room_policy() {
         let (client, mut mock_server) = get_connected_client().await;
 
         let room_mock = mock_server
@@ -166,7 +166,7 @@ mod tests {
             .with_is_virus_protection_enabled(true)
             .build();
 
-        let no_response = client.policy_room(123, policy).await.unwrap();
+        let no_response = client.update_room_policy(123, policy).await.unwrap();
 
         assert_eq!(no_response, ())
     }

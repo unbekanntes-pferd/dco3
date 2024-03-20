@@ -430,10 +430,10 @@ pub trait Rooms {
     ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
     ///                            .with_is_virus_protection_enabled()
     ///                            .build();
-    /// let _ = dracoon.policy_room(123, policy).await.unwrap();
+    /// let _ = dracoon.update_room_policy(123, policy).await.unwrap();
     /// # }
     /// ```
-    async fn policy_room(
+    async fn update_room_policy(
         &self,
         room_id: u64,
         policy_room_req: PolicyRoomRequest,
