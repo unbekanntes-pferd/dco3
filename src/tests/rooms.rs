@@ -166,7 +166,6 @@ mod tests {
 
         let room_policies = client.get_room_policies(123).await.unwrap();
 
-
         assert_eq!(room_policies.default_expiration_period, 0);
         assert_eq!(room_policies.is_virus_protection_enabled, false);
     }
@@ -187,9 +186,9 @@ mod tests {
             .with_is_virus_protection_enabled(true)
             .build();
 
-        let no_response = client.update_room_policies(123, policy).await.unwrap();
+        let no_response_body = client.update_room_policies(123, policy).await.unwrap();
 
-        assert_eq!(no_response, ())
+        assert_eq!(no_response_body, ())
     }
 
     #[tokio::test]
