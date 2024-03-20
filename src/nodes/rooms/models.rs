@@ -247,28 +247,28 @@ impl UpdateRoomRequestBuilder {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PolicyRoomRequest {
+pub struct PoliciesRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     default_expiration_period: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     is_virus_protection_enabled: Option<bool>,
 }
 
-impl PolicyRoomRequest {
-    pub fn builder() -> PolicyRoomRequestBuilder {
-        PolicyRoomRequestBuilder {
+impl PoliciesRoomRequest {
+    pub fn builder() -> PoliciesRoomRequestBuilder {
+        PoliciesRoomRequestBuilder {
             default_expiration_period: None,
             is_virus_protection_enabled: None,
         }
     }
 }
 
-pub struct PolicyRoomRequestBuilder {
+pub struct PoliciesRoomRequestBuilder {
     default_expiration_period: Option<u64>,
     is_virus_protection_enabled: Option<bool>,
 }
 
-impl PolicyRoomRequestBuilder {
+impl PoliciesRoomRequestBuilder {
     pub fn with_default_expiration_period(mut self, default_expiration_period: u64) -> Self {
         self.default_expiration_period = Some(default_expiration_period);
         self
@@ -279,8 +279,8 @@ impl PolicyRoomRequestBuilder {
         self
     }
 
-    pub fn build(self) -> PolicyRoomRequest {
-        PolicyRoomRequest {
+    pub fn build(self) -> PoliciesRoomRequest {
+        PoliciesRoomRequest {
             default_expiration_period: self.default_expiration_period,
             is_virus_protection_enabled: self.is_virus_protection_enabled,
         }
@@ -289,13 +289,13 @@ impl PolicyRoomRequestBuilder {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PolicyRoom {
+pub struct PoliciesRoom {
     pub default_expiration_period: u64,
     pub is_virus_protection_enabled: bool,
 }
 
 #[async_trait]
-impl FromResponse for PolicyRoom {
+impl FromResponse for PoliciesRoom {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
         parse_body::<Self, DracoonErrorResponse>(response).await
     }

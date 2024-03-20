@@ -412,9 +412,31 @@ pub trait Rooms {
         room_id: u64,
         config_room_req: ConfigRoomRequest,
     ) -> Result<Node, DracoonClientError>;
+    /// Gets the policy of a room by id.
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, nodes::PoliciesRoom};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client_secret")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    /// let policies = dracoon.get_room_policies(123).await.unwrap();
+    /// # }
+    /// ```
+
+    async fn get_room_policies(
+        &self, 
+        room_id: u64
+    ) -> Result<PoliciesRoom, DracoonClientError>;
     // Set the policy of a room by id.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::PolicyRoomRequest};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, nodes::PoliciesRoomRequest};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -426,17 +448,17 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let policy = PolicyRoomRequest::builder()
+    /// let policy = PoliciesRoomRequest::builder()
     ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
     ///                            .with_is_virus_protection_enabled()
     ///                            .build();
-    /// let _ = dracoon.update_room_policy(123, policy).await.unwrap();
+    /// let _ = dracoon.update_room_policies(123, policy).await.unwrap();
     /// # }
     /// ```
-    async fn update_room_policy(
+    async fn update_room_policies(
         &self,
         room_id: u64,
-        policy_room_req: PolicyRoomRequest,
+        policy_room_req: PoliciesRoomRequest,
     ) -> Result<(), DracoonClientError>;
     // 
     /// Encrypts a room by id.

@@ -6,7 +6,7 @@ mod tests {
         nodes::{
             ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, NodePermissions, RoomUser,
             RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType, RoomGroup, GroupMemberAcceptance,
-            RoomGroupsAddBatchRequestItem, PolicyRoomRequest
+            RoomGroupsAddBatchRequestItem, PoliciesRoomRequest
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -161,12 +161,12 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let policy = PolicyRoomRequest::builder()
+        let policy = PoliciesRoomRequest::builder()
             .with_default_expiration_period(60 * 60 * 24 * 7)
             .with_is_virus_protection_enabled(true)
             .build();
 
-        let no_response = client.update_room_policy(123, policy).await.unwrap();
+        let no_response = client.update_room_policies(123, policy).await.unwrap();
 
         assert_eq!(no_response, ())
     }

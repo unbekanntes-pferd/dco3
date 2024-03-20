@@ -14,7 +14,7 @@ use self::models::{
     RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
-use super::{models::Node, PolicyRoomRequest, Rooms};
+use super::{models::Node, PoliciesRoomRequest, Rooms};
 
 pub mod models;
 
@@ -82,10 +82,28 @@ impl Rooms for Dracoon<Connected> {
         Node::from_response(response).await
     }
 
-    async fn update_room_policy(
+    async fn get_room_policies(
+        &self,
+        room_id: u64,
+    ) -> Result<PoliciesRoom, DracoonClientError> {
+        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOM_POLICIES}");
+        let api_url = self.build_api_url(&url_part);
+
+        let response = self
+            .client
+            .http
+            .get(api_url)
+            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .send()
+            .await?;
+
+        PoliciesRoom::from_response(response).await
+    }
+
+    async fn update_room_policies(
         &self, 
         room_id: u64,
-        policy_room_req: PolicyRoomRequest
+        policy_room_req: PoliciesRoomRequest
     ) -> Result<(), DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOM_POLICIES}");
         let api_url = self.build_api_url(&url_part);
