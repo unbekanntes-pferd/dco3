@@ -6,7 +6,7 @@ mod tests {
         nodes::{
             ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, NodePermissions, RoomUser,
             RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType, RoomGroup, GroupMemberAcceptance,
-            RoomGroupsAddBatchRequestItem
+            RoomGroupsAddBatchRequestItem, PolicyRoomRequest
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -149,6 +149,26 @@ mod tests {
         let room = client.config_room(123, config).await.unwrap();
 
         assert_node(&room);
+    }
+
+    #[tokio::test]
+    async fn test_policy_room() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let room_mock = mock_server
+            .mock("PUT", "/api/v4/nodes/rooms/123/policies")
+            .with_status(204)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let policy = PolicyRoomRequest::builder()
+            .with_default_expiration_period(60 * 60 * 24 * 7)
+            .with_is_virus_protection_enabled(true)
+            .build();
+
+        let no_response = client.policy_room(123, policy).await.unwrap();
+
+        assert_eq!(no_response, ())
     }
 
     #[tokio::test]

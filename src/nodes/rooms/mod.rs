@@ -3,7 +3,7 @@ use reqwest::header;
 
 use crate::{
     auth::{errors::DracoonClientError, Connected},
-    constants::{DRACOON_API_PREFIX, ROOMS_BASE, NODES_BASE, ROOMS_CONFIG, ROOMS_USERS, ROOMS_GROUPS, ROOMS_ENCRYPT},
+    constants::{DRACOON_API_PREFIX, ROOMS_BASE, NODES_BASE, ROOMS_CONFIG,ROOM_POLICIES, ROOMS_USERS, ROOMS_GROUPS, ROOMS_ENCRYPT},
     models::ListAllParams,
     Dracoon, utils::FromResponse,
 };
@@ -14,7 +14,7 @@ use self::models::{
     RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
-use super::{models::Node, Rooms};
+use super::{models::Node, PolicyRoomRequest, Rooms};
 
 pub mod models;
 
@@ -81,6 +81,32 @@ impl Rooms for Dracoon<Connected> {
 
         Node::from_response(response).await
     }
+
+    async fn policy_room(
+        &self, 
+        room_id: u64,
+        policy_room_req: PolicyRoomRequest
+    ) -> Result<(), DracoonClientError> {
+        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOM_POLICIES}");
+        let api_url = self.build_api_url(&url_part);
+
+        let response = self
+            .client
+            .http
+            .put(api_url)
+            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(header::CONTENT_TYPE, "application/json")
+            .json(&policy_room_req)
+            .send()
+            .await?;
+
+        if response.status().is_client_error() || response.status().is_server_error() {
+            return Err(DracoonClientError::from_response(response).await?);
+        }
+
+        Ok(())
+    }
+
     async fn encrypt_room(
         &self,
         room_id: u64,

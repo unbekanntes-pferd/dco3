@@ -247,6 +247,48 @@ impl UpdateRoomRequestBuilder {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PolicyRoomRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    default_expiration_period: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    is_virus_protection_enabled: Option<bool>,
+}
+
+impl PolicyRoomRequest {
+    pub fn builder() -> PolicyRoomRequestBuilder {
+        PolicyRoomRequestBuilder {
+            default_expiration_period: None,
+            is_virus_protection_enabled: None,
+        }
+    }
+}
+
+pub struct PolicyRoomRequestBuilder {
+    default_expiration_period: Option<u64>,
+    is_virus_protection_enabled: Option<bool>,
+}
+
+impl PolicyRoomRequestBuilder {
+    pub fn with_default_expiration_period(mut self, default_expiration_period: u64) -> Self {
+        self.default_expiration_period = Some(default_expiration_period);
+        self
+    }
+    
+    pub fn with_is_virus_protection_enabled(mut self, enable_virus_protection: bool) -> Self {
+        self.is_virus_protection_enabled = Some(enable_virus_protection);
+        self
+    }
+
+    pub fn build(self) -> PolicyRoomRequest {
+        PolicyRoomRequest {
+            default_expiration_period: self.default_expiration_period,
+            is_virus_protection_enabled: self.is_virus_protection_enabled,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     recycle_bin_retention_period: Option<u32>,

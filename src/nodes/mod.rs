@@ -412,6 +412,33 @@ pub trait Rooms {
         room_id: u64,
         config_room_req: ConfigRoomRequest,
     ) -> Result<Node, DracoonClientError>;
+    // Set the policy of a room by id.
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::PolicyRoomRequest};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    /// let policy = PolicyRoomRequest::builder()
+    ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
+    ///                            .with_is_virus_protection_enabled()
+    ///                            .build();
+    /// let _ = dracoon.policy_room(123, policy).await.unwrap();
+    /// # }
+    /// ```
+    async fn policy_room(
+        &self,
+        room_id: u64,
+        policy_room_req: PolicyRoomRequest,
+    ) -> Result<(), DracoonClientError>;
+    // 
     /// Encrypts a room by id.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::EncryptRoomRequest};

@@ -36,6 +36,7 @@ pub const ROOMS_CONFIG: &str = "config";
 pub const ROOMS_ENCRYPT: &str = "encrypt";
 pub const ROOMS_USERS: &str = "users";
 pub const ROOMS_GROUPS: &str = "groups";
+pub const ROOM_POLICIES: &str = "policies";
 
 // SHARES
 pub const SHARES_BASE: &str = "shares";
