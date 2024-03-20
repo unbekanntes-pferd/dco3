@@ -14,7 +14,7 @@ use self::models::{
     RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
-use super::{models::Node, PoliciesRoomRequest, Rooms};
+use super::{models::Node, PoliciesRoom, PoliciesRoomRequest, Rooms};
 
 pub mod models;
 
