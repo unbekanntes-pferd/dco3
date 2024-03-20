@@ -152,6 +152,27 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_room_policies() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let room_policies_res = include_str!("../tests/responses/nodes/room_policies_ok.json");
+
+        let room_policies_mock = mock_server
+            .mock("GET", "/api/v4/nodes/rooms/123/policies")
+            .with_status(200)
+            .with_body(room_policies_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let room_policies = client.get_room_policies(123).await.unwrap();
+
+
+        assert_eq!(room_policies.default_expiration_period, 0);
+        assert_eq!(room_policies.is_virus_protection_enabled, false);
+    }
+
+
+    #[tokio::test]
     async fn test_update_room_policy() {
         let (client, mut mock_server) = get_connected_client().await;
 
