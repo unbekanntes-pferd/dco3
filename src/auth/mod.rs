@@ -673,7 +673,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_auth_code_authentication() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_ok.json");
@@ -704,7 +704,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_refresh_token_authentication() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_ok.json");
@@ -752,7 +752,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_auth_error_handling() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_error.json");
@@ -777,7 +777,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_auth_header() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_ok.json");
@@ -814,7 +814,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_base_url() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_ok.json");
@@ -840,7 +840,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_refresh_token() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_res = include_str!("./tests/auth_ok.json");
@@ -866,7 +866,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_retry_policy() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let auth_mock = mock_server
@@ -888,7 +888,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_token_refresh() {
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
         let auth_mock = mock_server
             .mock("POST", "/oauth/token")

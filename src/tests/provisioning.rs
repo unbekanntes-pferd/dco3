@@ -7,7 +7,7 @@ mod tests {
     };
 
     async fn get_provisioning_client() -> (Dracoon<Provisioning>, mockito::ServerGuard) {
-        let mock_server = mockito::Server::new();
+        let mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
         let dracoon = Dracoon::builder()
