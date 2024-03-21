@@ -416,7 +416,7 @@ pub trait Rooms {
     ) -> Result<Node, DracoonClientError>;
     /// Gets the policies of a room by id.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::PoliciesRoom};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::RoomPolicies};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -434,10 +434,10 @@ pub trait Rooms {
     async fn get_room_policies(
         &self, 
         room_id: u64
-    ) -> Result<PoliciesRoom, DracoonClientError>;
+    ) -> Result<RoomPolicies, DracoonClientError>;
      /// Set the policies of a room by id.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::PoliciesRoomRequest};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::RoomPoliciesRequest};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -449,7 +449,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let new_policies = PoliciesRoomRequest::builder()
+    /// let new_policies = RoomPoliciesRequest::builder()
     ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
     ///                            .with_virus_protection_enabled(true)
     ///                            .build();
@@ -460,7 +460,7 @@ pub trait Rooms {
     async fn update_room_policies(
         &self,
         room_id: u64,
-        policy_room_req: PoliciesRoomRequest,
+        policy_room_req: RoomPoliciesRequest,
     ) -> Result<(), DracoonClientError>;
     /// Encrypts a room by id.
     /// ```no_run

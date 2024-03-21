@@ -6,7 +6,7 @@ mod tests {
         nodes::{
             ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, NodePermissions, RoomUser,
             RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType, RoomGroup, GroupMemberAcceptance,
-            RoomGroupsAddBatchRequestItem, PoliciesRoomRequest
+            RoomGroupsAddBatchRequestItem, RoomPoliciesRequest
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -181,7 +181,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let room_policies = PoliciesRoomRequest::builder()
+        let room_policies = RoomPoliciesRequest::builder()
             .with_default_expiration_period(60 * 60 * 24 * 7)
             .with_virus_protection_enabled(true)
             .build();

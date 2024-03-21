@@ -247,28 +247,28 @@ impl UpdateRoomRequestBuilder {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PoliciesRoomRequest {
+pub struct RoomPoliciesRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     default_expiration_period: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     virus_protection_enabled: Option<bool>,
 }
 
-impl PoliciesRoomRequest {
-    pub fn builder() -> PoliciesRoomRequestBuilder {
-        PoliciesRoomRequestBuilder {
+impl RoomPoliciesRequest {
+    pub fn builder() -> RoomPoliciesRequestBuilder {
+        RoomPoliciesRequestBuilder {
             default_expiration_period: None,
             virus_protection_enabled: None,
         }
     }
 }
 
-pub struct PoliciesRoomRequestBuilder {
+pub struct RoomPoliciesRequestBuilder {
     default_expiration_period: Option<u64>,
     virus_protection_enabled: Option<bool>,
 }
 
-impl PoliciesRoomRequestBuilder {
+impl RoomPoliciesRequestBuilder {
     pub fn with_default_expiration_period(mut self, default_expiration_period: u64) -> Self {
         self.default_expiration_period = Some(default_expiration_period);
         self
@@ -279,8 +279,8 @@ impl PoliciesRoomRequestBuilder {
         self
     }
 
-    pub fn build(self) -> PoliciesRoomRequest {
-        PoliciesRoomRequest {
+    pub fn build(self) -> RoomPoliciesRequest {
+        RoomPoliciesRequest {
             default_expiration_period: self.default_expiration_period,
             virus_protection_enabled: self.virus_protection_enabled,
         }
@@ -289,13 +289,13 @@ impl PoliciesRoomRequestBuilder {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct PoliciesRoom {
+pub struct RoomPolicies {
     pub default_expiration_period: u64,
     pub is_virus_protection_enabled: bool,
 }
 
 #[async_trait]
-impl FromResponse for PoliciesRoom {
+impl FromResponse for RoomPolicies {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
         parse_body::<Self, DracoonErrorResponse>(response).await
     }
