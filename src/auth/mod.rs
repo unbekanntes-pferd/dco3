@@ -90,7 +90,7 @@ impl Connection {
 
     pub fn is_expired(&self) -> bool {
         let now = Utc::now();
-        let expires_at = self.connected_at + chrono::Duration::seconds(self.expires_in as i64);
+        let expires_at = self.connected_at + chrono::Duration::try_seconds(self.expires_in as i64).expect("overflow creating seconds");
         now > expires_at
     }
 
