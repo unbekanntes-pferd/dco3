@@ -36,7 +36,7 @@ pub mod dracoon {
 
     pub async fn get_connected_client() -> (Dracoon<Connected>, mockito::ServerGuard) {
 
-        let mut mock_server = mockito::Server::new();
+        let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
 

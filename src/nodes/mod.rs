@@ -325,6 +325,8 @@ pub trait Folders {
 ///  - Create a room
 ///  - Update a room
 ///  - Configure a room
+///  - Get the policies of a room
+///  - Set the policies of a room
 ///  - Encrypt a room
 ///  - Get groups of a room
 ///  - Add groups to a room
@@ -412,6 +414,54 @@ pub trait Rooms {
         room_id: u64,
         config_room_req: ConfigRoomRequest,
     ) -> Result<Node, DracoonClientError>;
+    /// Gets the policies of a room by id.
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::RoomPolicies};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client_secret")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    ///  let policies = dracoon.get_room_policies(123).await.unwrap();
+    /// # }
+    /// ```
+    async fn get_room_policies(
+        &self, 
+        room_id: u64
+    ) -> Result<RoomPolicies, DracoonClientError>;
+     /// Set the policies of a room by id.
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::RoomPoliciesRequest};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    /// let new_policies = RoomPoliciesRequest::builder()
+    ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
+    ///                            .with_virus_protection_enabled(true)
+    ///                            .build();
+    /// dracoon.update_room_policies(123, new_policies).await.unwrap();
+    /// # }
+    /// ```
+    // 
+    async fn update_room_policies(
+        &self,
+        room_id: u64,
+        policy_room_req: RoomPoliciesRequest,
+    ) -> Result<(), DracoonClientError>;
     /// Encrypts a room by id.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::EncryptRoomRequest};

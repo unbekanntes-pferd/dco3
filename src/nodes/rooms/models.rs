@@ -247,6 +247,62 @@ impl UpdateRoomRequestBuilder {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct RoomPoliciesRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    default_expiration_period: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    virus_protection_enabled: Option<bool>,
+}
+
+impl RoomPoliciesRequest {
+    pub fn builder() -> RoomPoliciesRequestBuilder {
+        RoomPoliciesRequestBuilder {
+            default_expiration_period: None,
+            virus_protection_enabled: None,
+        }
+    }
+}
+
+pub struct RoomPoliciesRequestBuilder {
+    default_expiration_period: Option<u64>,
+    virus_protection_enabled: Option<bool>,
+}
+
+impl RoomPoliciesRequestBuilder {
+    pub fn with_default_expiration_period(mut self, default_expiration_period: u64) -> Self {
+        self.default_expiration_period = Some(default_expiration_period);
+        self
+    }
+    
+    pub fn with_virus_protection_enabled(mut self, enable_virus_protection: bool) -> Self {
+        self.virus_protection_enabled = Some(enable_virus_protection);
+        self
+    }
+
+    pub fn build(self) -> RoomPoliciesRequest {
+        RoomPoliciesRequest {
+            default_expiration_period: self.default_expiration_period,
+            virus_protection_enabled: self.virus_protection_enabled,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoomPolicies {
+    pub default_expiration_period: u64,
+    pub is_virus_protection_enabled: bool,
+}
+
+#[async_trait]
+impl FromResponse for RoomPolicies {
+    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
+        parse_body::<Self, DracoonErrorResponse>(response).await
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     recycle_bin_retention_period: Option<u32>,

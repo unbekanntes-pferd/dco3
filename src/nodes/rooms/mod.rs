@@ -3,7 +3,7 @@ use reqwest::header;
 
 use crate::{
     auth::{errors::DracoonClientError, Connected},
-    constants::{DRACOON_API_PREFIX, ROOMS_BASE, NODES_BASE, ROOMS_CONFIG, ROOMS_USERS, ROOMS_GROUPS, ROOMS_ENCRYPT},
+    constants::{DRACOON_API_PREFIX, ROOMS_BASE, NODES_BASE, ROOMS_CONFIG,ROOMS_POLICIES, ROOMS_USERS, ROOMS_GROUPS, ROOMS_ENCRYPT},
     models::ListAllParams,
     Dracoon, utils::FromResponse,
 };
@@ -11,7 +11,7 @@ use crate::{
 use self::models::{
     ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, RoomGroupList,
     RoomGroupsAddBatchRequest, RoomGroupsDeleteBatchRequest, RoomUserList,
-    RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
+    RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest, RoomPoliciesRequest, RoomPolicies
 };
 
 use super::{models::Node, Rooms};
@@ -80,6 +80,47 @@ impl Rooms for Dracoon<Connected> {
             .await?;
 
         Node::from_response(response).await
+    }
+    async fn get_room_policies(
+        &self,
+        room_id: u64,
+    ) -> Result<RoomPolicies, DracoonClientError> {
+        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
+        let api_url = self.build_api_url(&url_part);
+
+        let response = self
+            .client
+            .http
+            .get(api_url)
+            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .send()
+            .await?;
+
+        RoomPolicies::from_response(response).await
+    }
+    async fn update_room_policies(
+        &self, 
+        room_id: u64,
+        policy_room_req: RoomPoliciesRequest
+    ) -> Result<(), DracoonClientError> {
+        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
+        let api_url = self.build_api_url(&url_part);
+
+        let response = self
+            .client
+            .http
+            .put(api_url)
+            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(header::CONTENT_TYPE, "application/json")
+            .json(&policy_room_req)
+            .send()
+            .await?;
+
+        if response.status().is_client_error() || response.status().is_server_error() {
+            return Err(DracoonClientError::from_response(response).await?);
+        }
+
+        Ok(())
     }
     async fn encrypt_room(
         &self,
