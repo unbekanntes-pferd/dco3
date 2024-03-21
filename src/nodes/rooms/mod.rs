@@ -11,10 +11,10 @@ use crate::{
 use self::models::{
     ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, RoomGroupList,
     RoomGroupsAddBatchRequest, RoomGroupsDeleteBatchRequest, RoomUserList,
-    RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
+    RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest, PoliciesRoomRequest, PoliciesRoom
 };
 
-use super::{models::Node, PoliciesRoom, PoliciesRoomRequest, Rooms};
+use super::{models::Node, Rooms};
 
 pub mod models;
 
@@ -81,7 +81,6 @@ impl Rooms for Dracoon<Connected> {
 
         Node::from_response(response).await
     }
-
     async fn get_room_policies(
         &self,
         room_id: u64,
@@ -99,7 +98,6 @@ impl Rooms for Dracoon<Connected> {
 
         PoliciesRoom::from_response(response).await
     }
-
     async fn update_room_policies(
         &self, 
         room_id: u64,
@@ -124,7 +122,6 @@ impl Rooms for Dracoon<Connected> {
 
         Ok(())
     }
-
     async fn encrypt_room(
         &self,
         room_id: u64,
