@@ -172,7 +172,7 @@ mod tests {
 
 
     #[tokio::test]
-    async fn test_update_room_policy() {
+    async fn test_update_room_policies() {
         let (client, mut mock_server) = get_connected_client().await;
 
         let room_mock = mock_server
@@ -181,12 +181,12 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let policy = PoliciesRoomRequest::builder()
+        let room_policies = PoliciesRoomRequest::builder()
             .with_default_expiration_period(60 * 60 * 24 * 7)
             .with_virus_protection_enabled(true)
             .build();
 
-        let no_response_body = client.update_room_policies(123, policy).await.unwrap();
+        let no_response_body = client.update_room_policies(123, room_policies).await.unwrap();
 
         assert_eq!(no_response_body, ())
     }
