@@ -3,7 +3,14 @@ use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
-use crate::{nodes::models::UserInfo, user::models::RoleList, utils::{FromResponse, parse_body}, auth::DracoonErrorResponse, DracoonClientError, models::{RangedItems, ObjectExpiration, FilterOperator, FilterQuery, SortOrder, SortQuery}};
+use crate::{
+    auth::DracoonErrorResponse,
+    models::{FilterOperator, FilterQuery, ObjectExpiration, RangedItems, SortOrder, SortQuery},
+    nodes::models::UserInfo,
+    user::models::RoleList,
+    utils::{parse_body, FromResponse},
+    DracoonClientError,
+};
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
@@ -16,7 +23,7 @@ pub struct Group {
     pub updated_by: Option<UserInfo>,
     pub cnt_users: Option<u64>,
     pub expire_at: Option<String>,
-    pub group_roles: Option<RoleList>
+    pub group_roles: Option<RoleList>,
 }
 
 pub type GroupList = RangedItems<Group>;
@@ -25,7 +32,7 @@ pub type GroupList = RangedItems<Group>;
 impl FromResponse for GroupList {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
         parse_body::<Self, DracoonErrorResponse>(response).await
-    }   
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -33,14 +40,14 @@ impl FromResponse for GroupList {
 pub struct CreateGroupRequest {
     name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    expiration: Option<ObjectExpiration>
+    expiration: Option<ObjectExpiration>,
 }
 
 impl CreateGroupRequest {
     pub fn new(name: impl Into<String>, expiration: Option<ObjectExpiration>) -> Self {
         Self {
             name: name.into(),
-            expiration
+            expiration,
         }
     }
 }
@@ -51,60 +58,54 @@ pub struct UpdateGroupRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    expiration: Option<ObjectExpiration>
+    expiration: Option<ObjectExpiration>,
 }
 
 impl UpdateGroupRequest {
-
     pub fn name(name: impl Into<String>) -> Self {
         Self {
             name: Some(name.into()),
-            expiration: None
+            expiration: None,
         }
     }
 
     pub fn expiration(expiration: ObjectExpiration) -> Self {
         Self {
             name: None,
-            expiration: Some(expiration)
+            expiration: Some(expiration),
         }
     }
 
     pub fn new(name: impl Into<String>, expiration: ObjectExpiration) -> Self {
         Self {
             name: Some(name.into()),
-            expiration: Some(expiration)
+            expiration: Some(expiration),
         }
     }
-
 }
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangeGroupMembersRequest {
-    ids: Vec<u64>
+    ids: Vec<u64>,
 }
 
 impl From<Vec<u64>> for ChangeGroupMembersRequest {
     fn from(ids: Vec<u64>) -> Self {
-        Self {
-            ids
-        }
+        Self { ids }
     }
 }
 
 impl ChangeGroupMembersRequest {
     pub fn new(ids: Vec<u64>) -> Self {
-        Self {
-            ids
-        }
+        Self { ids }
     }
 }
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoomList {
-    pub items: Vec<LastAdminGroupRoom>
+    pub items: Vec<LastAdminGroupRoom>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -113,8 +114,7 @@ pub struct LastAdminGroupRoom {
     pub id: u64,
     pub name: String,
     pub parent_path: String,
-    pub parent_id: Option<u64>
-
+    pub parent_id: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -130,7 +130,7 @@ pub type GroupUserList = RangedItems<GroupUser>;
 impl FromResponse for GroupUserList {
     async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
         parse_body::<Self, DracoonErrorResponse>(response).await
-    }   
+    }
 }
 
 #[derive(Debug)]
@@ -145,7 +145,7 @@ impl FilterQuery for GroupsFilter {
             GroupsFilter::Name(op, val) => {
                 let op: String = op.into();
                 format!("name:{}:{}", op, val)
-            },
+            }
             GroupsFilter::HasRole(op, val) => {
                 let op: String = op.into();
                 format!("hasRole:{}:{}", op, val)
@@ -178,15 +178,15 @@ impl SortQuery for GroupsSortBy {
             GroupsSortBy::Name(order) => {
                 let order: String = order.into();
                 format!("name:{}", order)
-            },
+            }
             GroupsSortBy::CreatedAt(order) => {
                 let order: String = order.into();
                 format!("createdAt:{}", order)
-            },
+            }
             GroupsSortBy::ExpireAt(order) => {
                 let order: String = order.into();
                 format!("expireAt:{}", order)
-            },
+            }
             GroupsSortBy::CntUsers(order) => {
                 let order: String = order.into();
                 format!("cntUsers:{}", order)
@@ -237,7 +237,7 @@ impl FilterQuery for GroupUsersFilter {
             GroupUsersFilter::User(op, val) => {
                 let op: String = op.into();
                 format!("user:{}:{}", op, val)
-            },
+            }
             GroupUsersFilter::IsMember(op, val) => {
                 let op: String = op.into();
                 format!("isMember:{}:{}", op, val)

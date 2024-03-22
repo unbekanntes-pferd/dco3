@@ -1,19 +1,20 @@
 use async_trait::async_trait;
 use reqwest::header;
 
+use crate::constants::{DRACOON_API_PREFIX, SHARES_BASE, SHARES_EMAIL, SHARES_UPLOAD};
 use crate::models::ListAllParams;
 use crate::utils::FromResponse;
-use crate::{Dracoon, auth::Connected, DracoonClientError};
-use crate::constants::{DRACOON_API_PREFIX, SHARES_BASE, SHARES_UPLOAD, SHARES_EMAIL};
+use crate::{auth::Connected, Dracoon, DracoonClientError};
 
-use super::UploadShares;
 use super::models::*;
-
+use super::UploadShares;
 
 #[async_trait]
 impl UploadShares for Dracoon<Connected> {
-
-    async fn get_upload_shares(&self, params: Option<ListAllParams>) -> Result<UploadSharesList, DracoonClientError> {
+    async fn get_upload_shares(
+        &self,
+        params: Option<ListAllParams>,
+    ) -> Result<UploadSharesList, DracoonClientError> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}");
 
@@ -41,8 +42,11 @@ impl UploadShares for Dracoon<Connected> {
 
         UploadSharesList::from_response(response).await
     }
-    
-    async fn update_upload_shares(&self, update: UpdateUploadSharesBulkRequest) -> Result<(), DracoonClientError> {
+
+    async fn update_upload_shares(
+        &self,
+        update: UpdateUploadSharesBulkRequest,
+    ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}");
 
         let api_url = self.build_api_url(&url_part);
@@ -58,13 +62,18 @@ impl UploadShares for Dracoon<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response).await.expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response)
+                .await
+                .expect("Could not parse error response"));
         }
 
         Ok(())
     }
 
-    async fn delete_upload_shares(&self, delete: DeleteUploadSharesRequest) -> Result<(), DracoonClientError> {
+    async fn delete_upload_shares(
+        &self,
+        delete: DeleteUploadSharesRequest,
+    ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}");
 
         let api_url = self.build_api_url(&url_part);
@@ -80,13 +89,18 @@ impl UploadShares for Dracoon<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response).await.expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response)
+                .await
+                .expect("Could not parse error response"));
         }
 
         Ok(())
     }
 
-    async fn create_upload_share(&self, create: CreateUploadShareRequest) -> Result<UploadShare, DracoonClientError> {
+    async fn create_upload_share(
+        &self,
+        create: CreateUploadShareRequest,
+    ) -> Result<UploadShare, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}");
 
         let api_url = self.build_api_url(&url_part);
@@ -104,8 +118,14 @@ impl UploadShares for Dracoon<Connected> {
         UploadShare::from_response(response).await
     }
 
-    async fn get_upload_share(&self, upload_share_id: u64) -> Result<UploadShare, DracoonClientError> {
-        let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}", id = upload_share_id);
+    async fn get_upload_share(
+        &self,
+        upload_share_id: u64,
+    ) -> Result<UploadShare, DracoonClientError> {
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}",
+            id = upload_share_id
+        );
 
         let api_url = self.build_api_url(&url_part);
 
@@ -121,8 +141,15 @@ impl UploadShares for Dracoon<Connected> {
         UploadShare::from_response(response).await
     }
 
-    async fn update_upload_share(&self, upload_share_id: u64, update: UpdateUploadShareRequest) -> Result<UploadShare, DracoonClientError> {
-        let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}", id = upload_share_id);
+    async fn update_upload_share(
+        &self,
+        upload_share_id: u64,
+        update: UpdateUploadShareRequest,
+    ) -> Result<UploadShare, DracoonClientError> {
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}",
+            id = upload_share_id
+        );
 
         let api_url = self.build_api_url(&url_part);
 
@@ -140,7 +167,10 @@ impl UploadShares for Dracoon<Connected> {
     }
 
     async fn delete_upload_share(&self, upload_share_id: u64) -> Result<(), DracoonClientError> {
-        let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}", id = upload_share_id);
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}",
+            id = upload_share_id
+        );
 
         let api_url = self.build_api_url(&url_part);
 
@@ -154,14 +184,23 @@ impl UploadShares for Dracoon<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response).await.expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response)
+                .await
+                .expect("Could not parse error response"));
         }
 
         Ok(())
     }
 
-    async fn send_upload_share_email(&self, upload_share_id: u64, email: UploadShareLinkEmail) -> Result<(), DracoonClientError> {
-        let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}/{SHARES_EMAIL}", id = upload_share_id);
+    async fn send_upload_share_email(
+        &self,
+        upload_share_id: u64,
+        email: UploadShareLinkEmail,
+    ) -> Result<(), DracoonClientError> {
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_UPLOAD}/{id}/{SHARES_EMAIL}",
+            id = upload_share_id
+        );
 
         let api_url = self.build_api_url(&url_part);
 
@@ -176,10 +215,11 @@ impl UploadShares for Dracoon<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response).await.expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response)
+                .await
+                .expect("Could not parse error response"));
         }
 
         Ok(())
     }
-    
 }

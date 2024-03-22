@@ -3,7 +3,12 @@ use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
-use crate::{user::UserAuthData, KeyValueEntry, RangedItems, utils::{FromResponse, parse_body}, DracoonClientError, auth::DracoonErrorResponse};
+use crate::{
+    auth::DracoonErrorResponse,
+    user::UserAuthData,
+    utils::{parse_body, FromResponse},
+    DracoonClientError, KeyValueEntry, RangedItems,
+};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CustomerAttributes {
@@ -16,7 +21,10 @@ impl CustomerAttributes {
     }
 
     pub fn add_attribute(&mut self, key: impl Into<String>, value: impl Into<String>) {
-        let attrib = KeyValueEntry { key: key.into(), value: value.into() };
+        let attrib = KeyValueEntry {
+            key: key.into(),
+            value: value.into(),
+        };
         self.items.push(attrib);
     }
 }
@@ -52,8 +60,6 @@ impl FromResponse for CustomerList {
         parse_body::<Self, DracoonErrorResponse>(response).await
     }
 }
-
-
 
 #[async_trait]
 impl FromResponse for AttributesResponse {
@@ -243,7 +249,7 @@ pub struct NewCustomerResponse {
     pub first_admin_user: FirstAdminUser,
     pub customer_attributes: Option<CustomerAttributes>,
     pub provider_customer_id: Option<String>,
-    pub webhooks_max: Option<u64>
+    pub webhooks_max: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, FromResponse)]
@@ -310,7 +316,10 @@ impl UpdateCustomerRequestBuilder {
         self
     }
 
-    pub fn with_customer_contract_type(mut self, customer_contract_type: impl Into<String>) -> Self {
+    pub fn with_customer_contract_type(
+        mut self,
+        customer_contract_type: impl Into<String>,
+    ) -> Self {
         self.customer_contract_type = Some(customer_contract_type.into());
         self
     }

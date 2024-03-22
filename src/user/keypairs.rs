@@ -17,9 +17,8 @@ impl UserAccountKeyPairs for Dracoon<Connected> {
         &self,
         secret: &str,
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
-        let url_part = format!(
-            "{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}"
-        );
+        let url_part =
+            format!("{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}");
 
         let url = self.build_api_url(&url_part);
 
@@ -39,9 +38,8 @@ impl UserAccountKeyPairs for Dracoon<Connected> {
     }
 
     async fn set_user_keypair(&self, secret: &str) -> Result<(), DracoonClientError> {
-        let url_part = format!(
-            "{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}"
-        );
+        let url_part =
+            format!("{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}");
 
         let url = self.build_api_url(&url_part);
 
@@ -63,9 +61,8 @@ impl UserAccountKeyPairs for Dracoon<Connected> {
     }
 
     async fn delete_user_keypair(&self) -> Result<(), DracoonClientError> {
-        let url_part = format!(
-            "{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}"
-        );
+        let url_part =
+            format!("{DRACOON_API_PREFIX}/{USER_BASE}/{USER_ACCOUNT}/{USER_ACCOUNT_KEYPAIR}");
 
         let url = self.build_api_url(&url_part);
 

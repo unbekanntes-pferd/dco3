@@ -3,8 +3,6 @@
 pub use self::{models::*, rooms::models::*};
 use super::{auth::errors::DracoonClientError, models::ListAllParams};
 use async_trait::async_trait;
-
-use std::io::Write;
 use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 
 pub mod download;
@@ -244,28 +242,28 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let mut missing_keys = dracoon.distribute_missing_keys(None, None, None).await.unwrap();
-    /// 
+    ///
     /// while missing_keys > 100 {
     /// // loop until no more keys need distribution
     /// missing_keys = dracoon.distribute_missing_keys(None, None, None).await.unwrap();
     /// }
-    /// 
+    ///
     /// // distribute missing keys for a specific room
     /// let missing_room_keys = dracoon.distribute_missing_keys(Some(123), None, None).await.unwrap();
-    /// 
+    ///
     /// // distribute missing keys for a specific file
     /// let missing_file_keys = dracoon.distribute_missing_keys(None, Some(123), None).await.unwrap();
-    /// 
+    ///
     /// // distribute missing keys for a specific user
     /// let missing_user_keys = dracoon.distribute_missing_keys(None, None, Some(123)).await.unwrap();
-    /// 
+    ///
     /// # }
-    /// 
+    ///
     async fn distribute_missing_keys(
         &self,
         room_id: Option<u64>,
         file_id: Option<u64>,
-        user_id: Option<u64>
+        user_id: Option<u64>,
     ) -> Result<u64, DracoonClientError>;
 }
 
@@ -431,11 +429,8 @@ pub trait Rooms {
     ///  let policies = dracoon.get_room_policies(123).await.unwrap();
     /// # }
     /// ```
-    async fn get_room_policies(
-        &self, 
-        room_id: u64
-    ) -> Result<RoomPolicies, DracoonClientError>;
-     /// Set the policies of a room by id.
+    async fn get_room_policies(&self, room_id: u64) -> Result<RoomPolicies, DracoonClientError>;
+    /// Set the policies of a room by id.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Rooms, nodes::RoomPoliciesRequest};
     /// # #[tokio::main]
@@ -456,7 +451,7 @@ pub trait Rooms {
     /// dracoon.update_room_policies(123, new_policies).await.unwrap();
     /// # }
     /// ```
-    // 
+    //
     async fn update_room_policies(
         &self,
         room_id: u64,

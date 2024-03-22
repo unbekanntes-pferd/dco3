@@ -10,7 +10,7 @@ use crate::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,
     },
-    nodes::{MissingKeysResponse, UserFileKeySetBatchRequest, UseKey},
+    nodes::{MissingKeysResponse, UseKey, UserFileKeySetBatchRequest},
     utils::FromResponse,
     Dracoon, DracoonClientError, ListAllParams,
 };
@@ -40,7 +40,8 @@ impl RescueKeyPair for Dracoon<Connected> {
             missing_keys.range.as_ref().unwrap().total
         };
 
-        let key_reqs = UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;
+        let key_reqs =
+            UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;
 
         if !key_reqs.is_empty() {
             self.set_file_keys(key_reqs).await?;
@@ -165,10 +166,7 @@ impl RescueKeypairInternal for Dracoon<Connected> {
 
 #[cfg(test)]
 mod tests {
-    use dco3_crypto::{
-        DracoonCryptoError, FileKeyVersion,
-        UserKeyPairVersion,
-    };
+    use dco3_crypto::{DracoonCryptoError, FileKeyVersion, UserKeyPairVersion};
 
     use crate::{
         settings::{keypair::RescueKeypairInternal, RescueKeyPair},
@@ -183,7 +181,10 @@ mod tests {
         let response = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0",
+            )
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -252,7 +253,6 @@ mod tests {
         keypair_mock.assert();
     }
 
-
     #[tokio::test]
     async fn test_distribute_missing_keys() {
         let (client, mut mock_server) = get_connected_client().await;
@@ -261,7 +261,10 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0",
+            )
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)
@@ -292,7 +295,10 @@ mod tests {
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
         let missing_keys_mock = mock_server
-            .mock("GET", "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0")
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0",
+            )
             .with_body(response)
             .with_header("content-type", "application/json")
             .with_status(200)

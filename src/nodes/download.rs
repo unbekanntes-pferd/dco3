@@ -14,10 +14,9 @@ use async_trait::async_trait;
 use dco3_crypto::{ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto, FileKey};
 use futures_util::TryStreamExt;
 use reqwest::header::{self, CONTENT_LENGTH, RANGE};
+use std::cmp::min;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
-use std::{cmp::min, io::Write};
 use tracing::{debug, error};
-
 
 #[async_trait]
 impl Download for Dracoon<Connected> {
@@ -525,7 +524,10 @@ mod tests {
             .await;
 
         assert!(download_res.is_err());
-        assert_eq!(download_res.err().unwrap(), DracoonClientError::MissingEncryptionSecret);
+        assert_eq!(
+            download_res.err().unwrap(),
+            DracoonClientError::MissingEncryptionSecret
+        );
     }
 
     async fn test_download_unencrypted_node() {

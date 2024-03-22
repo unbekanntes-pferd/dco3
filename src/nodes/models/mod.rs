@@ -262,8 +262,6 @@ pub struct Node {
     pub auth_parent_id: Option<u64>,
 }
 
-
-
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum NodeType {
     #[serde(rename = "room")]
@@ -508,7 +506,6 @@ pub struct PresignedUrl {
 pub struct PresignedUrlList {
     pub urls: Vec<PresignedUrl>,
 }
-
 
 #[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
@@ -1024,7 +1021,6 @@ pub struct MissingKeysResponse {
     pub users: Vec<UserUserPublicKey>,
     pub files: Vec<FileFileKeys>,
 }
-
 
 #[derive(Debug, Serialize, Default)]
 #[serde(rename_all = "camelCase")]

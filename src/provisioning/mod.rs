@@ -18,11 +18,11 @@ use crate::{
 #[async_trait]
 /// This trait contains all methods for customer provisioning.
 /// To use this trait, you need to create a client in `Provisioning` state.
-/// 
+///
 /// ```no_run
-/// 
+///
 /// use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 /// // the client only requires passing the base url and a provisioning token
@@ -32,10 +32,10 @@ use crate::{
 ///    .with_provisioning_token("some_token")
 ///    .build_provisioning()
 ///    .unwrap();
-/// 
+///
 /// // now you can use the client in provisioning state
 /// let customers = dracoon.get_customers(None).await.unwrap();
-/// 
+///
 /// }
 pub trait CustomerProvisioning {
     /// Returns a list of customers
@@ -83,7 +83,7 @@ pub trait CustomerProvisioning {
     /// #   .build_provisioning()
     /// #   .unwrap();
     /// let customer = dracoon.get_customer(123, None).await.unwrap();
-    /// 
+    ///
     /// // include attributes
     /// let customer = dracoon.get_customer(123, Some(true)).await.unwrap();
     /// # }
@@ -102,13 +102,13 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// 
+    ///
     /// let update = UpdateCustomerRequest::builder()
     ///    .with_company_name("Foo Inc.")
     ///    .build();
-            
+
     /// let customer = dracoon.update_customer(123, update).await.unwrap();
-    /// 
+    ///
     /// # }
     async fn update_customer(
         &self,
@@ -125,9 +125,9 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// 
+    ///
     /// dracoon.delete_customer(123).await.unwrap();
-    /// 
+    ///
     /// # }
     async fn delete_customer(&self, id: u64) -> Result<(), DracoonClientError>;
     /// Returns a list of customer users
@@ -142,7 +142,11 @@ pub trait CustomerProvisioning {
     /// #   .unwrap();
     /// let users = dracoon.get_customer_users(123, None).await.unwrap();
     /// # }
-    async fn get_customer_users(&self, id: u64, params: Option<ListAllParams>) -> Result<UserList, DracoonClientError>;
+    async fn get_customer_users(
+        &self,
+        id: u64,
+        params: Option<ListAllParams>,
+    ) -> Result<UserList, DracoonClientError>;
     /// Returns a list of customer attributes
     /// ```no_run
     /// # use dco3::{Dracoon, OAuth2Flow, CustomerProvisioning};
@@ -318,7 +322,11 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
 
         Ok(())
     }
-    async fn get_customer_users(&self, id: u64, params: Option<ListAllParams>) -> Result<UserList, DracoonClientError> {
+    async fn get_customer_users(
+        &self,
+        id: u64,
+        params: Option<ListAllParams>,
+    ) -> Result<UserList, DracoonClientError> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}/{PROVISIONING_CUSTOMER_USERS}");
 

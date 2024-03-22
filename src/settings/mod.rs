@@ -25,29 +25,28 @@ pub trait RescueKeyPair {
     /// #  .await
     /// #  .unwrap();
     /// let mut missing_keys = dracoon.distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
-    /// 
+    ///
     /// while missing_keys > 100 {
     /// // loop until no more keys need distribution
     /// missing_keys = dracoon.distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
     /// }
-    /// 
+    ///
     /// // distribute missing keys for a specific room
     /// let missing_room_keys = dracoon.distribute_missing_keys("rescue_key_secret", Some(123), None, None).await.unwrap();
-    /// 
+    ///
     /// // distribute missing keys for a specific file
     /// let missing_file_keys = dracoon.distribute_missing_keys("rescue_key_secret", None, Some(123), None).await.unwrap();
-    /// 
+    ///
     /// // distribute missing keys for a specific user
     /// let missing_user_keys = dracoon.distribute_missing_keys("rescue_key_secret", None, None, Some(123)).await.unwrap();
-    /// 
+    ///
     /// # }
-    /// 
+    ///
     async fn distribute_missing_keys(
         &self,
         rescue_key_secret: &str,
         room_id: Option<u64>,
         file_id: Option<u64>,
-        user_id: Option<u64>
+        user_id: Option<u64>,
     ) -> Result<u64, DracoonClientError>;
 }
-

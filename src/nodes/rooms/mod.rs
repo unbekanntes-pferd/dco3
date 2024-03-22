@@ -3,15 +3,19 @@ use reqwest::header;
 
 use crate::{
     auth::{errors::DracoonClientError, Connected},
-    constants::{DRACOON_API_PREFIX, ROOMS_BASE, NODES_BASE, ROOMS_CONFIG,ROOMS_POLICIES, ROOMS_USERS, ROOMS_GROUPS, ROOMS_ENCRYPT},
+    constants::{
+        DRACOON_API_PREFIX, NODES_BASE, ROOMS_BASE, ROOMS_CONFIG, ROOMS_ENCRYPT, ROOMS_GROUPS,
+        ROOMS_POLICIES, ROOMS_USERS,
+    },
     models::ListAllParams,
-    Dracoon, utils::FromResponse,
+    utils::FromResponse,
+    Dracoon,
 };
 
 use self::models::{
     ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, RoomGroupList,
-    RoomGroupsAddBatchRequest, RoomGroupsDeleteBatchRequest, RoomUserList,
-    RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest, RoomPoliciesRequest, RoomPolicies
+    RoomGroupsAddBatchRequest, RoomGroupsDeleteBatchRequest, RoomPolicies, RoomPoliciesRequest,
+    RoomUserList, RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
 use super::{models::Node, Rooms};
@@ -36,7 +40,7 @@ impl Rooms for Dracoon<Connected> {
             .json(&create_room_req)
             .send()
             .await?;
-        
+
         Node::from_response(response).await
     }
     async fn update_room(
@@ -58,15 +62,14 @@ impl Rooms for Dracoon<Connected> {
             .await?;
 
         Node::from_response(response).await
-
     }
     async fn config_room(
         &self,
         room_id: u64,
         config_room_req: ConfigRoomRequest,
     ) -> Result<Node, DracoonClientError> {
-
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_CONFIG}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_CONFIG}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -81,11 +84,9 @@ impl Rooms for Dracoon<Connected> {
 
         Node::from_response(response).await
     }
-    async fn get_room_policies(
-        &self,
-        room_id: u64,
-    ) -> Result<RoomPolicies, DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
+    async fn get_room_policies(&self, room_id: u64) -> Result<RoomPolicies, DracoonClientError> {
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -99,11 +100,12 @@ impl Rooms for Dracoon<Connected> {
         RoomPolicies::from_response(response).await
     }
     async fn update_room_policies(
-        &self, 
+        &self,
         room_id: u64,
-        policy_room_req: RoomPoliciesRequest
+        policy_room_req: RoomPoliciesRequest,
     ) -> Result<(), DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -127,7 +129,8 @@ impl Rooms for Dracoon<Connected> {
         room_id: u64,
         encrypt_room_req: EncryptRoomRequest,
     ) -> Result<Node, DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_ENCRYPT}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_ENCRYPT}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -140,7 +143,6 @@ impl Rooms for Dracoon<Connected> {
             .send()
             .await?;
 
-
         Node::from_response(response).await
     }
     async fn get_room_groups(
@@ -148,19 +150,21 @@ impl Rooms for Dracoon<Connected> {
         room_id: u64,
         params: Option<ListAllParams>,
     ) -> Result<RoomGroupList, DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
         let mut api_url = self.build_api_url(&url_part);
 
         let params = params.unwrap_or_default();
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
 
-        api_url.query_pairs_mut()
-        .extend_pairs(params.limit.map(|limit| ("limit", limit.to_string())))
-        .extend_pairs(params.offset.map(|offset| ("offset", offset.to_string())))
-        .extend_pairs(params.filter.map(|_| ("filter", filters)))
-        .extend_pairs(params.sort.map(|_| ("sort", sorts)))
-        .finish();
+        api_url
+            .query_pairs_mut()
+            .extend_pairs(params.limit.map(|limit| ("limit", limit.to_string())))
+            .extend_pairs(params.offset.map(|offset| ("offset", offset.to_string())))
+            .extend_pairs(params.filter.map(|_| ("filter", filters)))
+            .extend_pairs(params.sort.map(|_| ("sort", sorts)))
+            .finish();
 
         let response = self
             .client
@@ -171,15 +175,14 @@ impl Rooms for Dracoon<Connected> {
             .await?;
 
         RoomGroupList::from_response(response).await
-
-    
     }
     async fn update_room_groups(
         &self,
         room_id: u64,
         room_groups_update_req: RoomGroupsAddBatchRequest,
     ) -> Result<(), DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -197,14 +200,14 @@ impl Rooms for Dracoon<Connected> {
         }
 
         Ok(())
-
     }
     async fn delete_room_groups(
         &self,
         room_id: u64,
         room_groups_del_req: RoomGroupsDeleteBatchRequest,
     ) -> Result<(), DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -228,7 +231,8 @@ impl Rooms for Dracoon<Connected> {
         room_id: u64,
         params: Option<ListAllParams>,
     ) -> Result<RoomUserList, DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
         let mut api_url = self.build_api_url(&url_part);
 
         let params = params.unwrap_or_default();
@@ -236,12 +240,13 @@ impl Rooms for Dracoon<Connected> {
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
 
-        api_url.query_pairs_mut()
-        .extend_pairs(params.limit.map(|limit| ("limit", limit.to_string())))
-        .extend_pairs(params.offset.map(|offset| ("offset", offset.to_string())))
-        .extend_pairs(params.filter.map(|filter| ("filter", filters)))
-        .extend_pairs(params.sort.map(|sort| ("sort", sorts)))
-        .finish();
+        api_url
+            .query_pairs_mut()
+            .extend_pairs(params.limit.map(|limit| ("limit", limit.to_string())))
+            .extend_pairs(params.offset.map(|offset| ("offset", offset.to_string())))
+            .extend_pairs(params.filter.map(|filter| ("filter", filters)))
+            .extend_pairs(params.sort.map(|sort| ("sort", sorts)))
+            .finish();
 
         let response = self
             .client
@@ -252,14 +257,14 @@ impl Rooms for Dracoon<Connected> {
             .await?;
 
         RoomUserList::from_response(response).await
- 
     }
     async fn update_room_users(
         &self,
         room_id: u64,
         room_users_update_req: RoomUsersAddBatchRequest,
     ) -> Result<(), DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -277,14 +282,14 @@ impl Rooms for Dracoon<Connected> {
         }
 
         Ok(())
-  
     }
     async fn delete_room_users(
         &self,
         room_id: u64,
         room_users_del_req: RoomUsersDeleteBatchRequest,
     ) -> Result<(), DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
+        let url_part =
+            format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -296,7 +301,6 @@ impl Rooms for Dracoon<Connected> {
             .json(&room_users_del_req)
             .send()
             .await?;
-
 
         if response.status().is_client_error() || response.status().is_server_error() {
             return Err(DracoonClientError::from_response(response).await?);

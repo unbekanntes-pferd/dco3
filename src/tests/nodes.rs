@@ -1,7 +1,10 @@
 #[cfg(test)]
 pub mod tests {
     use crate::{
-        nodes::{Node, NodeType, NodesFilter, NodesSortBy, UserType, NodesSearchFilter, NodesSearchSortBy},
+        nodes::{
+            Node, NodeType, NodesFilter, NodesSearchFilter, NodesSearchSortBy, NodesSortBy,
+            UserType,
+        },
         tests::dracoon::get_connected_client,
         *,
     };
@@ -447,12 +450,10 @@ pub mod tests {
         let node = nodes.items.first().unwrap();
 
         assert_node(node);
-
     }
 
     #[tokio::test]
     async fn test_search_nodes_with_offset() {
-
         let (dracoon, mock_server) = get_connected_client().await;
 
         let mut mock_server = mock_server;
@@ -460,10 +461,7 @@ pub mod tests {
         let nodes_res = include_str!("./responses/nodes/nodes_ok.json");
 
         let nodes_mock = mock_server
-            .mock(
-                "GET",
-                "/api/v4/nodes/search?search_string=test&offset=500",
-            )
+            .mock("GET", "/api/v4/nodes/search?search_string=test&offset=500")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(nodes_res)
@@ -483,13 +481,10 @@ pub mod tests {
         let node = nodes.items.first().unwrap();
 
         assert_node(node);
-
     }
 
     #[tokio::test]
     async fn test_search_nodes_with_filter() {
-
-
         let (dracoon, mock_server) = get_connected_client().await;
 
         let mut mock_server = mock_server;
@@ -506,7 +501,9 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let params = ListAllParams::builder().with_filter(NodesSearchFilter::parent_path_contains("test")).build();
+        let params = ListAllParams::builder()
+            .with_filter(NodesSearchFilter::parent_path_contains("test"))
+            .build();
 
         let nodes = dracoon
             .search_nodes("test", None, None, Some(params))
@@ -520,12 +517,10 @@ pub mod tests {
         let node = nodes.items.first().unwrap();
 
         assert_node(node);
-
     }
 
     #[tokio::test]
     async fn test_search_nodes_with_sort() {
-
         let (dracoon, mock_server) = get_connected_client().await;
 
         let mut mock_server = mock_server;
@@ -542,7 +537,9 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let params = ListAllParams::builder().with_sort(NodesSearchSortBy::FileType(SortOrder::Asc)).build();
+        let params = ListAllParams::builder()
+            .with_sort(NodesSearchSortBy::FileType(SortOrder::Asc))
+            .build();
 
         let nodes = dracoon
             .search_nodes("test", None, None, Some(params))
@@ -556,12 +553,10 @@ pub mod tests {
         let node = nodes.items.first().unwrap();
 
         assert_node(node);
-
     }
 
     #[tokio::test]
     async fn test_search_nodes_with_depth_level() {
-
         let (dracoon, mock_server) = get_connected_client().await;
 
         let mut mock_server = mock_server;
@@ -590,7 +585,5 @@ pub mod tests {
         let node = nodes.items.first().unwrap();
 
         assert_node(node);
-
     }
-
 }

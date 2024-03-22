@@ -680,7 +680,8 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             upload_channel.upload_id.clone(),
             complete_upload_req,
         )
-        .await.map_err(|err| {
+        .await
+        .map_err(|err| {
             error!("Error finalizing upload: {}", err);
             err
         })?;
@@ -695,7 +696,8 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 self,
                 upload_channel.upload_id.clone(),
             )
-            .await.map_err(|err| {
+            .await
+            .map_err(|err| {
                 error!("Error getting upload status: {}", err);
                 err
             })?;
@@ -712,7 +714,8 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                                 .expect("Node must be set if status is done")
                                 .id,
                         )
-                        .await.map_err(|err| {
+                        .await
+                        .map_err(|err| {
                             error!("Error getting missing file keys: {}", err);
                             err
                         })?;
@@ -746,7 +749,8 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             self,
                             key_reqs.into(),
                         )
-                        .await.map_err(|err| {
+                        .await
+                        .map_err(|err| {
                             error!("Error setting file keys: {}", err);
                             err
                         })?;
@@ -820,7 +824,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
         // handle error
         if res.error_for_status_ref().is_err() {
-            error!("Error uploading file to S3: {:?}", res.error_for_status_ref().unwrap_err());
+            error!(
+                "Error uploading file to S3: {:?}",
+                res.error_for_status_ref().unwrap_err()
+            );
             let error = build_s3_error(res).await;
             return Err(error);
         }

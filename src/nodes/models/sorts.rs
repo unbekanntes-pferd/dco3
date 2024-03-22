@@ -21,48 +21,47 @@ impl From<NodesSortBy> for String {
             NodesSortBy::Name(order) => {
                 let order = String::from(order);
                 format!("name:{}", order)
-            },
+            }
             NodesSortBy::CreatedAt(order) => {
                 let order = String::from(order);
                 format!("createdAt:{}", order)
-            },
+            }
             NodesSortBy::CreatedBy(order) => {
                 let order = String::from(order);
                 format!("createdBy:{}", order)
-            },
+            }
             NodesSortBy::UpdatedAt(order) => {
                 let order = String::from(order);
                 format!("updatedAt:{}", order)
-            },
+            }
             NodesSortBy::UpdatedBy(order) => {
                 let order = String::from(order);
                 format!("updatedBy:{}", order)
-            },
+            }
             NodesSortBy::FileType(order) => {
                 let order = String::from(order);
                 format!("fileType:{}", order)
-            },
+            }
             NodesSortBy::Classification(order) => {
                 let order = String::from(order);
                 format!("classification:{}", order)
-            },
+            }
             NodesSortBy::Size(order) => {
                 let order = String::from(order);
                 format!("size:{}", order)
-            },
+            }
             NodesSortBy::CntDeletedVersions(order) => {
                 let order = String::from(order);
                 format!("cntDeletedVersions:{}", order)
-            },
+            }
             NodesSortBy::TimestampCreation(order) => {
                 let order = String::from(order);
                 format!("timestampCreation:{}", order)
-            },
+            }
             NodesSortBy::TimestampModification(order) => {
                 let order = String::from(order);
                 format!("timestampModification:{}", order)
-            },
-
+            }
         }
     }
 }
@@ -115,19 +114,19 @@ impl NodesSortBy {
 
 #[derive(Debug)]
 pub enum NodesSearchSortBy {
-   Name(SortOrder),
-   CreatedAt(SortOrder),
-   CreatedBy(SortOrder),
-   UpdatedAt(SortOrder),
-   UpdatedBy(SortOrder),
-   FileType(SortOrder),
-   Classification(SortOrder),
-   Size(SortOrder),
-   CntDeletedVersions(SortOrder),
-   Type(SortOrder),
-   ParentPath(SortOrder),
-   TimestampCreation(SortOrder),
-   TimestampModification(SortOrder),   
+    Name(SortOrder),
+    CreatedAt(SortOrder),
+    CreatedBy(SortOrder),
+    UpdatedAt(SortOrder),
+    UpdatedBy(SortOrder),
+    FileType(SortOrder),
+    Classification(SortOrder),
+    Size(SortOrder),
+    CntDeletedVersions(SortOrder),
+    Type(SortOrder),
+    ParentPath(SortOrder),
+    TimestampCreation(SortOrder),
+    TimestampModification(SortOrder),
 }
 
 impl From<NodesSearchSortBy> for String {
@@ -136,56 +135,55 @@ impl From<NodesSearchSortBy> for String {
             NodesSearchSortBy::Name(order) => {
                 let order = String::from(order);
                 format!("name:{}", order)
-            },
+            }
             NodesSearchSortBy::CreatedAt(order) => {
                 let order = String::from(order);
                 format!("createdAt:{}", order)
-            },
+            }
             NodesSearchSortBy::CreatedBy(order) => {
                 let order = String::from(order);
                 format!("createdBy:{}", order)
-            },
+            }
             NodesSearchSortBy::UpdatedAt(order) => {
                 let order = String::from(order);
                 format!("updatedAt:{}", order)
-            },
+            }
             NodesSearchSortBy::UpdatedBy(order) => {
                 let order = String::from(order);
                 format!("updatedBy:{}", order)
-            },
+            }
             NodesSearchSortBy::FileType(order) => {
                 let order = String::from(order);
                 format!("fileType:{}", order)
-            },
+            }
             NodesSearchSortBy::Classification(order) => {
                 let order = String::from(order);
                 format!("classification:{}", order)
-            },
+            }
             NodesSearchSortBy::Size(order) => {
                 let order = String::from(order);
                 format!("size:{}", order)
-            },
+            }
             NodesSearchSortBy::CntDeletedVersions(order) => {
                 let order = String::from(order);
                 format!("cntDeletedVersions:{}", order)
-            },
+            }
             NodesSearchSortBy::Type(order) => {
                 let order = String::from(order);
                 format!("type:{}", order)
-            },
+            }
             NodesSearchSortBy::ParentPath(order) => {
                 let order = String::from(order);
                 format!("parentPath:{}", order)
-            },
+            }
             NodesSearchSortBy::TimestampCreation(order) => {
                 let order = String::from(order);
                 format!("timestampCreation:{}", order)
-            },
+            }
             NodesSearchSortBy::TimestampModification(order) => {
                 let order = String::from(order);
                 format!("timestampModification:{}", order)
-            },
-            
+            }
         }
     }
 }
@@ -242,7 +240,6 @@ impl NodesSearchSortBy {
     pub fn timestamp_modification(order: SortOrder) -> Self {
         NodesSearchSortBy::TimestampModification(order)
     }
-
 }
 
 impl SortQuery for NodesSearchSortBy {
@@ -251,68 +248,68 @@ impl SortQuery for NodesSearchSortBy {
             NodesSearchSortBy::Name(order) => {
                 let order = String::from(order);
                 format!("name:{}", order)
-            },
+            }
             NodesSearchSortBy::CreatedAt(order) => {
                 let order = String::from(order);
                 format!("createdAt:{}", order)
-            },
+            }
             NodesSearchSortBy::CreatedBy(order) => {
                 let order = String::from(order);
                 format!("createdBy:{}", order)
-            },
+            }
             NodesSearchSortBy::UpdatedAt(order) => {
                 let order = String::from(order);
                 format!("updatedAt:{}", order)
-            },
+            }
             NodesSearchSortBy::UpdatedBy(order) => {
                 let order = String::from(order);
                 format!("updatedBy:{}", order)
-            },
+            }
             NodesSearchSortBy::FileType(order) => {
                 let order = String::from(order);
                 format!("fileType:{}", order)
-            },
+            }
             NodesSearchSortBy::Classification(order) => {
                 let order = String::from(order);
                 format!("classification:{}", order)
-            },
+            }
             NodesSearchSortBy::Size(order) => {
                 let order = String::from(order);
                 format!("size:{}", order)
-            },
+            }
             NodesSearchSortBy::CntDeletedVersions(order) => {
                 let order = String::from(order);
                 format!("cntDeletedVersions:{}", order)
-            },
+            }
             NodesSearchSortBy::Type(order) => {
                 let order = String::from(order);
                 format!("type:{}", order)
-            },
+            }
             NodesSearchSortBy::ParentPath(order) => {
                 let order = String::from(order);
                 format!("parentPath:{}", order)
-            },
+            }
             NodesSearchSortBy::TimestampCreation(order) => {
                 let order = String::from(order);
                 format!("timestampCreation:{}", order)
-            },
+            }
             NodesSearchSortBy::TimestampModification(order) => {
                 let order = String::from(order);
                 format!("timestampModification:{}", order)
-            },
+            }
         }
     }
 }
 
 impl From<NodesSearchSortBy> for Box<dyn SortQuery> {
     fn from(value: NodesSearchSortBy) -> Self {
-        Box::new(value)  
+        Box::new(value)
     }
 }
 
 impl From<NodesSortBy> for Box<dyn SortQuery> {
     fn from(value: NodesSortBy) -> Self {
-        Box::new(value)  
+        Box::new(value)
     }
 }
 
@@ -322,53 +319,50 @@ impl SortQuery for NodesSortBy {
             NodesSortBy::Classification(order) => {
                 let order = String::from(order);
                 format!("classification:{}", order)
-            },
+            }
             NodesSortBy::CreatedAt(order) => {
                 let order = String::from(order);
                 format!("createdAt:{}", order)
-            },
+            }
             NodesSortBy::CreatedBy(order) => {
                 let order = String::from(order);
                 format!("createdBy:{}", order)
-            },
+            }
             NodesSortBy::FileType(order) => {
                 let order = String::from(order);
                 format!("fileType:{}", order)
-            },
+            }
             NodesSortBy::Name(order) => {
                 let order = String::from(order);
                 format!("name:{}", order)
-            },
+            }
             NodesSortBy::Size(order) => {
                 let order = String::from(order);
                 format!("size:{}", order)
-            },
+            }
             NodesSortBy::UpdatedAt(order) => {
                 let order = String::from(order);
                 format!("updatedAt:{}", order)
-            },
+            }
             NodesSortBy::UpdatedBy(order) => {
                 let order = String::from(order);
                 format!("updatedBy:{}", order)
-            },
+            }
             NodesSortBy::CntDeletedVersions(order) => {
                 let order = String::from(order);
                 format!("cntDeletedVersions:{}", order)
-            },
+            }
             NodesSortBy::TimestampCreation(order) => {
                 let order = String::from(order);
                 format!("timestampCreation:{}", order)
-            },
+            }
             NodesSortBy::TimestampModification(order) => {
                 let order = String::from(order);
                 format!("timestampModification:{}", order)
-            },
-
-
+            }
         }
     }
 }
-
 
 #[cfg(test)]
 
@@ -470,7 +464,6 @@ mod tests {
         let sort_by = NodesSortBy::size(SortOrder::Desc);
         assert_eq!(sort_by.to_sort_string(), "size:desc");
     }
-
 
     #[test]
     fn test_nodes_sort_by_cnt_deleted_versions_asc() {
@@ -639,5 +632,4 @@ mod tests {
         let sort_by = NodesSearchSortBy::timestamp_modification(SortOrder::Desc);
         assert_eq!(sort_by.to_sort_string(), "timestampModification:desc");
     }
-
 }

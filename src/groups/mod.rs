@@ -1,19 +1,18 @@
 use async_trait::async_trait;
 
-
 #[allow(clippy::module_inception)]
 mod groups;
 mod models;
 
 pub use models::*;
 
-use crate::{DracoonClientError, models::ListAllParams};
+use crate::{models::ListAllParams, DracoonClientError};
 
 /// This trait provides all methods to manage groups.
 /// All sorting and filtering is implemented and can be found using respective '*Filter` or
 /// '*SortBy' enums.
-/// 
-#[async_trait] 
+///
+#[async_trait]
 pub trait Groups {
     /// Get a list of all groups.
     /// ```no_run
@@ -36,10 +35,13 @@ pub trait Groups {
     ///     .build();
     /// // pass None if you don't want to use any params
     /// let groups = dracoon.get_groups(Some(params)).await.unwrap();
-    /// 
+    ///
     /// # }
     /// ```
-    async fn get_groups(&self, params: Option<ListAllParams>) -> Result<GroupList, DracoonClientError>;
+    async fn get_groups(
+        &self,
+        params: Option<ListAllParams>,
+    ) -> Result<GroupList, DracoonClientError>;
     /// Create a group.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::{CreateGroupRequest}};
@@ -97,7 +99,11 @@ pub trait Groups {
     /// let group = dracoon.update_group(123, update).await.unwrap();
     /// # }
     /// ```
-    async fn update_group(&self, group_id: u64, group: UpdateGroupRequest) -> Result<Group, DracoonClientError>;
+    async fn update_group(
+        &self,
+        group_id: u64,
+        group: UpdateGroupRequest,
+    ) -> Result<Group, DracoonClientError>;
     /// Delete a group by id.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups};
@@ -136,10 +142,14 @@ pub trait Groups {
     ///     .build();
     /// // pass None if you don't want to use any params
     /// let groups = dracoon.get_group_users(123, Some(params)).await.unwrap();
-    /// 
+    ///
     /// # }
     /// ```
-    async fn get_group_users(&self, group_id: u64, params: Option<ListAllParams>) -> Result<GroupUserList, DracoonClientError>;
+    async fn get_group_users(
+        &self,
+        group_id: u64,
+        params: Option<ListAllParams>,
+    ) -> Result<GroupUserList, DracoonClientError>;
     /// Add users to a group.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::{ChangeGroupMembersRequest}};
@@ -162,7 +172,11 @@ pub trait Groups {
     /// dracoon.add_group_users(123, user_ids).await.unwrap();
     /// # }
     /// ```
-    async fn add_group_users(&self, group_id: u64, user_ids: ChangeGroupMembersRequest) -> Result<Group, DracoonClientError>;
+    async fn add_group_users(
+        &self,
+        group_id: u64,
+        user_ids: ChangeGroupMembersRequest,
+    ) -> Result<Group, DracoonClientError>;
     /// Remove users from a group.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups, groups::{ChangeGroupMembersRequest}};
@@ -185,7 +199,11 @@ pub trait Groups {
     /// dracoon.remove_group_users(123, user_ids).await.unwrap();
     /// # }
     /// ```
-    async fn remove_group_users(&self, group_id: u64, user_ids: ChangeGroupMembersRequest) -> Result<Group, DracoonClientError>;
+    async fn remove_group_users(
+        &self,
+        group_id: u64,
+        user_ids: ChangeGroupMembersRequest,
+    ) -> Result<Group, DracoonClientError>;
     /// Get group last admin rooms
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Groups};
@@ -203,6 +221,8 @@ pub trait Groups {
     /// let rooms = dracoon.get_group_last_admin_rooms(123).await.unwrap();
     /// # }
     /// ```
-    async fn get_group_last_admin_rooms(&self, group_id: u64) -> Result<LastAdminGroupRoomList, DracoonClientError>;
-
+    async fn get_group_last_admin_rooms(
+        &self,
+        group_id: u64,
+    ) -> Result<LastAdminGroupRoomList, DracoonClientError>;
 }

@@ -3,7 +3,8 @@ mod tests {
     use crate::{
         auth::Provisioning,
         provisioning::{Customer, FirstAdminUser, NewCustomerRequest, UpdateCustomerRequest},
-        CustomerProvisioning, Dracoon, ListAllParams, tests::users::tests::assert_user_item,
+        tests::users::tests::assert_user_item,
+        CustomerProvisioning, Dracoon, ListAllParams,
     };
 
     async fn get_provisioning_client() -> (Dracoon<Provisioning>, mockito::ServerGuard) {
@@ -140,7 +141,7 @@ mod tests {
         let customers_res = include_str!("./responses/provisioning/customers_ok.json");
 
         let customers_mock = mock_server
-        // TODO: add filter query
+            // TODO: add filter query
             .mock("GET", "/api/v4/provisioning/customers?offset=0")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -276,7 +277,10 @@ mod tests {
         let res = include_str!("./responses/provisioning/customer_ok.json");
 
         let customer_mock = mock_server
-            .mock("GET", "/api/v4/provisioning/customers/1?include_attributes=true")
+            .mock(
+                "GET",
+                "/api/v4/provisioning/customers/1?include_attributes=true",
+            )
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(res)
@@ -323,7 +327,7 @@ mod tests {
     #[tokio::test]
     async fn test_delete_customer() {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
-        
+
         let del_mock = mock_server
             .mock("DELETE", "/api/v4/provisioning/customers/1")
             .with_status(204)
@@ -331,13 +335,12 @@ mod tests {
 
         let res = dracoon.delete_customer(1).await;
         assert!(res.is_ok());
-    
     }
 
     #[tokio::test]
     async fn test_get_customer_users() {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
-        let res = include_str!("./responses/users/users_ok.json"); 
+        let res = include_str!("./responses/users/users_ok.json");
 
         let customer_mock = mock_server
             .mock("GET", "/api/v4/provisioning/customers/1/users?offset=0")
@@ -358,10 +361,13 @@ mod tests {
     #[tokio::test]
     async fn test_get_customer_users_with_limit() {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
-        let res = include_str!("./responses/users/users_ok.json"); 
+        let res = include_str!("./responses/users/users_ok.json");
 
         let customer_mock = mock_server
-            .mock("GET", "/api/v4/provisioning/customers/1/users?limit=100&offset=0")
+            .mock(
+                "GET",
+                "/api/v4/provisioning/customers/1/users?limit=100&offset=0",
+            )
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(res)
@@ -381,7 +387,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_customer_users_with_offset() {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
-        let res = include_str!("./responses/users/users_ok.json"); 
+        let res = include_str!("./responses/users/users_ok.json");
 
         let customer_mock = mock_server
             .mock("GET", "/api/v4/provisioning/customers/1/users?offset=500")
