@@ -14,15 +14,17 @@ use async_trait::async_trait;
 use dco3_crypto::{ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto, FileKey};
 use futures_util::TryStreamExt;
 use reqwest::header::{self, CONTENT_LENGTH, RANGE};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 use std::{cmp::min, io::Write};
 use tracing::{debug, error};
+
 
 #[async_trait]
 impl Download for Dracoon<Connected> {
     async fn download<'w>(
         &'w self,
         node: &Node,
-        writer: &'w mut (dyn Write + Send),
+        writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
         let download_url_response = self.get_download_url(node.id).await?;
@@ -73,7 +75,7 @@ trait DownloadInternal {
     async fn download_unencrypted(
         &self,
         url: &str,
-        writer: &mut (dyn Write + Send),
+        writer: &mut (dyn AsyncWrite + Send + Unpin),
         size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
@@ -82,7 +84,7 @@ trait DownloadInternal {
         &self,
         url: &str,
         node_id: u64,
-        writer: &mut (dyn Write + Send),
+        writer: &mut (dyn AsyncWrite + Send + Unpin),
         size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
@@ -115,7 +117,7 @@ impl DownloadInternal for Dracoon<Connected> {
     async fn download_unencrypted(
         &self,
         url: &str,
-        writer: &mut (dyn Write + Send),
+        writer: &mut (dyn AsyncWrite + Send + Unpin),
         size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
@@ -177,6 +179,7 @@ impl DownloadInternal for Dracoon<Connected> {
                 let len = chunk.len() as u64;
                 writer
                     .write_all(&chunk)
+                    .await
                     .or(Err(DracoonClientError::IoError))?;
                 downloaded_bytes += len;
 
@@ -197,7 +200,7 @@ impl DownloadInternal for Dracoon<Connected> {
         &self,
         url: &str,
         node_id: u64,
-        writer: &mut (dyn Write + Send),
+        writer: &mut (dyn AsyncWrite + Send + Unpin),
         size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
@@ -288,6 +291,7 @@ impl DownloadInternal for Dracoon<Connected> {
 
         writer
             .write_all(&buffer)
+            .await
             .or(Err(DracoonClientError::IoError))?;
         Ok(())
     }
@@ -391,8 +395,7 @@ mod tests {
 
         let buffer = Vec::with_capacity(16);
 
-        // create a writer
-        let mut writer = std::io::BufWriter::new(buffer);
+        let mut writer = tokio::io::BufWriter::new(buffer);
 
         dracoon
             .download_unencrypted(&download_url, &mut writer, Some(16), None)
@@ -403,7 +406,7 @@ mod tests {
 
         download_mock.assert();
 
-        assert_eq!(writer.into_inner().unwrap(), mock_bytes.to_vec());
+        assert_eq!(writer.buffer(), mock_bytes.to_vec());
     }
 
     #[tokio::test]
@@ -466,7 +469,7 @@ mod tests {
         let buffer = Vec::with_capacity(16);
 
         // create a writer
-        let mut writer = std::io::BufWriter::new(buffer);
+        let mut writer = tokio::io::BufWriter::new(buffer);
 
         dracoon
             .download_encrypted(&download_url, 1234, &mut writer, None, None)
@@ -481,7 +484,7 @@ mod tests {
 
         file_key_mock.assert();
 
-        assert_eq!(writer.into_inner().unwrap(), mock_bytes_compare.to_vec());
+        assert_eq!(writer.buffer(), mock_bytes_compare.to_vec());
     }
 
     #[tokio::test]
@@ -515,15 +518,14 @@ mod tests {
         let buffer = Vec::with_capacity(16);
 
         // create a writer
-        let mut writer = std::io::BufWriter::new(buffer);
+        let mut writer = tokio::io::BufWriter::new(buffer);
 
         let download_res = dracoon
             .download_encrypted(&download_url, 1234, &mut writer, None, None)
             .await;
 
         assert!(download_res.is_err());
-        // TODO: implement PartialEq for DracoonClientError
-        // assert_eq!(err, DracoonClientError::MissingEncryptionSecret);
+        assert_eq!(download_res.err().unwrap(), DracoonClientError::MissingEncryptionSecret);
     }
 
     async fn test_download_unencrypted_node() {

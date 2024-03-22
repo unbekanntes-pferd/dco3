@@ -5,7 +5,7 @@ use super::{auth::errors::DracoonClientError, models::ListAllParams};
 use async_trait::async_trait;
 
 use std::io::Write;
-use tokio::io::{AsyncRead, BufReader};
+use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 
 pub mod download;
 pub mod folders;
@@ -670,7 +670,7 @@ pub trait Download {
     ///
     ///   let node = client.get_node(node_id).await.unwrap();
     ///
-    ///   let mut writer = std::io::BufWriter::new(std::fs::File::create("test.txt").unwrap());
+    ///   let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
     ///
     ///   client.download(&node, &mut writer, None).await.unwrap();
     ///
@@ -686,7 +686,7 @@ pub trait Download {
     async fn download<'w>(
         &'w self,
         node: &Node,
-        writer: &'w mut (dyn Write + Send),
+        writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 }
