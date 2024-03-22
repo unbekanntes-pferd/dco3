@@ -4,7 +4,10 @@ use serde::de::DeserializeOwned;
 use serde_xml_rs::from_str;
 use tracing::error;
 
-use super::{auth::{errors::DracoonClientError, models::StatusCodeState}, nodes::models::{S3ErrorResponse, S3XmlError}};
+use super::{
+    auth::{errors::DracoonClientError, models::StatusCodeState},
+    nodes::models::{S3ErrorResponse, S3XmlError},
+};
 
 /// Parses the response body and returns the result into desired JSON parsed response or error
 pub async fn parse_body<T, E>(res: Response) -> Result<T, DracoonClientError>
@@ -13,11 +16,17 @@ where
     E: DeserializeOwned + Into<DracoonClientError>,
 {
     match Into::<StatusCodeState>::into(res.status()) {
-        StatusCodeState::Ok(_) => Ok(res.json::<T>().await.map_err(|err| println!("{}", err)).expect("Correct response type")),
-        StatusCodeState::Error(_) => Err(build_error_body::<E>(res.json::<E>().await.map_err(|err| {
-            error!("Failed to parse error body: {}", err);
-            err
-        })?)),
+        StatusCodeState::Ok(_) => Ok(res
+            .json::<T>()
+            .await
+            .map_err(|err| println!("{}", err))
+            .expect("Correct response type")),
+        StatusCodeState::Error(_) => Err(build_error_body::<E>(res.json::<E>().await.map_err(
+            |err| {
+                error!("Failed to parse error body: {}", err);
+                err
+            },
+        )?)),
     }
 }
 

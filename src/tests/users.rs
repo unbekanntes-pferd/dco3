@@ -3,7 +3,9 @@ pub mod tests {
     use crate::{
         tests::dracoon::get_connected_client,
         user::UserAuthData,
-        users::{CreateUserRequest, UserData, UserItem, UsersFilter, UsersSortBy, UpdateUserRequest},
+        users::{
+            CreateUserRequest, UpdateUserRequest, UserData, UserItem, UsersFilter, UsersSortBy,
+        },
         ListAllParams, SortOrder, Users,
     };
 
@@ -226,7 +228,6 @@ pub mod tests {
 
     #[tokio::test]
     async fn test_get_user() {
-
         let (client, mut mock_server) = get_connected_client().await;
 
         let user_res = include_str!("./responses/users/user_ok.json");
@@ -242,7 +243,6 @@ pub mod tests {
         user_mock.assert();
 
         assert_user_data(&user);
-
     }
 
     #[tokio::test]
@@ -283,6 +283,5 @@ pub mod tests {
         assert!(res.is_ok());
 
         user_mock.assert();
-
     }
 }

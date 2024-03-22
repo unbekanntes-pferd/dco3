@@ -3,6 +3,7 @@ use dco3_crypto::{
     DracoonCrypto, DracoonCryptoError, DracoonRSACrypto, PublicKeyContainer, UserKeyPairContainer,
     UserKeyPairVersion,
 };
+use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -273,7 +274,7 @@ impl RoomPoliciesRequestBuilder {
         self.default_expiration_period = Some(default_expiration_period);
         self
     }
-    
+
     pub fn with_virus_protection_enabled(mut self, enable_virus_protection: bool) -> Self {
         self.virus_protection_enabled = Some(enable_virus_protection);
         self
@@ -287,18 +288,11 @@ impl RoomPoliciesRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomPolicies {
     pub default_expiration_period: u64,
     pub is_virus_protection_enabled: bool,
-}
-
-#[async_trait]
-impl FromResponse for RoomPolicies {
-    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
-        parse_body::<Self, DracoonErrorResponse>(response).await
-    }
 }
 
 #[derive(Debug, Serialize)]

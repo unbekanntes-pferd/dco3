@@ -46,8 +46,8 @@ impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
         match value {
             ReqError::Middleware(error) => {
-            DracoonClientError::ConnectionFailed("Error in middleware".into())
-            },
+                DracoonClientError::ConnectionFailed("Error in middleware".into())
+            }
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {
                     return DracoonClientError::ConnectionFailed("Timeout".into());
@@ -71,7 +71,7 @@ impl From<ClientError> for DracoonClientError {
         if error.is_connect() {
             return DracoonClientError::ConnectionFailed("Connection failed".into());
         }
-        
+
         DracoonClientError::ConnectionFailed("Unknown".into())
     }
 }

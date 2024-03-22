@@ -4,9 +4,9 @@ mod tests {
 
     use crate::{
         nodes::{
-            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, NodePermissions, RoomUser,
-            RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType, RoomGroup, GroupMemberAcceptance,
-            RoomGroupsAddBatchRequestItem, RoomPoliciesRequest
+            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, GroupMemberAcceptance,
+            NodePermissions, RoomGroup, RoomGroupsAddBatchRequestItem, RoomPoliciesRequest,
+            RoomUser, RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType,
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -67,7 +67,10 @@ mod tests {
     fn assert_room_group(room_group: &RoomGroup) {
         assert_eq!(room_group.id, 3);
         assert_eq!(room_group.name, "string");
-        assert_eq!(room_group.new_group_member_acceptance.as_ref().unwrap(), &GroupMemberAcceptance::AutoAllow);
+        assert_eq!(
+            room_group.new_group_member_acceptance.as_ref().unwrap(),
+            &GroupMemberAcceptance::AutoAllow
+        );
         assert!(room_group.is_granted);
         assert!(room_group.permissions.as_ref().unwrap().manage);
         assert!(room_group.permissions.as_ref().unwrap().read);
@@ -85,7 +88,6 @@ mod tests {
         assert!(room_group.permissions.as_ref().unwrap().read_recycle_bin);
         assert!(room_group.permissions.as_ref().unwrap().restore_recycle_bin);
         assert!(room_group.permissions.as_ref().unwrap().delete_recycle_bin);
-
     }
 
     #[tokio::test]
@@ -170,7 +172,6 @@ mod tests {
         assert_eq!(room_policies.is_virus_protection_enabled, false);
     }
 
-
     #[tokio::test]
     async fn test_update_room_policies() {
         let (client, mut mock_server) = get_connected_client().await;
@@ -186,7 +187,10 @@ mod tests {
             .with_virus_protection_enabled(true)
             .build();
 
-        let no_response_body = client.update_room_policies(123, room_policies).await.unwrap();
+        let no_response_body = client
+            .update_room_policies(123, room_policies)
+            .await
+            .unwrap();
 
         assert_eq!(no_response_body, ())
     }
@@ -442,7 +446,11 @@ mod tests {
             .with_status(204)
             .create();
 
-        let group_updates = vec![RoomGroupsAddBatchRequestItem::new(1, NodePermissions::new_with_edit_permissions(), Some(GroupMemberAcceptance::Pending))];
+        let group_updates = vec![RoomGroupsAddBatchRequestItem::new(
+            1,
+            NodePermissions::new_with_edit_permissions(),
+            Some(GroupMemberAcceptance::Pending),
+        )];
 
         let room_groups = client
             .update_room_groups(123, group_updates.into())

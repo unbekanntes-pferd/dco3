@@ -1,4 +1,7 @@
-use crate::{models::{FilterOperator, FilterQuery}, auth::errors::DracoonClientError};
+use crate::{
+    auth::errors::DracoonClientError,
+    models::{FilterOperator, FilterQuery},
+};
 
 use super::NodeType;
 
@@ -11,7 +14,7 @@ pub enum NodesFilter {
     TimestampCreation(FilterOperator, String),
     TimestampModification(FilterOperator, String),
     ReferenceId(FilterOperator, u64),
-    // missing: perm, childPerm 
+    // missing: perm, childPerm
     // TODO: add permission model enum in api/models.rs
 }
 
@@ -21,32 +24,32 @@ impl FilterQuery for NodesFilter {
             NodesFilter::Name(op, value) => {
                 let op = String::from(op);
                 format!("name:{}:{}", op, value)
-            },
+            }
             NodesFilter::Type(op, value) => {
                 let op = String::from(op);
                 let node_type = String::from(value);
                 format!("type:{}:{}", op, node_type)
-            },
+            }
             NodesFilter::Encrypted(op, value) => {
                 let op = String::from(op);
                 format!("encrypted:{}:{}", op, value)
-            },
+            }
             NodesFilter::BranchVersion(op, value) => {
                 let op = String::from(op);
                 format!("branchVersion:{}:{}", op, value)
-            },
+            }
             NodesFilter::TimestampCreation(op, value) => {
                 let op = String::from(op);
                 format!("timestampCreation:{}:{}", op, value)
-            },
+            }
             NodesFilter::TimestampModification(op, value) => {
                 let op = String::from(op);
                 format!("timestampModification:{}:{}", op, value)
-            },
+            }
             NodesFilter::ReferenceId(op, value) => {
                 let op = String::from(op);
                 format!("referenceId:{}:{}", op, value)
-            },
+            }
         }
     }
 }
@@ -103,12 +106,11 @@ impl NodesFilter {
     pub fn is_room() -> Self {
         NodesFilter::Type(FilterOperator::Eq, NodeType::Room)
     }
- 
 }
 
 impl From<NodesFilter> for Box<dyn FilterQuery> {
     fn from(filter: NodesFilter) -> Self {
-        Box::new(filter)  
+        Box::new(filter)
     }
 }
 
@@ -131,7 +133,6 @@ pub enum NodesSearchFilter {
     TimestampCreation(FilterOperator, String),
     TimestampModification(FilterOperator, String),
     ReferenceId(FilterOperator, u64),
-
 }
 
 impl NodesSearchFilter {
@@ -210,92 +211,89 @@ impl NodesSearchFilter {
     pub fn file_type_contains(val: impl Into<String>) -> Self {
         NodesSearchFilter::FileType(FilterOperator::Cn, val.into())
     }
-
 }
 
 impl From<NodesSearchFilter> for Box<dyn FilterQuery> {
     fn from(filter: NodesSearchFilter) -> Self {
-        Box::new(filter)  
+        Box::new(filter)
     }
 }
 
 impl FilterQuery for NodesSearchFilter {
-
     fn to_filter_string(&self) -> String {
         match self {
             NodesSearchFilter::BranchVersion(op, val) => {
                 let op = String::from(op);
                 format!("branchVersion:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::Type(op, val) => {
                 let op = String::from(op);
                 let node_type: String = val.into();
                 format!("type:{}:{}", op, node_type)
-            },
+            }
             NodesSearchFilter::FileType(op, val) => {
                 let op = String::from(op);
                 format!("fileType:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::Classification(op, val) => {
                 let op = String::from(op);
                 format!("classification:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::CreatedBy(op, val) => {
                 let op = String::from(op);
                 format!("createdBy:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::UpdatedBy(op, val) => {
                 let op = String::from(op);
                 format!("updatedBy:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::CreatedById(op, val) => {
                 let op = String::from(op);
                 format!("createdById:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::UpdatedById(op, val) => {
                 let op = String::from(op);
                 format!("updatedById:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::CreatedAt(op, val) => {
                 let op = String::from(op);
                 format!("createdAt:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::UpdatedAt(op, val) => {
                 let op = String::from(op);
                 format!("updatedAt:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::ExpireAt(op, val) => {
                 let op = String::from(op);
                 format!("expireAt:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::Size(op, val) => {
                 let op = String::from(op);
                 format!("size:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::IsFavorite(op, val) => {
                 let op = String::from(op);
                 format!("isFavorite:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::ParentPath(op, val) => {
                 let op = String::from(op);
                 format!("parentPath:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::TimestampCreation(op, val) => {
                 let op = String::from(op);
                 format!("timestampCreation:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::TimestampModification(op, val) => {
                 let op = String::from(op);
                 format!("timestampModification:{}:{}", op, val)
-            },
+            }
             NodesSearchFilter::ReferenceId(op, val) => {
                 let op = String::from(op);
                 format!("referenceId:{}:{}", op, val)
-            },
+            }
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -329,27 +327,39 @@ mod tests {
     }
 
     #[test]
-    fn test_nodes_filter_created_before(){
+    fn test_nodes_filter_created_before() {
         let filter = NodesFilter::created_before("2020-01-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "timestampCreation:le:2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "timestampCreation:le:2020-01-01T00:00:00.000Z"
+        );
     }
 
     #[test]
-    fn test_nodes_filter_created_after(){
+    fn test_nodes_filter_created_after() {
         let filter = NodesFilter::created_after("2020-01-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "timestampCreation:ge:2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "timestampCreation:ge:2020-01-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_filter_modified_before() {
         let filter = NodesFilter::modified_before("2020-01-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "timestampModification:le:2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "timestampModification:le:2020-01-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_filter_modified_after() {
         let filter = NodesFilter::modified_after("2020-01-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "timestampModification:ge:2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "timestampModification:ge:2020-01-01T00:00:00.000Z"
+        );
     }
 
     #[test]
@@ -405,13 +415,13 @@ mod tests {
     #[test]
     fn test_nodes_search_filter_size_greater_equals() {
         let filter = NodesSearchFilter::size_greater_equals(1);
-        assert_eq!(filter.to_filter_string(), "size:ge:1");    
+        assert_eq!(filter.to_filter_string(), "size:ge:1");
     }
 
     #[test]
     fn test_nodes_search_filter_size_less_equals() {
         let filter = NodesSearchFilter::size_less_equals(1);
-        assert_eq!(filter.to_filter_string(), "size:le:1");    
+        assert_eq!(filter.to_filter_string(), "size:le:1");
     }
 
     #[test]
@@ -429,37 +439,55 @@ mod tests {
     #[test]
     fn test_nodes_search_filter_created_at_before() {
         let filter = NodesSearchFilter::created_at_before("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "createdAt:le:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "createdAt:le:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_search_filter_created_at_after() {
         let filter = NodesSearchFilter::created_at_after("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "createdAt:ge:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "createdAt:ge:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_search_filter_updated_at_before() {
         let filter = NodesSearchFilter::updated_at_before("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "updatedAt:le:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "updatedAt:le:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_search_filter_updated_at_after() {
         let filter = NodesSearchFilter::updated_at_after("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "updatedAt:ge:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "updatedAt:ge:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_search_filter_expire_at_before() {
         let filter = NodesSearchFilter::expire_at_before("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "expireAt:le:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "expireAt:le:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
     fn test_nodes_search_filter_expire_at_after() {
         let filter = NodesSearchFilter::expire_at_after("2021-02-01T00:00:00.000Z");
-        assert_eq!(filter.to_filter_string(), "expireAt:ge:2021-02-01T00:00:00.000Z");
+        assert_eq!(
+            filter.to_filter_string(),
+            "expireAt:ge:2021-02-01T00:00:00.000Z"
+        );
     }
 
     #[test]
@@ -479,5 +507,4 @@ mod tests {
         let filter = NodesSearchFilter::file_type_contains("jpg");
         assert_eq!(filter.to_filter_string(), "fileType:cn:jpg");
     }
-
 }

@@ -4,9 +4,9 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::constants::{
-    CONFIG_ALGORITHMS, CONFIG_BASE, CONFIG_INFRASTRUCTURE, CONFIG_PASSWORD_POLICIES,
-    CONFIG_POLICIES, DRACOON_API_PREFIX, CONFIG_DEFAULTS, CONFIG_PRODUCT_PACKAGES,
-    CONFIG_GENERAL, CONFIG_S3_TAGS, CONFIG_PRODUCT_PACKAGES_CURRENT, CONFIG_CLASSIFICATION_POLICIES
+    CONFIG_ALGORITHMS, CONFIG_BASE, CONFIG_CLASSIFICATION_POLICIES, CONFIG_DEFAULTS,
+    CONFIG_GENERAL, CONFIG_INFRASTRUCTURE, CONFIG_PASSWORD_POLICIES, CONFIG_POLICIES,
+    CONFIG_PRODUCT_PACKAGES, CONFIG_PRODUCT_PACKAGES_CURRENT, CONFIG_S3_TAGS, DRACOON_API_PREFIX,
 };
 use crate::utils::FromResponse;
 use crate::{auth::Connected, Dracoon, DracoonClientError};
@@ -25,7 +25,9 @@ pub trait Config {
 
     async fn get_password_policies(&self) -> Result<PasswordPoliciesConfig, DracoonClientError>;
 
-    async fn get_classification_policies(&self) -> Result<ClassificationPoliciesConfig, DracoonClientError>;
+    async fn get_classification_policies(
+        &self,
+    ) -> Result<ClassificationPoliciesConfig, DracoonClientError>;
 
     async fn get_algorithms(&self) -> Result<AlgorithmVersionInfoList, DracoonClientError>;
 
@@ -57,9 +59,8 @@ impl Config for Dracoon<Connected> {
     }
 
     async fn get_general_settings(&self) -> Result<GeneralSettingsInfo, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_GENERAL}");
-        
+
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -76,9 +77,8 @@ impl Config for Dracoon<Connected> {
     async fn get_infrastructure_properties(
         &self,
     ) -> Result<InfrastructureProperties, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_INFRASTRUCTURE}");
-        
+
         let api_url = self.build_api_url(&url_part);
 
         let response = self
@@ -90,28 +90,30 @@ impl Config for Dracoon<Connected> {
             .await?;
 
         InfrastructureProperties::from_response(response).await
-       
     }
 
-    async fn get_classification_policies(&self) -> Result<ClassificationPoliciesConfig, DracoonClientError> {
-            
-            let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_CLASSIFICATION_POLICIES}");
-    
-            let api_url = self.build_api_url(&url_part);
-    
-            let response = self
-                .client
-                .http
-                .get(api_url)
-                .header(header::AUTHORIZATION, self.get_auth_header().await?)
-                .send()
-                .await?;
-    
-            ClassificationPoliciesConfig::from_response(response).await
+    async fn get_classification_policies(
+        &self,
+    ) -> Result<ClassificationPoliciesConfig, DracoonClientError> {
+        let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_CLASSIFICATION_POLICIES}");
+
+        let api_url = self.build_api_url(&url_part);
+
+        let response = self
+            .client
+            .http
+            .get(api_url)
+            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .send()
+            .await?;
+
+        ClassificationPoliciesConfig::from_response(response).await
     }
 
     async fn get_password_policies(&self) -> Result<PasswordPoliciesConfig, DracoonClientError> {
-        let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_PASSWORD_POLICIES}");
+        let url_part = format!(
+            "/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_PASSWORD_POLICIES}"
+        );
 
         let api_url = self.build_api_url(&url_part);
 
@@ -124,11 +126,9 @@ impl Config for Dracoon<Connected> {
             .await?;
 
         PasswordPoliciesConfig::from_response(response).await
-
     }
 
     async fn get_algorithms(&self) -> Result<AlgorithmVersionInfoList, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_ALGORITHMS}");
 
         let api_url = self.build_api_url(&url_part);
@@ -142,11 +142,9 @@ impl Config for Dracoon<Connected> {
             .await?;
 
         AlgorithmVersionInfoList::from_response(response).await
-
     }
 
     async fn get_product_packages(&self) -> Result<ProductPackageResponseList, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_PRODUCT_PACKAGES}");
 
         let api_url = self.build_api_url(&url_part);
@@ -160,13 +158,11 @@ impl Config for Dracoon<Connected> {
             .await?;
 
         ProductPackageResponseList::from_response(response).await
-
     }
 
     async fn get_current_product_package(
         &self,
     ) -> Result<ProductPackageResponseList, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_PRODUCT_PACKAGES}/{CONFIG_PRODUCT_PACKAGES_CURRENT}");
 
         let api_url = self.build_api_url(&url_part);
@@ -183,7 +179,6 @@ impl Config for Dracoon<Connected> {
     }
 
     async fn get_s3_tags(&self) -> Result<S3TagList, DracoonClientError> {
-
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_S3_TAGS}");
 
         let api_url = self.build_api_url(&url_part);
@@ -197,7 +192,6 @@ impl Config for Dracoon<Connected> {
             .await?;
 
         S3TagList::from_response(response).await
-
     }
 }
 
@@ -341,9 +335,17 @@ mod tests {
 
         classification_policies_mock.assert();
 
-        assert!(classification_policies.share_classification_policies.is_some());
-        let share_classification_policies = classification_policies.share_classification_policies.as_ref().unwrap();
-        assert_eq!(share_classification_policies.classification_requires_share_password, MinimumClassification::NoPassword);
+        assert!(classification_policies
+            .share_classification_policies
+            .is_some());
+        let share_classification_policies = classification_policies
+            .share_classification_policies
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            share_classification_policies.classification_requires_share_password,
+            MinimumClassification::NoPassword
+        );
     }
 
     #[tokio::test]
@@ -444,10 +446,7 @@ mod tests {
         assert_eq!(updated_by.avatar_uuid, "string");
         assert_eq!(updated_by.user_type, UserType::Internal);
 
-        assert_eq!(
-            encryption_password_policies.reject_dictionary_words,
-            None
-        );
+        assert_eq!(encryption_password_policies.reject_dictionary_words, None);
         assert_eq!(encryption_password_policies.reject_user_info, Some(true));
         assert_eq!(
             encryption_password_policies.reject_keyboard_patterns,

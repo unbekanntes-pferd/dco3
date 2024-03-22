@@ -99,7 +99,6 @@ impl From<u8> for MinimumClassification {
     }
 }
 
-
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassificationPoliciesConfig {
@@ -128,7 +127,7 @@ pub enum CharacterRule {
     #[serde(rename = "all")]
     All,
     #[serde(rename = "none")]
-    None
+    None,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -235,4 +234,3 @@ pub struct S3Tag {
 pub struct S3TagList {
     pub items: Option<Vec<S3Tag>>,
 }
-

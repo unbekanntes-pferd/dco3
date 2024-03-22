@@ -66,7 +66,6 @@ impl FromResponse for UserList {
     }
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminUserRoom {
@@ -82,7 +81,6 @@ pub struct LastAdminUserRoom {
 pub struct LastAdminUserRoomList {
     items: Vec<LastAdminUserRoom>,
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]

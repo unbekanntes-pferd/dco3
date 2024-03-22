@@ -3,8 +3,9 @@ mod tests {
     use dco3_crypto::{DracoonCrypto, DracoonRSACrypto, UserKeyPairContainer};
 
     use crate::{
-        tests::dracoon::{get_connected_client, assert_user_account}, user::UpdateUserAccountRequest, User,
-        UserAccountKeyPairs,
+        tests::dracoon::{assert_user_account, get_connected_client},
+        user::UpdateUserAccountRequest,
+        User, UserAccountKeyPairs,
     };
 
     #[tokio::test]
@@ -98,8 +99,6 @@ mod tests {
         user_account_mock.assert();
 
         assert_user_account(&user_account);
-
-
     }
 
     #[tokio::test]

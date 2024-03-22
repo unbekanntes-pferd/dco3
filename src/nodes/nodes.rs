@@ -6,7 +6,10 @@ use tracing::{debug, error};
 
 use crate::{
     auth::{errors::DracoonClientError, Connected},
-    constants::{DRACOON_API_PREFIX, NODES_BASE, NODES_COPY, NODES_MOVE, NODES_SEARCH, MISSING_FILE_KEYS, FILES_BASE, FILES_KEYS},
+    constants::{
+        DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, NODES_COPY,
+        NODES_MOVE, NODES_SEARCH,
+    },
     models::ListAllParams,
     utils::FromResponse,
     Dracoon,
@@ -14,7 +17,7 @@ use crate::{
 
 use super::{
     models::{DeleteNodesRequest, Node, NodeList, TransferNodesRequest},
-    Nodes, MissingKeysResponse, UserFileKeySetBatchRequest,
+    MissingKeysResponse, Nodes, UserFileKeySetBatchRequest,
 };
 
 #[async_trait]
@@ -244,9 +247,8 @@ impl Nodes for Dracoon<Connected> {
         &self,
         room_id: Option<u64>,
         file_id: Option<u64>,
-        user_id: Option<u64>
+        user_id: Option<u64>,
     ) -> Result<u64, DracoonClientError> {
-
         let keypair = self.get_keypair(None).await?;
 
         let missing_keys = self
@@ -259,14 +261,14 @@ impl Nodes for Dracoon<Connected> {
             missing_keys.range.as_ref().unwrap().total
         };
 
-        let key_reqs = UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;
+        let key_reqs =
+            UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;
 
         if !key_reqs.is_empty() {
             self.set_file_keys(key_reqs).await?;
         }
 
         Ok(remaining_keys)
-
     }
 }
 
@@ -284,7 +286,6 @@ trait NodesMissingFileKeysInternal {
         &self,
         req: UserFileKeySetBatchRequest,
     ) -> Result<(), DracoonClientError>;
-
 }
 
 #[async_trait]
@@ -324,7 +325,6 @@ impl NodesMissingFileKeysInternal for Dracoon<Connected> {
             .await?;
 
         MissingKeysResponse::from_response(response).await
-
     }
 
     async fn set_file_keys(
@@ -351,13 +351,8 @@ impl NodesMissingFileKeysInternal for Dracoon<Connected> {
         }
 
         Ok(())
-
     }
-
 }
-
-
-
 
 type ParsedPath = (String, String, u64);
 pub fn parse_node_path(path: &str) -> Result<ParsedPath, DracoonClientError> {
@@ -446,43 +441,46 @@ mod tests {
         let missing_keys_res = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-        .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
-        .with_body(missing_keys_res)
-        .with_header("content-type", "application/json")
-        .with_status(200)
-        .create();
+            .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0")
+            .with_body(missing_keys_res)
+            .with_header("content-type", "application/json")
+            .with_status(200)
+            .create();
 
-       let missing_keys = client.get_missing_file_keys(None, None, None, None).await.unwrap();
+        let missing_keys = client
+            .get_missing_file_keys(None, None, None, None)
+            .await
+            .unwrap();
 
-       missing_keys_mock.assert();
+        missing_keys_mock.assert();
 
-       assert_eq!(missing_keys.range.unwrap().total, 1);
-       assert_eq!(missing_keys.items.len(), 1);
-       assert_eq!(missing_keys.users.len(), 1);
-       assert_eq!(missing_keys.files.len(), 1);
+        assert_eq!(missing_keys.range.unwrap().total, 1);
+        assert_eq!(missing_keys.items.len(), 1);
+        assert_eq!(missing_keys.users.len(), 1);
+        assert_eq!(missing_keys.files.len(), 1);
 
-       let item = missing_keys.items.first().unwrap();
-       let user = missing_keys.users.first().unwrap();
-       let file = missing_keys.files.first().unwrap();
+        let item = missing_keys.items.first().unwrap();
+        let user = missing_keys.users.first().unwrap();
+        let file = missing_keys.files.first().unwrap();
 
-       assert_eq!(item.file_id, 3);
-       assert_eq!(item.user_id, 2);
-       assert_eq!(user.id, 2);
-       assert_eq!(file.id, 3);
-       assert_eq!(
-           file.file_key_container.version,
-           FileKeyVersion::RSA4096_AES256GCM
-       );
-       assert_eq!(file.file_key_container.key, "string");
-       assert_eq!(file.file_key_container.iv, "string");
-       assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
-       assert_eq!(
-           user.public_key_container.version,
-           UserKeyPairVersion::RSA4096
-       );
+        assert_eq!(item.file_id, 3);
+        assert_eq!(item.user_id, 2);
+        assert_eq!(user.id, 2);
+        assert_eq!(file.id, 3);
+        assert_eq!(
+            file.file_key_container.version,
+            FileKeyVersion::RSA4096_AES256GCM
+        );
+        assert_eq!(file.file_key_container.key, "string");
+        assert_eq!(file.file_key_container.iv, "string");
+        assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
+        assert_eq!(
+            user.public_key_container.version,
+            UserKeyPairVersion::RSA4096
+        );
 
-       assert_eq!(item.user_id, user.id);
-       assert_eq!(item.file_id, file.id);
+        assert_eq!(item.user_id, user.id);
+        assert_eq!(item.file_id, file.id);
     }
 
     #[tokio::test]
@@ -492,43 +490,49 @@ mod tests {
         let missing_keys_res = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-        .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0&file_id=123")
-        .with_body(missing_keys_res)
-        .with_header("content-type", "application/json")
-        .with_status(200)
-        .create();
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&file_id=123",
+            )
+            .with_body(missing_keys_res)
+            .with_header("content-type", "application/json")
+            .with_status(200)
+            .create();
 
-       let missing_keys = client.get_missing_file_keys(None, Some(123), None, None).await.unwrap();
+        let missing_keys = client
+            .get_missing_file_keys(None, Some(123), None, None)
+            .await
+            .unwrap();
 
-       missing_keys_mock.assert();
+        missing_keys_mock.assert();
 
-       assert_eq!(missing_keys.range.unwrap().total, 1);
-       assert_eq!(missing_keys.items.len(), 1);
-       assert_eq!(missing_keys.users.len(), 1);
-       assert_eq!(missing_keys.files.len(), 1);
+        assert_eq!(missing_keys.range.unwrap().total, 1);
+        assert_eq!(missing_keys.items.len(), 1);
+        assert_eq!(missing_keys.users.len(), 1);
+        assert_eq!(missing_keys.files.len(), 1);
 
-       let item = missing_keys.items.first().unwrap();
-       let user = missing_keys.users.first().unwrap();
-       let file = missing_keys.files.first().unwrap();
+        let item = missing_keys.items.first().unwrap();
+        let user = missing_keys.users.first().unwrap();
+        let file = missing_keys.files.first().unwrap();
 
-       assert_eq!(item.file_id, 3);
-       assert_eq!(item.user_id, 2);
-       assert_eq!(user.id, 2);
-       assert_eq!(file.id, 3);
-       assert_eq!(
-           file.file_key_container.version,
-           FileKeyVersion::RSA4096_AES256GCM
-       );
-       assert_eq!(file.file_key_container.key, "string");
-       assert_eq!(file.file_key_container.iv, "string");
-       assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
-       assert_eq!(
-           user.public_key_container.version,
-           UserKeyPairVersion::RSA4096
-       );
+        assert_eq!(item.file_id, 3);
+        assert_eq!(item.user_id, 2);
+        assert_eq!(user.id, 2);
+        assert_eq!(file.id, 3);
+        assert_eq!(
+            file.file_key_container.version,
+            FileKeyVersion::RSA4096_AES256GCM
+        );
+        assert_eq!(file.file_key_container.key, "string");
+        assert_eq!(file.file_key_container.iv, "string");
+        assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
+        assert_eq!(
+            user.public_key_container.version,
+            UserKeyPairVersion::RSA4096
+        );
 
-       assert_eq!(item.user_id, user.id);
-       assert_eq!(item.file_id, file.id);
+        assert_eq!(item.user_id, user.id);
+        assert_eq!(item.file_id, file.id);
     }
 
     #[tokio::test]
@@ -538,43 +542,49 @@ mod tests {
         let missing_keys_res = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-        .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0&room_id=123")
-        .with_body(missing_keys_res)
-        .with_header("content-type", "application/json")
-        .with_status(200)
-        .create();
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&room_id=123",
+            )
+            .with_body(missing_keys_res)
+            .with_header("content-type", "application/json")
+            .with_status(200)
+            .create();
 
-       let missing_keys = client.get_missing_file_keys(Some(123), None, None, None).await.unwrap();
+        let missing_keys = client
+            .get_missing_file_keys(Some(123), None, None, None)
+            .await
+            .unwrap();
 
-       missing_keys_mock.assert();
+        missing_keys_mock.assert();
 
-       assert_eq!(missing_keys.range.unwrap().total, 1);
-       assert_eq!(missing_keys.items.len(), 1);
-       assert_eq!(missing_keys.users.len(), 1);
-       assert_eq!(missing_keys.files.len(), 1);
+        assert_eq!(missing_keys.range.unwrap().total, 1);
+        assert_eq!(missing_keys.items.len(), 1);
+        assert_eq!(missing_keys.users.len(), 1);
+        assert_eq!(missing_keys.files.len(), 1);
 
-       let item = missing_keys.items.first().unwrap();
-       let user = missing_keys.users.first().unwrap();
-       let file = missing_keys.files.first().unwrap();
+        let item = missing_keys.items.first().unwrap();
+        let user = missing_keys.users.first().unwrap();
+        let file = missing_keys.files.first().unwrap();
 
-       assert_eq!(item.file_id, 3);
-       assert_eq!(item.user_id, 2);
-       assert_eq!(user.id, 2);
-       assert_eq!(file.id, 3);
-       assert_eq!(
-           file.file_key_container.version,
-           FileKeyVersion::RSA4096_AES256GCM
-       );
-       assert_eq!(file.file_key_container.key, "string");
-       assert_eq!(file.file_key_container.iv, "string");
-       assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
-       assert_eq!(
-           user.public_key_container.version,
-           UserKeyPairVersion::RSA4096
-       );
+        assert_eq!(item.file_id, 3);
+        assert_eq!(item.user_id, 2);
+        assert_eq!(user.id, 2);
+        assert_eq!(file.id, 3);
+        assert_eq!(
+            file.file_key_container.version,
+            FileKeyVersion::RSA4096_AES256GCM
+        );
+        assert_eq!(file.file_key_container.key, "string");
+        assert_eq!(file.file_key_container.iv, "string");
+        assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
+        assert_eq!(
+            user.public_key_container.version,
+            UserKeyPairVersion::RSA4096
+        );
 
-       assert_eq!(item.user_id, user.id);
-       assert_eq!(item.file_id, file.id);
+        assert_eq!(item.user_id, user.id);
+        assert_eq!(item.file_id, file.id);
     }
 
     #[tokio::test]
@@ -584,42 +594,48 @@ mod tests {
         let missing_keys_res = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
 
         let missing_keys_mock = mock_server
-        .mock("GET", "/api/v4/nodes/missingFileKeys?limit=100&offset=0&user_id=123")
-        .with_body(missing_keys_res)
-        .with_header("content-type", "application/json")
-        .with_status(200)
-        .create();
+            .mock(
+                "GET",
+                "/api/v4/nodes/missingFileKeys?limit=100&offset=0&user_id=123",
+            )
+            .with_body(missing_keys_res)
+            .with_header("content-type", "application/json")
+            .with_status(200)
+            .create();
 
-       let missing_keys = client.get_missing_file_keys(None, None, Some(123), None).await.unwrap();
+        let missing_keys = client
+            .get_missing_file_keys(None, None, Some(123), None)
+            .await
+            .unwrap();
 
-       missing_keys_mock.assert();
+        missing_keys_mock.assert();
 
-       assert_eq!(missing_keys.range.unwrap().total, 1);
-       assert_eq!(missing_keys.items.len(), 1);
-       assert_eq!(missing_keys.users.len(), 1);
-       assert_eq!(missing_keys.files.len(), 1);
+        assert_eq!(missing_keys.range.unwrap().total, 1);
+        assert_eq!(missing_keys.items.len(), 1);
+        assert_eq!(missing_keys.users.len(), 1);
+        assert_eq!(missing_keys.files.len(), 1);
 
-       let item = missing_keys.items.first().unwrap();
-       let user = missing_keys.users.first().unwrap();
-       let file = missing_keys.files.first().unwrap();
+        let item = missing_keys.items.first().unwrap();
+        let user = missing_keys.users.first().unwrap();
+        let file = missing_keys.files.first().unwrap();
 
-       assert_eq!(item.file_id, 3);
-       assert_eq!(item.user_id, 2);
-       assert_eq!(user.id, 2);
-       assert_eq!(file.id, 3);
-       assert_eq!(
-           file.file_key_container.version,
-           FileKeyVersion::RSA4096_AES256GCM
-       );
-       assert_eq!(file.file_key_container.key, "string");
-       assert_eq!(file.file_key_container.iv, "string");
-       assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
-       assert_eq!(
-           user.public_key_container.version,
-           UserKeyPairVersion::RSA4096
-       );
+        assert_eq!(item.file_id, 3);
+        assert_eq!(item.user_id, 2);
+        assert_eq!(user.id, 2);
+        assert_eq!(file.id, 3);
+        assert_eq!(
+            file.file_key_container.version,
+            FileKeyVersion::RSA4096_AES256GCM
+        );
+        assert_eq!(file.file_key_container.key, "string");
+        assert_eq!(file.file_key_container.iv, "string");
+        assert_eq!(file.file_key_container.tag.as_ref().unwrap(), "string");
+        assert_eq!(
+            user.public_key_container.version,
+            UserKeyPairVersion::RSA4096
+        );
 
-       assert_eq!(item.user_id, user.id);
-       assert_eq!(item.file_id, file.id);
+        assert_eq!(item.user_id, user.id);
+        assert_eq!(item.file_id, file.id);
     }
 }

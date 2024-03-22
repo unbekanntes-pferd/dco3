@@ -66,26 +66,26 @@ impl AuthenticationMethods for Dracoon<Connected> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{tests::dracoon::get_connected_client, system::auth::AuthenticationMethods};
-
+    use crate::{system::auth::AuthenticationMethods, tests::dracoon::get_connected_client};
 
     #[tokio::test]
     async fn test_get_ad_configs() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let response = include_str!("../../tests/responses/system/auth/active_directory_list_ok.json");
+        let response =
+            include_str!("../../tests/responses/system/auth/active_directory_list_ok.json");
 
         let ad_config_mock = mock_server
-        .mock("GET", "/api/v4/system/auth/ads")
-        .with_status(200)
-        .with_body(response)
-        .with_header("content-type", "application/json")
-        .create();
+            .mock("GET", "/api/v4/system/auth/ads")
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .create();
 
         let ad_configs = client.get_active_directory_configurations().await.unwrap();
 
         ad_config_mock.assert();
-        
+
         assert_eq!(ad_configs.items.len(), 1);
         let ad_config = &ad_configs.items.get(0).unwrap();
         assert_eq!(ad_config.id, 1);
@@ -104,19 +104,18 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_openid_configs() {
-
         let (client, mut mock_server) = get_connected_client().await;
 
         let response = include_str!("../../tests/responses/system/auth/openid_config_list_ok.json");
 
         let openid_config_mock = mock_server
-        .mock("GET", "/api/v4/system/auth/openid/idps")
-        .with_status(200)
-        .with_body(response)
-        .with_header("content-type", "application/json")
-        .create();
+            .mock("GET", "/api/v4/system/auth/openid/idps")
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .create();
 
-      let openid_configs = client.get_openid_idp_configurations().await.unwrap();
+        let openid_configs = client.get_openid_idp_configurations().await.unwrap();
 
         openid_config_mock.assert();
 
@@ -139,14 +138,24 @@ mod tests {
         assert_eq!(openid_config.mapping_claim, "string");
         assert_eq!(openid_config.flow, Some("authorization_code".to_string()));
         assert_eq!(openid_config.pkce_enabled, Some(true));
-        assert_eq!(openid_config.pkce_challenge_method, Some("string".to_string()));
-        assert_eq!(openid_config.fallback_mapping_claim, Some("string".to_string()));
-        assert_eq!(openid_config.user_info_source, Some("user_info_endpoint".to_string()));
+        assert_eq!(
+            openid_config.pkce_challenge_method,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            openid_config.fallback_mapping_claim,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            openid_config.user_info_source,
+            Some("user_info_endpoint".to_string())
+        );
         assert_eq!(openid_config.user_import_enabled, Some(true));
         assert_eq!(openid_config.user_import_group, Some(2));
         assert_eq!(openid_config.user_update_enabled, Some(true));
-        assert_eq!(openid_config.user_management_url, Some("string".to_string()));
-
+        assert_eq!(
+            openid_config.user_management_url,
+            Some("string".to_string())
+        );
     }
-
-} 
+}
