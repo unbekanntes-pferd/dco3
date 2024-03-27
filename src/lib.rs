@@ -28,6 +28,7 @@
 //! * [Users] - for user management operations
 //! * [CustomerProvisioning] - for customer provisioning operations
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
+//! * [Config] - for general configuration information
 //!
 //!
 //! ### Example
@@ -416,6 +417,7 @@ pub use self::{
     shares::{DownloadShares, UploadShares},
     user::{User, UserAccountKeyPairs},
     users::Users,
+    public::Public,
 };
 
 pub mod auth;
@@ -428,6 +430,7 @@ pub mod provisioning;
 pub mod settings;
 pub mod shares;
 pub mod system;
+pub mod public;
 mod tests;
 pub mod user;
 pub mod users;

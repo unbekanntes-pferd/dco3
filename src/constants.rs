@@ -103,6 +103,13 @@ pub const CONFIG_S3_TAGS: &str = "s3_tags";
 pub const CONFIG_PRODUCT_PACKAGES_CURRENT: &str = "current";
 pub const CONFIG_CLASSIFICATION_POLICIES: &str = "classifications";
 
+// PUBLIC
+pub const PUBLIC_BASE: &str = "public";
+pub const PUBLIC_SOFTWARE_BASE: &str = "software";
+pub const PUBLIC_VERSION: &str = "version";
+pub const PUBLIC_SYSTEM_BASE: &str = "system";
+pub const PUBLIC_INFO: &str = "info";
+
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));
 

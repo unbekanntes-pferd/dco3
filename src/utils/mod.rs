@@ -19,7 +19,10 @@ where
         StatusCodeState::Ok(_) => Ok(res
             .json::<T>()
             .await
-            .map_err(|err| println!("{}", err))
+            .map_err(|err| {
+                eprintln!("Failed to parse response body: {}", err);
+                error!("{}", err);
+            })
             .expect("Correct response type")),
         StatusCodeState::Error(_) => Err(build_error_body::<E>(res.json::<E>().await.map_err(
             |err| {
