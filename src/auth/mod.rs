@@ -21,8 +21,8 @@ pub use models::*;
 
 use crate::{
     constants::{
-        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MIN_RETRY_DELAY,
-        TOKEN_TYPE_HINT_ACCESS_TOKEN,
+        DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MAX_TOKEN_COUNT,
+        MIN_RETRY_DELAY, MIN_TOKEN_COUNT, TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
     models::Container,
 };
@@ -104,6 +104,12 @@ impl Connection {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum CurrentConnection {
+    Main,
+    Additional(u8),
+}
+
 #[derive(Clone)]
 /// represents the DRACOON client (stateful)
 pub struct DracoonClient<State = Disconnected> {
@@ -114,6 +120,9 @@ pub struct DracoonClient<State = Disconnected> {
     pub http: ClientWithMiddleware,
     pub stream_http: Client,
     connection: Container<Connection>,
+    token_rotation: Option<u8>,
+    additional_connections: Container<Vec<Connection>>,
+    curr_connection: Container<CurrentConnection>,
     connected: PhantomData<State>,
     provisioning_token: Option<String>,
 }
@@ -129,6 +138,7 @@ pub struct DracoonClientBuilder {
     max_retries: Option<u32>,
     min_retry_delay: Option<u64>,
     max_retry_delay: Option<u64>,
+    token_rotation: Option<u8>,
     provisioning_token: Option<String>,
 }
 
@@ -145,6 +155,7 @@ impl DracoonClientBuilder {
             min_retry_delay: None,
             max_retry_delay: None,
             provisioning_token: None,
+            token_rotation: None,
         }
     }
 
@@ -196,11 +207,19 @@ impl DracoonClientBuilder {
         self
     }
 
+    /// Sets the provisioning token for the provisioning API
     pub fn with_provisioning_token(mut self, token: impl Into<String>) -> Self {
         self.provisioning_token = Some(token.into());
         self
     }
 
+    #[doc(hidden = "experimental")]
+    pub fn with_token_rotation(mut self, token_rotation: u8) -> Self {
+        self.token_rotation = Some(token_rotation);
+        self
+    }
+
+    /// Builds the [DracoonClient] struct for the provisioning API
     pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
         let Some(provisioning_token) = self.provisioning_token else {
             return Err(DracoonClientError::MissingArgument);
@@ -255,6 +274,9 @@ impl DracoonClientBuilder {
             stream_http: upload_http,
             connected: PhantomData,
             connection: Container::new(),
+            additional_connections: Container::new(),
+            token_rotation: None,
+            curr_connection: Container::new(),
             provisioning_token: Some(provisioning_token),
         })
     }
@@ -273,6 +295,11 @@ impl DracoonClientBuilder {
             .max_retry_delay
             .unwrap_or(MAX_RETRY_DELAY)
             .clamp(min_retry_delay, MAX_RETRY_DELAY);
+
+        let token_rotation = self
+            .token_rotation
+            .unwrap_or(MIN_TOKEN_COUNT)
+            .clamp(MIN_TOKEN_COUNT, MAX_TOKEN_COUNT);
 
         let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
             .jitter(Jitter::Bounded)
@@ -319,14 +346,23 @@ impl DracoonClientBuilder {
             ))?,
         };
 
+        let token_rotation = if token_rotation > 1 {
+            Some(token_rotation)
+        } else {
+            None
+        };
+
         Ok(DracoonClient {
             base_url,
             redirect_uri: Some(redirect_uri),
             client_id,
             client_secret,
             connection: Container::<Connection>::new(),
+            additional_connections: Container::new(),
+            token_rotation,
             connected: PhantomData,
             http,
+            curr_connection: Container::new_from(CurrentConnection::Main),
             stream_http: upload_http,
             provisioning_token: None,
         })
@@ -359,10 +395,25 @@ impl DracoonClient<Disconnected> {
             }
         };
 
+        if let Some(token_rotation) = self.token_rotation {
+            let mut additional_connections = Vec::new();
+            for _ in 0..token_rotation - 1 {
+                let new_connection = self
+                    .connect_refresh_token(&connection.refresh_token)
+                    .await?;
+                additional_connections.push(new_connection);
+            }
+
+            self.additional_connections.set(additional_connections);
+        }
+
         Ok(DracoonClient {
             client_id: self.client_id,
             client_secret: self.client_secret,
             connection: Container::new_from(connection),
+            additional_connections: self.additional_connections,
+            token_rotation: self.token_rotation,
+            curr_connection: self.curr_connection,
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -516,6 +567,9 @@ impl DracoonClient<Connected> {
             client_id: self.client_id,
             client_secret: self.client_secret,
             connection: Container::<Connection>::new(),
+            additional_connections: Container::new(),
+            token_rotation: self.token_rotation,
+            curr_connection: Container::new_from(CurrentConnection::Main),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             connected: PhantomData,
@@ -609,6 +663,71 @@ impl DracoonClient<Connected> {
 
     /// Returns the necessary token header for any API call that requires authentication in DRACOON
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
+        if let Some(token_rotation) = self.token_rotation {
+            // get the next connection in the rotation
+            let connection = match self.curr_connection.get() {
+                Some(CurrentConnection::Main) => self
+                    .connection
+                    .get()
+                    .expect("Connected client has no connection"),
+                Some(CurrentConnection::Additional(idx)) => {
+                    let additional_connections = self
+                        .additional_connections
+                        .get()
+                        .expect("Connected client has no additional connections");
+
+                    additional_connections
+                        .get(idx as usize)
+                        .expect("Invalid connection index")
+                        .clone()
+                }
+                None => self
+                    .connection
+                    .get()
+                    .expect("Connected client has no connection"),
+            };
+
+            // check if the current connection is expired and replace it if necessary
+            if connection.is_expired() {
+                let new_connection = self.connect_refresh_token().await?;
+                let access_token = new_connection.access_token.clone();
+
+                match self.curr_connection.get() {
+                    Some(CurrentConnection::Main) => self.connection.set(new_connection),
+                    Some(CurrentConnection::Additional(idx)) => {
+                        let mut additional_connections = self
+                            .additional_connections
+                            .get()
+                            .expect("Connected client has no additional connections");
+
+                        additional_connections[idx as usize] = new_connection;
+                        self.additional_connections.set(additional_connections);
+                    }
+                    None => self.connection.set(new_connection),
+                }
+
+                // no need to rotate, there's a new access token
+                return Ok(format!("Bearer {}", access_token));
+            }
+
+            // rotate the connection
+            let next_connection = match self.curr_connection.get() {
+                Some(CurrentConnection::Main) => CurrentConnection::Additional(0),
+                Some(CurrentConnection::Additional(idx)) => {
+                    if idx + 1 < token_rotation - 1 {
+                        CurrentConnection::Additional(idx + 1)
+                    } else {
+                        CurrentConnection::Main
+                    }
+                }
+                None => CurrentConnection::Main,
+            };
+
+            self.curr_connection.set(next_connection);
+
+            return Ok(format!("Bearer {}", connection.access_token));
+        }
+
         if self.is_connection_expired() {
             let new_connection = self.connect_refresh_token().await?;
             self.connection.set(new_connection);
@@ -671,6 +790,44 @@ mod tests {
             .with_min_retry_delay(300)
             .build()
             .expect("valid client config")
+    }
+
+    fn get_test_client_with_token_rotation(url: &str, rotation: u8) -> DracoonClient<Disconnected> {
+        DracoonClientBuilder::new()
+            .with_base_url(url)
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .with_user_agent("test_client")
+            .with_max_retries(1)
+            .with_max_retry_delay(600)
+            .with_min_retry_delay(300)
+            .with_token_rotation(rotation)
+            .build()
+            .expect("valid client config")
+    }
+
+    struct TokenGenrator {
+        tokens: [&'static str; 5],
+        idx: usize,
+    }
+
+    impl TokenGenrator {
+        pub fn new() -> Self {
+            TokenGenrator {
+                tokens: ["token1", "token2", "token3", "token4", "token5"],
+                idx: 0,
+            }
+        }
+        pub fn get_token(&mut self) -> &'static str {
+            let token = self.tokens[self.idx];
+            self.idx = (self.idx + 1) % 5;
+            token
+        }
+
+        pub fn get_auth_response(&mut self) -> String {
+            let auth_res = include_str!("tests/auth_ok_placeholder.json");
+            auth_res.replace("$token", self.get_token())
+        }
     }
 
     #[tokio::test]
@@ -801,6 +958,206 @@ mod tests {
 
         auth_mock.assert();
         assert_eq!(access_token, "Bearer access_token");
+    }
+
+    #[tokio::test]
+    async fn test_token_rotation_creation() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let base_url = mock_server.url();
+
+        let mut token_generator = TokenGenrator::new();
+
+        let auth_mock_1 = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_generator.get_auth_response())
+            .create();
+
+        let auth_mock_2 = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_generator.get_auth_response())
+            .create();
+
+        let auth_mock_3 = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_generator.get_auth_response())
+            .create();
+
+        let auth_mock_4 = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_generator.get_auth_response())
+            .create();
+
+        let auth_mock_5 = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_generator.get_auth_response())
+            .create();
+        let dracoon = get_test_client_with_token_rotation(&base_url, 5);
+
+        let dracoon = dracoon
+            .connect(OAuth2Flow::AuthCodeFlow("test".to_string()))
+            .await
+            .unwrap();
+
+        auth_mock_1.assert();
+        auth_mock_2.assert();
+        auth_mock_3.assert();
+        auth_mock_4.assert();
+        auth_mock_5.assert();
+
+        assert_eq!(dracoon.token_rotation, Some(5));
+        assert_eq!(dracoon.additional_connections.get().unwrap().len(), 4);
+        assert_eq!(
+            dracoon.curr_connection.get().unwrap(),
+            CurrentConnection::Main
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .access_token,
+            "token2"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .access_token,
+            "token3"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(2)
+                .unwrap()
+                .access_token,
+            "token4"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(3)
+                .unwrap()
+                .access_token,
+            "token5"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_token_rotation_creation_above_limit() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let base_url = mock_server.url();
+
+        let auth_res = include_str!("./tests/auth_ok.json");
+
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(auth_res)
+            .expect(5)
+            .create();
+
+        let dracoon = get_test_client_with_token_rotation(&base_url, 10);
+
+        let dracoon = dracoon
+            .connect(OAuth2Flow::AuthCodeFlow("test".to_string()))
+            .await
+            .unwrap();
+
+        auth_mock.assert();
+
+        assert_eq!(dracoon.token_rotation, Some(5));
+        assert_eq!(dracoon.additional_connections.get().unwrap().len(), 4);
+        assert_eq!(
+            dracoon.curr_connection.get().unwrap(),
+            CurrentConnection::Main
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(0)
+                .unwrap()
+                .access_token,
+            "access_token"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(1)
+                .unwrap()
+                .access_token,
+            "access_token"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(2)
+                .unwrap()
+                .access_token,
+            "access_token"
+        );
+        assert_eq!(
+            dracoon
+                .additional_connections
+                .get()
+                .unwrap()
+                .get(3)
+                .unwrap()
+                .access_token,
+            "access_token"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_token_rotation_with_lower_limit() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let base_url = mock_server.url();
+
+        let auth_res = include_str!("./tests/auth_ok.json");
+
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(auth_res)
+            .expect(1)
+            .create();
+
+        let dracoon = get_test_client_with_token_rotation(&base_url, 1)
+            .connect(OAuth2Flow::authorization_code("test".to_string()))
+            .await
+            .unwrap();
+
+        auth_mock.assert();
+
+        assert_eq!(dracoon.token_rotation, None);
+        assert!(dracoon.additional_connections.get().is_none());
     }
 
     #[tokio::test]
