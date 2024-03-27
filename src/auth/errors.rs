@@ -94,6 +94,13 @@ impl From<DracoonCryptoError> for DracoonClientError {
 }
 
 impl DracoonClientError {
+    pub fn get_http_error(&self) -> Option<&DracoonErrorResponse> {
+        match self {
+            DracoonClientError::Http(error) => Some(error),
+            _ => None,
+        }
+    }
+
     /// Check if the error is an authentication error
     pub fn is_auth_error(&self) -> bool {
         matches!(self, DracoonClientError::Auth(_))

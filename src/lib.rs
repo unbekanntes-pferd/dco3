@@ -168,9 +168,43 @@
 //!         }
 //!       }
 //!  }
-//!
 //! ```
+//! If you need more information about the error, you can use the `get_http_error` method.
+//! 
+//! ```no_run
+//! use dco3::{Dracoon, OAuth2Flow, Nodes};
 //!
+//! #[tokio::main]
+//!
+//! async fn main() {
+//!
+//!  let dracoon = Dracoon::builder()
+//!    .with_base_url("https://dracoon.team")
+//!    .with_client_id("client_id")
+//!    .with_client_secret("client_secret")
+//!    .build()
+//!    .unwrap()
+//!    .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+//!    .await
+//!    .unwrap();
+//!
+//! let node = dracoon.get_node(123).await;
+//!
+//! match node {
+//!  Ok(node) => println!("Node info: {:?}", node),
+//! Err(err) => {
+//!   if let Some(http_err) = err.get_http_error() {
+//!    // check error type
+//!   if http_err.is_not_found() {
+//!    // do something
+//!    println!("Node not found");
+//!    // check error message
+//!   println!("Error message: {}", http_err.error_message());
+//!    // access error details
+//!   println!("Error details: {}", http_err.debug_info().unwrap());
+//!   } 
+//!  }
+//!````
 //! ### Retries
 //! The client will automatically retry failed requests.
 //! You can configure the retry behavior by passing your config during client creation.
