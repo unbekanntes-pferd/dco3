@@ -202,8 +202,11 @@
 //!   println!("Error message: {}", http_err.error_message());
 //!    // access error details
 //!   println!("Error details: {}", http_err.debug_info().unwrap());
-//!   } 
+//!     } 
+//!    }
+//!   }
 //!  }
+//! }
 //!````
 //! ### Retries
 //! The client will automatically retry failed requests.
