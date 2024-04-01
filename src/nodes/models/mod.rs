@@ -684,6 +684,68 @@ impl CompleteS3FileUploadRequestBuilder {
     }
 }
 
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompleteUploadRequest {
+    resolution_strategy: Option<ResolutionStrategy>,
+    file_name: Option<String>,
+    keep_share_links: Option<bool>,
+    file_key: Option<FileKey>,
+}
+
+
+pub struct CompleteUploadRequestBuilder {
+    resolution_strategy: Option<ResolutionStrategy>,
+    file_name: Option<String>,
+    keep_share_links: Option<bool>,
+    file_key: Option<FileKey>,
+}
+
+
+impl CompleteUploadRequest {
+    pub fn builder() -> CompleteUploadRequestBuilder {
+        CompleteUploadRequestBuilder {
+            resolution_strategy: None,
+            file_name: None,
+            keep_share_links: None,
+            file_key: None,
+        }
+    }
+}
+
+impl CompleteUploadRequestBuilder {
+    pub fn with_resolution_strategy(mut self, resolution_strategy: ResolutionStrategy) -> Self {
+        self.resolution_strategy = Some(resolution_strategy);
+        self
+    }
+
+    pub fn with_file_name(mut self, file_name: String) -> Self {
+        self.file_name = Some(file_name);
+        self
+    }
+
+    pub fn with_keep_share_links(mut self, keep_share_links: bool) -> Self {
+        self.keep_share_links = Some(keep_share_links);
+        self
+    }
+
+    pub fn with_file_key(mut self, file_key: FileKey) -> Self {
+        self.file_key = Some(file_key);
+        self
+    }
+
+    pub fn build(self) -> CompleteUploadRequest {
+        CompleteUploadRequest {
+            resolution_strategy: self.resolution_strategy,
+            file_name: self.file_name,
+            keep_share_links: self.keep_share_links,
+            file_key: self.file_key,
+        }
+    }
+
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub enum ResolutionStrategy {
     #[serde(rename = "autorename")]
