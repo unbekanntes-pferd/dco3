@@ -87,7 +87,7 @@ mod tests {
         ad_config_mock.assert();
 
         assert_eq!(ad_configs.items.len(), 1);
-        let ad_config = &ad_configs.items.get(0).unwrap();
+        let ad_config = &ad_configs.items.first().unwrap();
         assert_eq!(ad_config.id, 1);
         assert_eq!(ad_config.alias, "string");
         assert_eq!(ad_config.server_ip, "string");
@@ -95,8 +95,8 @@ mod tests {
         assert_eq!(ad_config.server_admin_name, "string");
         assert_eq!(ad_config.ldap_users_domain, "string");
         assert_eq!(ad_config.user_filter, "string");
-        assert_eq!(ad_config.user_import, true);
-        assert_eq!(ad_config.use_ldaps, true);
+        assert!(ad_config.user_import);
+        assert!(ad_config.use_ldaps);
         assert_eq!(ad_config.ad_export_group, "string");
         assert_eq!(ad_config.sds_import_group, Some(2));
         assert_eq!(ad_config.ssl_finger_print, Some("string".to_string()));
@@ -120,7 +120,7 @@ mod tests {
         openid_config_mock.assert();
 
         assert_eq!(openid_configs.len(), 1);
-        let openid_config = &openid_configs.get(0).unwrap();
+        let openid_config = &openid_configs.first().unwrap();
 
         assert_eq!(openid_config.id, 1);
         assert_eq!(openid_config.name, "string");
@@ -132,9 +132,9 @@ mod tests {
         assert_eq!(openid_config.client_id, "string");
         assert_eq!(openid_config.client_secret, "string");
         assert_eq!(openid_config.redirect_uris.len(), 1);
-        assert_eq!(openid_config.redirect_uris.get(0).unwrap(), "string");
+        assert_eq!(openid_config.redirect_uris.first().unwrap(), "string");
         assert_eq!(openid_config.scopes.len(), 1);
-        assert_eq!(openid_config.scopes.get(0).unwrap(), "string");
+        assert_eq!(openid_config.scopes.first().unwrap(), "string");
         assert_eq!(openid_config.mapping_claim, "string");
         assert_eq!(openid_config.flow, Some("authorization_code".to_string()));
         assert_eq!(openid_config.pkce_enabled, Some(true));

@@ -100,7 +100,7 @@ mod download_share_tests {
         assert_eq!(shares.range.total, 1);
 
         assert_eq!(shares.items.len(), 1);
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_download_share(share);
     }
@@ -127,7 +127,7 @@ mod download_share_tests {
         assert_eq!(shares.range.total, 1);
 
         assert_eq!(shares.items.len(), 1);
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_download_share(share);
     }
@@ -154,7 +154,7 @@ mod download_share_tests {
         assert_eq!(shares.range.total, 1);
 
         assert_eq!(shares.items.len(), 1);
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_download_share(share);
     }
@@ -186,7 +186,7 @@ mod download_share_tests {
         assert_eq!(shares.range.total, 1);
 
         assert_eq!(shares.items.len(), 1);
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_download_share(share);
     }
@@ -215,7 +215,7 @@ mod download_share_tests {
         assert_eq!(shares.range.total, 1);
 
         assert_eq!(shares.items.len(), 1);
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_download_share(share);
     }
@@ -472,7 +472,7 @@ mod upload_share_tests {
 
         assert_eq!(shares.items.len(), 1);
 
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_upload_share(share);
     }
@@ -502,7 +502,7 @@ mod upload_share_tests {
 
         assert_eq!(shares.items.len(), 1);
 
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_upload_share(share);
     }
@@ -532,7 +532,7 @@ mod upload_share_tests {
 
         assert_eq!(shares.items.len(), 1);
 
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_upload_share(share);
     }
@@ -567,7 +567,7 @@ mod upload_share_tests {
 
         assert_eq!(shares.items.len(), 1);
 
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_upload_share(share);
     }
@@ -599,7 +599,7 @@ mod upload_share_tests {
 
         assert_eq!(shares.items.len(), 1);
 
-        let share = shares.items.get(0).unwrap();
+        let share = shares.items.first().unwrap();
 
         assert_upload_share(share);
     }

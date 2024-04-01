@@ -1498,10 +1498,10 @@ mod tests {
 
         assert_eq!(s3_urls.urls.len(), 1);
         assert_eq!(
-            s3_urls.urls.get(0).unwrap().url,
+            s3_urls.urls.first().unwrap().url,
             "https://test.dracoon.com/not/real/upload_url"
         );
-        assert_eq!(s3_urls.urls.get(0).unwrap().part_number, 1);
+        assert_eq!(s3_urls.urls.first().unwrap().part_number, 1);
     }
 
     #[tokio::test]
@@ -1607,19 +1607,19 @@ mod tests {
         assert_eq!(missing_keys.items.len(), 1);
         assert_eq!(missing_keys.users.len(), 1);
         assert_eq!(missing_keys.files.len(), 1);
-        assert_eq!(missing_keys.items.get(0).unwrap().file_id, 3);
-        assert_eq!(missing_keys.items.get(0).unwrap().user_id, 2);
-        assert_eq!(missing_keys.users.get(0).unwrap().id, 2);
-        assert_eq!(missing_keys.files.get(0).unwrap().id, 3);
+        assert_eq!(missing_keys.items.first().unwrap().file_id, 3);
+        assert_eq!(missing_keys.items.first().unwrap().user_id, 2);
+        assert_eq!(missing_keys.users.first().unwrap().id, 2);
+        assert_eq!(missing_keys.files.first().unwrap().id, 3);
         assert_eq!(
-            missing_keys.files.get(0).unwrap().file_key_container.key,
+            missing_keys.files.first().unwrap().file_key_container.key,
             "string"
         );
         assert_eq!(
-            missing_keys.files.get(0).unwrap().file_key_container.iv,
+            missing_keys.files.first().unwrap().file_key_container.iv,
             "string"
         );
-        assert_eq!(missing_keys.files.get(0).unwrap().file_key_container.version, FileKeyVersion::RSA4096_AES256GCM);
+        assert_eq!(missing_keys.files.first().unwrap().file_key_container.version, FileKeyVersion::RSA4096_AES256GCM);
     }
 
     #[tokio::test]

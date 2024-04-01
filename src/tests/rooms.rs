@@ -169,7 +169,7 @@ mod tests {
         let room_policies = client.get_room_policies(123).await.unwrap();
 
         assert_eq!(room_policies.default_expiration_period, 0);
-        assert_eq!(room_policies.is_virus_protection_enabled, false);
+        assert!(!room_policies.is_virus_protection_enabled);
     }
 
     #[tokio::test]
@@ -187,12 +187,11 @@ mod tests {
             .with_virus_protection_enabled(true)
             .build();
 
-        let no_response_body = client
+        let result = client
             .update_room_policies(123, room_policies)
-            .await
-            .unwrap();
+            .await;
 
-        assert_eq!(no_response_body, ())
+        assert!(result.is_ok());
     }
 
     #[tokio::test]
@@ -258,7 +257,7 @@ mod tests {
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
 
-        let room_user = room_users.items.get(0).unwrap();
+        let room_user = room_users.items.first().unwrap();
 
         room_users_mock.assert();
 
@@ -285,7 +284,7 @@ mod tests {
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
 
-        let room_user = room_users.items.get(0).unwrap();
+        let room_user = room_users.items.first().unwrap();
 
         room_users_mock.assert();
 
@@ -312,7 +311,7 @@ mod tests {
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
 
-        let room_user = room_users.items.get(0).unwrap();
+        let room_user = room_users.items.first().unwrap();
 
         room_users_mock.assert();
 
@@ -333,7 +332,7 @@ mod tests {
             NodePermissions::new_with_read_permissions(),
         )];
 
-        let room_users = client
+        client
             .update_room_users(123, user_updates.into())
             .await
             .unwrap();
@@ -352,7 +351,7 @@ mod tests {
 
         let user_ids = vec![1, 2, 3];
 
-        let room_users = client
+        client
             .delete_room_users(123, user_ids.into())
             .await
             .unwrap();
@@ -379,7 +378,7 @@ mod tests {
 
         assert_eq!(room_groups.range.total, 1);
         assert_eq!(room_groups.items.len(), 1);
-        let room_group = room_groups.items.get(0).unwrap();
+        let room_group = room_groups.items.first().unwrap();
 
         assert_room_group(room_group);
     }
@@ -405,7 +404,7 @@ mod tests {
 
         assert_eq!(room_groups.range.total, 1);
         assert_eq!(room_groups.items.len(), 1);
-        let room_group = room_groups.items.get(0).unwrap();
+        let room_group = room_groups.items.first().unwrap();
 
         assert_room_group(room_group);
     }
@@ -430,7 +429,7 @@ mod tests {
         assert_eq!(room_groups.range.total, 1);
         assert_eq!(room_groups.items.len(), 1);
 
-        let room_group = room_groups.items.get(0).unwrap();
+        let room_group = room_groups.items.first().unwrap();
 
         room_groups_mock.assert();
 
@@ -452,7 +451,7 @@ mod tests {
             Some(GroupMemberAcceptance::Pending),
         )];
 
-        let room_groups = client
+        client
             .update_room_groups(123, group_updates.into())
             .await
             .unwrap();
@@ -471,7 +470,7 @@ mod tests {
 
         let group_ids = vec![1, 2, 3];
 
-        let room_groups = client
+        client
             .delete_room_groups(123, group_ids.into())
             .await
             .unwrap();

@@ -1025,7 +1025,7 @@ mod tests {
                 .additional_connections
                 .get()
                 .unwrap()
-                .get(0)
+                .first()
                 .unwrap()
                 .access_token,
             "token2"
@@ -1097,7 +1097,7 @@ mod tests {
                 .additional_connections
                 .get()
                 .unwrap()
-                .get(0)
+                .first()
                 .unwrap()
                 .access_token,
             "access_token"

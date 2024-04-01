@@ -22,7 +22,7 @@ mod tests {
             .create();
 
         let groups = dracoon.get_groups(None).await.unwrap();
-        let group = groups.items.get(0).unwrap();
+        let group = groups.items.first().unwrap();
 
         groups_mock.assert();
 

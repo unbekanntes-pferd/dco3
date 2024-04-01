@@ -246,13 +246,13 @@ mod tests {
 
         general_settings_mock.assert();
 
-        assert_eq!(general_settings.share_password_sms_enabled, true);
-        assert_eq!(general_settings.crypto_enabled, true);
-        assert_eq!(general_settings.email_notification_button_enabled, true);
-        assert_eq!(general_settings.eula_enabled, true);
-        assert_eq!(general_settings.use_s3_storage, true);
-        assert_eq!(general_settings.s3_tags_enabled, true);
-        assert_eq!(general_settings.home_rooms_active, true);
+        assert!(general_settings.share_password_sms_enabled);
+        assert!(general_settings.crypto_enabled);
+        assert!(general_settings.email_notification_button_enabled);
+        assert!(general_settings.eula_enabled);
+        assert!(general_settings.use_s3_storage);
+        assert!(general_settings.s3_tags_enabled);
+        assert!(general_settings.home_rooms_active);
         assert_eq!(general_settings.home_room_parent_id, Some(2));
         assert_eq!(general_settings.subscription_plan, Some(1));
         assert!(general_settings.auth_token_restrictions.is_some());
@@ -377,16 +377,16 @@ mod tests {
             .unwrap();
 
         assert_eq!(login_password_policies.min_length, 1024);
-        assert_eq!(login_password_policies.reject_dictionary_words, true);
-        assert_eq!(login_password_policies.reject_user_info, true);
-        assert_eq!(login_password_policies.reject_keyboard_patterns, true);
+        assert!(login_password_policies.reject_dictionary_words);
+        assert!(login_password_policies.reject_user_info);
+        assert!(login_password_policies.reject_keyboard_patterns);
         assert_eq!(login_password_policies.number_of_archived_passwords, 10);
         assert_eq!(
             login_password_policies.password_expiration.max_password_age,
             Some(0)
         );
-        assert_eq!(login_password_policies.password_expiration.enabled, true);
-        assert_eq!(login_password_policies.user_lockout.enabled, true);
+        assert!(login_password_policies.password_expiration.enabled);
+        assert!(login_password_policies.user_lockout.enabled);
         assert_eq!(
             login_password_policies
                 .user_lockout
@@ -404,7 +404,7 @@ mod tests {
         let char_rule = login_password_policies
             .character_rules
             .must_contain_characters
-            .get(0)
+            .first()
             .unwrap();
         assert_eq!(char_rule, &CharacterRule::Alpha);
         assert_eq!(
@@ -485,12 +485,12 @@ mod tests {
         algorithms_mock.assert();
 
         assert_eq!(algorithms.file_key_algorithms.len(), 1);
-        let file_key_algorithm = algorithms.file_key_algorithms.get(0).unwrap();
+        let file_key_algorithm = algorithms.file_key_algorithms.first().unwrap();
         assert_eq!(file_key_algorithm.version, "string");
         assert_eq!(file_key_algorithm.description, "string");
         assert_eq!(file_key_algorithm.status, AlgorithmStatus::Required);
         assert_eq!(algorithms.key_pair_algorithms.len(), 1);
-        let key_pair_algorithm = algorithms.key_pair_algorithms.get(0).unwrap();
+        let key_pair_algorithm = algorithms.key_pair_algorithms.first().unwrap();
         assert_eq!(key_pair_algorithm.version, "string");
         assert_eq!(key_pair_algorithm.description, "string");
         assert_eq!(key_pair_algorithm.status, AlgorithmStatus::Required);
@@ -515,18 +515,18 @@ mod tests {
         product_packages_mock.assert();
 
         assert_eq!(product_packages.packages.len(), 1);
-        let product_package = product_packages.packages.get(0).unwrap();
+        let product_package = product_packages.packages.first().unwrap();
         assert_eq!(product_package.product_package_id, 0);
         assert_eq!(product_package.product_package_name, "string");
         assert_eq!(product_package.features.len(), 1);
-        let feature = product_package.features.get(0).unwrap();
+        let feature = product_package.features.first().unwrap();
         assert_eq!(feature.feature_id, 0);
         assert_eq!(feature.feature_name, "string");
-        assert_eq!(feature.is_available, true);
+        assert!(feature.is_available);
         assert_eq!(product_package.clients.len(), 1);
-        let client = product_package.clients.get(0).unwrap();
+        let client = product_package.clients.first().unwrap();
         assert_eq!(client.oauth_client_name, Some("string".into()));
-        assert_eq!(client.is_available, true);
+        assert!(client.is_available);
     }
 
     #[tokio::test]
@@ -548,18 +548,18 @@ mod tests {
         product_packages_mock.assert();
 
         assert_eq!(product_packages.packages.len(), 1);
-        let product_package = product_packages.packages.get(0).unwrap();
+        let product_package = product_packages.packages.first().unwrap();
         assert_eq!(product_package.product_package_id, 0);
         assert_eq!(product_package.product_package_name, "string");
         assert_eq!(product_package.features.len(), 1);
-        let feature = product_package.features.get(0).unwrap();
+        let feature = product_package.features.first().unwrap();
         assert_eq!(feature.feature_id, 0);
         assert_eq!(feature.feature_name, "string");
-        assert_eq!(feature.is_available, true);
+        assert!(feature.is_available);
         assert_eq!(product_package.clients.len(), 1);
-        let client = product_package.clients.get(0).unwrap();
+        let client = product_package.clients.first().unwrap();
         assert_eq!(client.oauth_client_name, Some("string".into()));
-        assert_eq!(client.is_available, true);
+        assert!(client.is_available);
     }
 
     #[tokio::test]
@@ -580,7 +580,7 @@ mod tests {
         s3_tags_mock.assert();
 
         assert_eq!(s3_tags.items.as_ref().unwrap().len(), 1);
-        let s3_tag = s3_tags.items.as_ref().unwrap().get(0).unwrap();
+        let s3_tag = s3_tags.items.as_ref().unwrap().first().unwrap();
 
         assert_eq!(s3_tag.id, Some(0));
         assert_eq!(s3_tag.key, Some("string".into()));

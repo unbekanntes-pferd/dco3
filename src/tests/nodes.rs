@@ -19,7 +19,7 @@ pub mod tests {
         assert_eq!(node.name, "string");
         assert_eq!(node.clone().parent_path.unwrap(), "string");
         assert_eq!(node.quota.unwrap(), 0);
-        assert_eq!(node.inherit_permissions.unwrap(), true);
+        assert!(node.inherit_permissions.unwrap());
         assert_eq!(node.branch_version.unwrap(), 123456);
         assert_eq!(node.cnt_rooms.unwrap(), 1);
         assert_eq!(node.cnt_files.unwrap(), 3);
@@ -29,8 +29,8 @@ pub mod tests {
         assert_eq!(node.cnt_comments.unwrap(), 0);
         assert_eq!(node.cnt_deleted_versions.unwrap(), 0);
         assert_eq!(node.recycle_bin_retention_period.unwrap(), 9999);
-        assert_eq!(node.is_encrypted.unwrap(), false);
-        assert_eq!(node.has_activities_log.unwrap(), true);
+        assert!(!node.is_encrypted.unwrap());
+        assert!(node.has_activities_log.unwrap());
         assert_eq!(
             node.clone().timestamp_creation.unwrap(),
             "2020-01-01T00:00:00.000Z"

@@ -18,8 +18,8 @@ pub mod dracoon {
         assert_eq!(user_account.first_name, "string");
         assert_eq!(user_account.last_name, "string");
         assert_eq!(user_account.user_name, "string");
-        assert_eq!(user_account.is_locked, false);
-        assert_eq!(user_account.has_manageable_rooms, true);
+        assert!(!user_account.is_locked);
+        assert!(user_account.has_manageable_rooms);
         assert_eq!(user_account.language, "string");
         assert_eq!(user_account.must_set_email, Some(false));
         assert_eq!(user_account.needs_to_accept_EULA, Some(false));
@@ -112,9 +112,9 @@ pub mod dracoon {
 
         assert!(kp.is_err());
 
-        // TODO: implement PartialEq for DracoonClientError
-        // let err = kp.unwrap_err();
-        // assert_eq!(err, DracoonClientError::MissingEncryptionSecret);
+
+        let err = kp.unwrap_err();
+        assert_eq!(err, DracoonClientError::MissingEncryptionSecret);
     }
 
     #[tokio::test]
@@ -171,7 +171,7 @@ pub mod dracoon {
 
         assert_eq!(system_info.language_default, "de-DE");
         assert_eq!(system_info.s3_hosts.len(), 1);
-        assert_eq!(system_info.s3_enforce_direct_upload, true);
-        assert_eq!(system_info.use_s3_storage, true);
+        assert!(system_info.s3_enforce_direct_upload);
+        assert!(system_info.use_s3_storage);
     }
 }
