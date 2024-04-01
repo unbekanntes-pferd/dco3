@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
@@ -41,10 +42,10 @@ pub struct Customer {
     pub quota_used: u64,
     pub user_max: u64,
     pub user_used: u64,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub customer_attributes: Option<CustomerAttributes>,
-    pub updated_at: Option<String>,
-    pub last_login_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
+    pub last_login_at: Option<DateTime<Utc>>,
     pub trial_days_left: Option<i32>,
     pub is_locked: Option<bool>,
     pub customer_uuid: Option<String>,
@@ -245,7 +246,7 @@ pub struct NewCustomerResponse {
     pub user_max: u64,
     pub is_locked: Option<bool>,
     pub trial_days: Option<u64>,
-    pub created_at: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
     pub first_admin_user: FirstAdminUser,
     pub customer_attributes: Option<CustomerAttributes>,
     pub provider_customer_id: Option<String>,
@@ -263,8 +264,8 @@ pub struct UpdateCustomerResponse {
     pub customer_uuid: String,
     pub is_locked: Option<bool>,
     pub trial_days: Option<u64>,
-    pub created_at: Option<String>,
-    pub updated_at: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub customer_attributes: Option<CustomerAttributes>,
     pub provider_customer_id: Option<String>,
     pub webhooks_max: Option<u64>,

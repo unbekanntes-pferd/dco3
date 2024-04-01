@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{Date, DateTime, Utc};
 use dco3_crypto::UserKeyPairContainer;
 use dco3_derive::FromResponse;
 use reqwest::Response;
@@ -20,9 +21,9 @@ pub struct DownloadShare {
     pub name: String,
     pub access_key: String,
     pub cnt_downloads: u32,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub created_by: UserInfo,
-    pub updated_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub updated_by: Option<UserInfo>,
     pub notes: Option<String>,
     pub show_creator_name: Option<bool>,
@@ -34,7 +35,7 @@ pub struct DownloadShare {
     pub is_protected: Option<bool>,
     pub node_type: Option<NodeType>,
     pub max_downloads: Option<u32>,
-    pub expire_at: Option<String>,
+    pub expire_at: Option<DateTime<Utc>>,
 }
 
 pub type DownloadSharesList = RangedItems<DownloadShare>;

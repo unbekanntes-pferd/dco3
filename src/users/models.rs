@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use dco3_crypto::PublicKeyContainer;
 use dco3_derive::FromResponse;
 use reqwest::Response;
@@ -48,7 +49,7 @@ pub struct UserItem {
     pub avatar_uuid: String,
     pub email: Option<String>,
     pub phone: Option<String>,
-    pub expire_at: Option<String>,
+    pub expire_at: Option<DateTime<Utc>>,
     pub has_manageable_rooms: Option<bool>,
     pub is_encryption_enabled: Option<bool>,
     pub last_login_success_at: Option<String>,

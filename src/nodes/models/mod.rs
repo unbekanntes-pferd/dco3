@@ -3,6 +3,7 @@
 pub mod filters;
 pub mod sorts;
 
+use chrono::Date;
 use dco3_crypto::DracoonCrypto;
 use dco3_crypto::DracoonRSACrypto;
 use dco3_crypto::PlainUserKeyPairContainer;
@@ -230,11 +231,11 @@ pub struct Node {
     pub timestamp_modification: Option<String>,
     pub parent_id: Option<u64>,
     pub parent_path: Option<String>,
-    pub created_at: Option<String>,
+    pub created_at: Option<DateTime<Utc>>,
     pub created_by: Option<UserInfo>,
-    pub updated_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub updated_by: Option<UserInfo>,
-    pub expire_at: Option<String>,
+    pub expire_at: Option<DateTime<Utc>>,
     pub hash: Option<String>,
     pub file_type: Option<String>,
     pub media_type: Option<String>,

@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use serde::Deserialize;
 
@@ -156,7 +157,7 @@ pub struct LoginPasswordPolicies {
     pub number_of_archived_passwords: u8,
     pub password_expiration: PasswordExpiration,
     pub user_lockout: UserLockout,
-    pub updated_at: String,
+    pub updated_at: DateTime<Utc>,
     pub updated_by: UserInfo,
 }
 
@@ -168,7 +169,7 @@ pub struct SharesPasswordPolicies {
     pub reject_dictionary_words: Option<bool>,
     pub reject_user_info: Option<bool>,
     pub reject_keyboard_patterns: Option<bool>,
-    pub updated_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub updated_by: Option<UserInfo>,
 }
 
@@ -180,7 +181,7 @@ pub struct EncryptionPasswordPolicies {
     pub reject_dictionary_words: Option<bool>,
     pub reject_user_info: Option<bool>,
     pub reject_keyboard_patterns: Option<bool>,
-    pub updated_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub updated_by: Option<UserInfo>,
 }
 

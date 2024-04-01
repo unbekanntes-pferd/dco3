@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::DateTime;
 use dco3_crypto::UserKeyPairContainer;
 use dco3_derive::FromResponse;
 use reqwest::Response;
@@ -24,7 +25,7 @@ pub struct UserAccount {
     pub auth_data: UserAuthData,
     pub must_set_email: Option<bool>,
     pub needs_to_accept_EULA: Option<bool>,
-    pub expire_at: Option<String>,
+    pub expire_at: Option<DateTime<Utc>>,
     pub is_encryption_enabled: Option<bool>,
     pub last_login_success_at: Option<String>,
     pub last_login_fail_at: Option<String>,
