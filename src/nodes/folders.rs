@@ -98,7 +98,7 @@ mod tests {
         );
         assert_eq!(
             folder.clone().updated_at.unwrap(),
-             DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
+            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             folder.clone().created_at.unwrap(),

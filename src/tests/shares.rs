@@ -19,7 +19,10 @@ mod download_share_tests {
         assert_eq!(share.node_id, 2);
         assert_eq!(share.access_key, "string");
         assert_eq!(share.cnt_downloads, 10);
-        assert_eq!(share.created_at, DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap());
+        assert_eq!(
+            share.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(
             share.updated_at.as_ref().unwrap(),
             &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
@@ -389,7 +392,10 @@ mod upload_share_tests {
         assert_eq!(share.name, "string");
         assert_eq!(share.target_id, 2);
         assert_eq!(share.access_key, "string");
-        assert_eq!(share.created_at, DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap());
+        assert_eq!(
+            share.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(
             share.updated_at.as_ref().unwrap(),
             &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
