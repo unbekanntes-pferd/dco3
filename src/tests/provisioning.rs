@@ -38,7 +38,12 @@ mod tests {
         assert_eq!(customer.trial_days_left.unwrap(), 0);
         assert_eq!(customer.customer_uuid.as_ref().unwrap(), "string");
         assert!(customer.customer_attributes.is_some());
-        assert!(!customer.customer_attributes.as_ref().unwrap().items.is_empty());
+        assert!(!customer
+            .customer_attributes
+            .as_ref()
+            .unwrap()
+            .items
+            .is_empty());
         assert!(customer
             .customer_attributes
             .as_ref()

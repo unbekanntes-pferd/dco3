@@ -2,8 +2,15 @@ mod models;
 use async_trait::async_trait;
 use reqwest::header;
 
-use crate::{auth::Connected, constants::{DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_INFO, PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_VERSION}, utils::FromResponse, Dracoon, DracoonClientError};
-
+use crate::{
+    auth::Connected,
+    constants::{
+        DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_INFO, PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE,
+        PUBLIC_VERSION,
+    },
+    utils::FromResponse,
+    Dracoon, DracoonClientError,
+};
 
 pub use self::models::*;
 
@@ -29,26 +36,26 @@ impl Public for Dracoon<Connected> {
     /// #  .connect(OAuth2Flow::password_flow("username", "password"))
     /// #  .await
     /// #  .unwrap();
-    /// 
+    ///
     /// let software_version = dracoon.get_software_version().await.unwrap();
-    /// 
+    ///
     /// # }
-    /// 
+    ///
     async fn get_software_version(&self) -> Result<SoftwareVersionData, DracoonClientError> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SOFTWARE_BASE}/{PUBLIC_VERSION}");
 
-            let url = self.build_api_url(&url_part);
+        let url = self.build_api_url(&url_part);
 
-            let response = self
-                .client
-                .http
-                .get(url)
-                .header(header::CONTENT_TYPE, "application/json")
-                .send()
-                .await?;
-            
-            Ok(SoftwareVersionData::from_response(response).await?)
+        let response = self
+            .client
+            .http
+            .get(url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .send()
+            .await?;
+
+        Ok(SoftwareVersionData::from_response(response).await?)
     }
 
     /// Get system information for the DRACOON backend (API).
@@ -65,14 +72,14 @@ impl Public for Dracoon<Connected> {
     /// #  .connect(OAuth2Flow::password_flow("username", "password"))
     /// #  .await
     /// #  .unwrap();
-    /// 
+    ///
     /// let system_info = dracoon.get_system_info().await.unwrap();
-    /// 
+    ///
     /// # }
     async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
         let url_part =
-        format!("{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SYSTEM_BASE}/{PUBLIC_INFO}");
-        
+            format!("{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SYSTEM_BASE}/{PUBLIC_INFO}");
+
         let url = self.build_api_url(&url_part);
 
         let response = self
@@ -143,5 +150,4 @@ mod tests {
         assert_eq!(software_version.build_date.year(), 2024);
         assert!(software_version.is_dracoon_cloud.unwrap());
     }
-
 }

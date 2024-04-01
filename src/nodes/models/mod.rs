@@ -684,7 +684,6 @@ impl CompleteS3FileUploadRequestBuilder {
     }
 }
 
-
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteUploadRequest {
@@ -694,14 +693,12 @@ pub struct CompleteUploadRequest {
     file_key: Option<FileKey>,
 }
 
-
 pub struct CompleteUploadRequestBuilder {
     resolution_strategy: Option<ResolutionStrategy>,
     file_name: Option<String>,
     keep_share_links: Option<bool>,
     file_key: Option<FileKey>,
 }
-
 
 impl CompleteUploadRequest {
     pub fn builder() -> CompleteUploadRequestBuilder {
@@ -743,7 +740,6 @@ impl CompleteUploadRequestBuilder {
             file_key: self.file_key,
         }
     }
-
 }
 
 #[derive(Debug, Serialize, Clone)]

@@ -187,9 +187,7 @@ mod tests {
             .with_virus_protection_enabled(true)
             .build();
 
-        let result = client
-            .update_room_policies(123, room_policies)
-            .await;
+        let result = client.update_room_policies(123, room_policies).await;
 
         assert!(result.is_ok());
     }

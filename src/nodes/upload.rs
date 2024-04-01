@@ -6,7 +6,8 @@ use super::{
         CreateFileUploadResponse, FileMeta, GeneratePresignedUrlsRequest, MissingKeysResponse,
         Node, PresignedUrl, PresignedUrlList, ResolutionStrategy, S3FileUploadStatus,
         S3UploadStatus, UploadOptions, UploadProgressCallback, UserFileKeySetBatchRequest,
-    }, CompleteUploadRequest, Upload
+    },
+    CompleteUploadRequest, Upload,
 };
 use crate::{
     auth::{errors::DracoonClientError, Connected},
@@ -39,7 +40,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<Node, DracoonClientError> {
-
         let is_s3_upload = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = parent_node.is_encrypted.unwrap_or(false);
 
@@ -50,8 +50,16 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
             (false, false) => Self::upload_to_nfs_unencrypted,
         };
 
-        upload_fn(self, file_meta, parent_node, upload_options, reader, callback, chunk_size).await
-
+        upload_fn(
+            self,
+            file_meta,
+            parent_node,
+            upload_options,
+            reader,
+            callback,
+            chunk_size,
+        )
+        .await
     }
 }
 
@@ -1619,7 +1627,15 @@ mod tests {
             missing_keys.files.first().unwrap().file_key_container.iv,
             "string"
         );
-        assert_eq!(missing_keys.files.first().unwrap().file_key_container.version, FileKeyVersion::RSA4096_AES256GCM);
+        assert_eq!(
+            missing_keys
+                .files
+                .first()
+                .unwrap()
+                .file_key_container
+                .version,
+            FileKeyVersion::RSA4096_AES256GCM
+        );
     }
 
     #[tokio::test]

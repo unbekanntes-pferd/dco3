@@ -101,7 +101,10 @@ pub mod dracoon {
         assert!(kp.is_err());
 
         let err = kp.unwrap_err();
-        assert_eq!(err, DracoonClientError::CryptoError(DracoonCryptoError::RsaOperationFailed));
+        assert_eq!(
+            err,
+            DracoonClientError::CryptoError(DracoonCryptoError::RsaOperationFailed)
+        );
     }
 
     #[tokio::test]
@@ -111,7 +114,6 @@ pub mod dracoon {
         let kp = dracoon.get_keypair(None).await;
 
         assert!(kp.is_err());
-
 
         let err = kp.unwrap_err();
         assert_eq!(err, DracoonClientError::MissingEncryptionSecret);

@@ -171,7 +171,7 @@
 //!  }
 //! ```
 //! If you need more information about the error, you can use the `get_http_error` method.
-//! 
+//!
 //! ```no_run
 //! use dco3::{Dracoon, OAuth2Flow, Nodes};
 //!
@@ -203,7 +203,7 @@
 //!   println!("Error message: {}", http_err.error_message());
 //!    // access error details
 //!   println!("Error details: {}", http_err.debug_info().unwrap());
-//!     } 
+//!     }
 //!    }
 //!   }
 //!  }
@@ -414,11 +414,11 @@ pub use self::{
     models::*,
     nodes::{Download, Folders, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
+    public::Public,
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
     user::{User, UserAccountKeyPairs},
     users::Users,
-    public::Public,
 };
 
 pub mod auth;
@@ -428,10 +428,10 @@ pub mod groups;
 pub mod models;
 pub mod nodes;
 pub mod provisioning;
+pub mod public;
 pub mod settings;
 pub mod shares;
 pub mod system;
-pub mod public;
 mod tests;
 pub mod user;
 pub mod users;
@@ -628,7 +628,6 @@ impl Dracoon<Connected> {
     }
 
     pub async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
-
         if self.system_info.is_none() {
             let system_info = Public::get_system_info(self).await?;
             self.system_info.set(system_info);

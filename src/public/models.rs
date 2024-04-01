@@ -8,8 +8,7 @@ pub struct SoftwareVersionData {
     pub rest_api_version: String,
     pub sds_server_version: String,
     pub build_date: DateTime<Utc>,
-    pub is_dracoon_cloud: Option<bool>
-
+    pub is_dracoon_cloud: Option<bool>,
 }
 
 #[derive(Debug, Clone, Deserialize, FromResponse)]
