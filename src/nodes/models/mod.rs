@@ -226,8 +226,8 @@ pub struct Node {
     #[serde(rename = "type")]
     pub node_type: NodeType,
     pub name: String,
-    pub timestamp_creation: Option<String>,
-    pub timestamp_modification: Option<String>,
+    pub timestamp_creation: Option<DateTime<Utc>>,
+    pub timestamp_modification: Option<DateTime<Utc>>,
     pub parent_id: Option<u64>,
     pub parent_path: Option<String>,
     pub created_at: Option<DateTime<Utc>>,

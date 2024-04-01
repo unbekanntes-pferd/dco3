@@ -35,11 +35,11 @@ pub mod tests {
         assert!(node.has_activities_log.unwrap());
         assert_eq!(
             node.clone().timestamp_creation.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             node.clone().timestamp_modification.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(node.clone().updated_at.unwrap(), DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap());
         assert_eq!(node.clone().created_at.unwrap(), DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap());
