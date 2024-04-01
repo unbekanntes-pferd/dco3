@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use chrono::{Date, DateTime, Utc};
+use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};

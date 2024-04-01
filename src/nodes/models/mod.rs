@@ -3,7 +3,6 @@
 pub mod filters;
 pub mod sorts;
 
-use chrono::Date;
 use dco3_crypto::DracoonCrypto;
 use dco3_crypto::DracoonRSACrypto;
 use dco3_crypto::PlainUserKeyPairContainer;

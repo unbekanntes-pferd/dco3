@@ -8,11 +8,11 @@
     "userUsed": 100,
     "cntInternalUser": 99,
     "cntGuestUser": 1,
-    "createdAt": "2020-01-00T00:00:00.000Z",
+    "createdAt": "2020-01-01T00:00:00.000Z",
     "isLocked": false,
     "trialDaysLeft": 0,
-    "updatedAt": "2020-01-00T00:00:00.000Z",
-    "lastLoginAt": "2020-01-00T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z",
+    "lastLoginAt": "2020-01-01T00:00:00.000Z",
     "customerAttributes": {
       "items": [
         {

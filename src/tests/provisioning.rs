@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use chrono::DateTime;
+
     use crate::{
         auth::Provisioning,
         provisioning::{Customer, FirstAdminUser, NewCustomerRequest, UpdateCustomerRequest},
@@ -30,10 +32,10 @@ mod tests {
         assert_eq!(customer.user_used, 100);
         assert_eq!(customer.cnt_guest_user.unwrap(), 1);
         assert_eq!(customer.cnt_internal_user.unwrap(), 99);
-        assert_eq!(customer.created_at, "2020-01-00T00:00:00.000Z");
+        assert_eq!(customer.created_at, DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap());
         assert_eq!(
             customer.updated_at.as_ref().unwrap(),
-            "2020-01-00T00:00:00.000Z"
+            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(customer.trial_days_left.unwrap(), 0);
         assert_eq!(customer.customer_uuid.as_ref().unwrap(), "string");
