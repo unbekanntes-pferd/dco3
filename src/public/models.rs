@@ -12,7 +12,7 @@ pub struct SoftwareVersionData {
 
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Clone, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInfo {
     pub language_default: String,

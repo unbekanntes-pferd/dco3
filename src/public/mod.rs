@@ -4,7 +4,8 @@ use reqwest::header;
 
 use crate::{auth::Connected, constants::{DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_INFO, PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_VERSION}, utils::FromResponse, Dracoon, DracoonClientError};
 
-use self::models::{SoftwareVersionData, SystemInfo};
+
+pub use self::models::*;
 
 #[async_trait]
 pub trait Public {

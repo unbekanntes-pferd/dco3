@@ -396,6 +396,7 @@ use std::marker::PhantomData;
 
 use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
+use public::SystemInfo;
 use reqwest::Url;
 
 use self::{
@@ -443,6 +444,7 @@ pub struct Dracoon<State = Disconnected> {
     state: PhantomData<State>,
     user_info: Container<UserAccount>,
     keypair: Container<PlainUserKeyPairContainer>,
+    system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
 }
 
@@ -540,6 +542,7 @@ impl DracoonBuilder {
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
+            system_info: Container::new(),
             encryption_secret: self.encryption_secret,
         })
     }
@@ -553,6 +556,7 @@ impl DracoonBuilder {
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
+            system_info: Container::new(),
             encryption_secret: None,
         })
     }
@@ -574,6 +578,7 @@ impl Dracoon<Disconnected> {
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
+            system_info: Container::new(),
             encryption_secret: self.encryption_secret,
         };
 
@@ -620,6 +625,18 @@ impl Dracoon<Connected> {
 
         let user_info = self.user_info.get().expect("Just set user info");
         Ok(user_info)
+    }
+
+    pub async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
+
+        if self.system_info.is_none() {
+            let system_info = Public::get_system_info(self).await?;
+            self.system_info.set(system_info);
+        }
+
+        let system_info = self.system_info.get().expect("No system info set");
+
+        Ok(system_info)
     }
 
     pub async fn get_keypair(

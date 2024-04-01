@@ -24,7 +24,7 @@ use crate::{
         DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MAX_TOKEN_COUNT,
         MIN_RETRY_DELAY, MIN_TOKEN_COUNT, TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
-    models::Container,
+    models::Container, public::SystemInfo,
 };
 
 use self::errors::DracoonClientError;
