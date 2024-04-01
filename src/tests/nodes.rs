@@ -1,5 +1,7 @@
 #[cfg(test)]
 pub mod tests {
+    use chrono::DateTime;
+
     use crate::{
         nodes::{
             Node, NodeType, NodesFilter, NodesSearchFilter, NodesSearchSortBy, NodesSortBy,
@@ -19,7 +21,7 @@ pub mod tests {
         assert_eq!(node.name, "string");
         assert_eq!(node.clone().parent_path.unwrap(), "string");
         assert_eq!(node.quota.unwrap(), 0);
-        assert_eq!(node.inherit_permissions.unwrap(), true);
+        assert!(node.inherit_permissions.unwrap());
         assert_eq!(node.branch_version.unwrap(), 123456);
         assert_eq!(node.cnt_rooms.unwrap(), 1);
         assert_eq!(node.cnt_files.unwrap(), 3);
@@ -29,18 +31,24 @@ pub mod tests {
         assert_eq!(node.cnt_comments.unwrap(), 0);
         assert_eq!(node.cnt_deleted_versions.unwrap(), 0);
         assert_eq!(node.recycle_bin_retention_period.unwrap(), 9999);
-        assert_eq!(node.is_encrypted.unwrap(), false);
-        assert_eq!(node.has_activities_log.unwrap(), true);
+        assert!(!node.is_encrypted.unwrap());
+        assert!(node.has_activities_log.unwrap());
         assert_eq!(
             node.clone().timestamp_creation.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             node.clone().timestamp_modification.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
-        assert_eq!(node.clone().updated_at.unwrap(), "2020-02-01T00:00:00.000Z");
-        assert_eq!(node.clone().created_at.unwrap(), "2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            node.clone().updated_at.unwrap(),
+            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
+        );
+        assert_eq!(
+            node.clone().created_at.unwrap(),
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(node.clone().size.unwrap(), 123456);
         assert_eq!(node.clone().classification.unwrap(), 4);
 

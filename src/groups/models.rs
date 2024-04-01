@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
@@ -17,12 +18,12 @@ use crate::{
 pub struct Group {
     pub id: u64,
     pub name: String,
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
     pub created_by: UserInfo,
-    pub updated_at: Option<String>,
+    pub updated_at: Option<DateTime<Utc>>,
     pub updated_by: Option<UserInfo>,
     pub cnt_users: Option<u64>,
-    pub expire_at: Option<String>,
+    pub expire_at: Option<DateTime<Utc>>,
     pub group_roles: Option<RoleList>,
 }
 

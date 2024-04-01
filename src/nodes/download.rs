@@ -387,10 +387,10 @@ mod tests {
             .mock("GET", "/some/download/url")
             .with_status(200)
             .with_header("content-type", "application/octet-stream")
-            .with_body(&mock_bytes)
+            .with_body(mock_bytes)
             .create();
 
-        let download_url = format!("{}some/download/url", dracoon.get_base_url().to_string());
+        let download_url = format!("{}some/download/url", dracoon.get_base_url());
 
         let buffer = Vec::with_capacity(16);
 
@@ -422,9 +422,9 @@ mod tests {
         let mock_bytes: [u8; 16] = [
             0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
         ];
-        let mock_bytes_compare = mock_bytes.clone();
+        let mock_bytes_compare = mock_bytes;
 
-        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes.to_vec()).unwrap();
+        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
         let plain_key = mock_bytes_encrypted.1.clone();
 
         let keypair =
@@ -458,7 +458,7 @@ mod tests {
             .with_body(enc_keypair_json)
             .create();
 
-        let download_url = format!("{}some/download/url", dracoon.get_base_url().to_string());
+        let download_url = format!("{}some/download/url", dracoon.get_base_url());
 
         let _kp = dracoon
             .get_keypair(Some("TopSecret1234!".into()))
@@ -495,7 +495,7 @@ mod tests {
             0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
         ];
 
-        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes.to_vec()).unwrap();
+        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
         let plain_key = mock_bytes_encrypted.1.clone();
 
         let keypair =
@@ -512,7 +512,7 @@ mod tests {
             .with_body(file_key_json)
             .create();
 
-        let download_url = format!("{}some/download/url", dracoon.get_base_url().to_string());
+        let download_url = format!("{}some/download/url", dracoon.get_base_url());
 
         let buffer = Vec::with_capacity(16);
 

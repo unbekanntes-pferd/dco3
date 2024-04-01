@@ -8,6 +8,8 @@ mod users;
 
 #[cfg(test)]
 pub mod dracoon {
+    use dco3_crypto::DracoonCryptoError;
+
     use crate::*;
     //use dco3_crypto::DracoonCryptoError;
 
@@ -16,8 +18,8 @@ pub mod dracoon {
         assert_eq!(user_account.first_name, "string");
         assert_eq!(user_account.last_name, "string");
         assert_eq!(user_account.user_name, "string");
-        assert_eq!(user_account.is_locked, false);
-        assert_eq!(user_account.has_manageable_rooms, true);
+        assert!(!user_account.is_locked);
+        assert!(user_account.has_manageable_rooms);
         assert_eq!(user_account.language, "string");
         assert_eq!(user_account.must_set_email, Some(false));
         assert_eq!(user_account.needs_to_accept_EULA, Some(false));
@@ -98,9 +100,11 @@ pub mod dracoon {
         kp_mock.assert();
         assert!(kp.is_err());
 
-        // TODO: implement PartialEq for DracoonCryptoError and DracoonClientError
-        // let err = kp.unwrap_err();
-        // assert_eq!(err, DracoonClientError::CryptoError(DracoonCryptoError::RsaOperationFailed));
+        let err = kp.unwrap_err();
+        assert_eq!(
+            err,
+            DracoonClientError::CryptoError(DracoonCryptoError::RsaOperationFailed)
+        );
     }
 
     #[tokio::test]
@@ -111,9 +115,8 @@ pub mod dracoon {
 
         assert!(kp.is_err());
 
-        // TODO: implement PartialEq for DracoonClientError
-        // let err = kp.unwrap_err();
-        // assert_eq!(err, DracoonClientError::MissingEncryptionSecret);
+        let err = kp.unwrap_err();
+        assert_eq!(err, DracoonClientError::MissingEncryptionSecret);
     }
 
     #[tokio::test]
@@ -148,5 +151,29 @@ pub mod dracoon {
         let token = client.get_service_token();
 
         assert_eq!(token, "token");
+    }
+
+    #[tokio::test]
+    async fn test_get_system_info() {
+        let (client, mock_server) = get_connected_client().await;
+        let mut mock_server = mock_server;
+
+        let system_info_res = include_str!("./responses/public/system_info_ok.json");
+
+        let system_info_mock = mock_server
+            .mock("GET", "/api/v4/public/system/info")
+            .with_status(200)
+            .with_body(system_info_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let system_info = client.get_system_info().await.unwrap();
+
+        system_info_mock.assert();
+
+        assert_eq!(system_info.language_default, "de-DE");
+        assert_eq!(system_info.s3_hosts.len(), 1);
+        assert!(system_info.s3_enforce_direct_upload);
+        assert!(system_info.use_s3_storage);
     }
 }

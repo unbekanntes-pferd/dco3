@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
 
+    use chrono::DateTime;
+
     use crate::*;
 
     use crate::groups::{CreateGroupRequest, GroupsFilter, GroupsSortBy, UpdateGroupRequest};
@@ -22,7 +24,7 @@ mod tests {
             .create();
 
         let groups = dracoon.get_groups(None).await.unwrap();
-        let group = groups.items.get(0).unwrap();
+        let group = groups.items.first().unwrap();
 
         groups_mock.assert();
 
@@ -44,7 +46,10 @@ mod tests {
             group.created_by.last_name.as_ref().unwrap().clone(),
             "string"
         );
-        assert_eq!(group.created_at, "2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            group.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
         assert_eq!(group.created_by.email.as_ref().unwrap(), "string");
@@ -85,7 +90,7 @@ mod tests {
         );
         assert_eq!(
             group.updated_at.as_ref().unwrap(),
-            "2023-07-23T08:58:01.236Z"
+            &DateTime::parse_from_rfc3339("2023-07-23T08:58:01.236Z").unwrap()
         );
         assert_eq!(group.updated_by.as_ref().unwrap().id, 2);
         assert_eq!(
@@ -222,7 +227,10 @@ mod tests {
             group.created_by.last_name.as_ref().unwrap().clone(),
             "string"
         );
-        assert_eq!(group.created_at, "2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            group.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
         assert_eq!(group.created_by.email.as_ref().unwrap(), "string");
@@ -266,7 +274,10 @@ mod tests {
             group.created_by.last_name.as_ref().unwrap().clone(),
             "string"
         );
-        assert_eq!(group.created_at, "2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            group.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
         assert_eq!(group.created_by.email.as_ref().unwrap(), "string");
@@ -310,7 +321,10 @@ mod tests {
             group.created_by.last_name.as_ref().unwrap().clone(),
             "string"
         );
-        assert_eq!(group.created_at, "2020-01-01T00:00:00.000Z");
+        assert_eq!(
+            group.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
         assert_eq!(group.created_by.email.as_ref().unwrap(), "string");

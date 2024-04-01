@@ -1,6 +1,7 @@
 //! This module implments basic models for the DRACOON API.
 use std::fmt::Debug;
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 
@@ -218,6 +219,15 @@ pub struct Range {
 pub struct ObjectExpiration {
     pub enable_expiration: bool,
     pub expire_at: Option<String>,
+}
+
+impl ObjectExpiration {
+    pub fn new(expire_at: DateTime<Utc>) -> Self {
+        Self {
+            enable_expiration: true,
+            expire_at: Some(expire_at.to_rfc3339()),
+        }
+    }
 }
 
 impl AsRef<ObjectExpiration> for ObjectExpiration {

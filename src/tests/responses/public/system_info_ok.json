@@ -1,0 +1,8 @@
+{
+    "languageDefault": "de-DE",
+    "s3Hosts": [
+        "test.s3.dracoon.com"
+    ],
+    "s3EnforceDirectUpload": true,
+    "useS3Storage": true
+}

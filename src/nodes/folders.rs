@@ -57,6 +57,8 @@ impl Folders for Dracoon<Connected> {
 
 #[cfg(test)]
 mod tests {
+    use chrono::DateTime;
+
     use crate::{
         nodes::{NodeType, UserType},
         tests::dracoon::get_connected_client,
@@ -74,7 +76,7 @@ mod tests {
         assert_eq!(folder.name, "string");
         assert_eq!(folder.clone().parent_path.unwrap(), "string");
         assert_eq!(folder.quota.unwrap(), 0);
-        assert_eq!(folder.inherit_permissions.unwrap(), true);
+        assert!(folder.inherit_permissions.unwrap());
         assert_eq!(folder.branch_version.unwrap(), 123456);
         assert_eq!(folder.cnt_rooms.unwrap(), 1);
         assert_eq!(folder.cnt_files.unwrap(), 3);
@@ -84,23 +86,23 @@ mod tests {
         assert_eq!(folder.cnt_comments.unwrap(), 0);
         assert_eq!(folder.cnt_deleted_versions.unwrap(), 0);
         assert_eq!(folder.recycle_bin_retention_period.unwrap(), 9999);
-        assert_eq!(folder.is_encrypted.unwrap(), false);
-        assert_eq!(folder.has_activities_log.unwrap(), true);
+        assert!(!folder.is_encrypted.unwrap());
+        assert!(folder.has_activities_log.unwrap());
         assert_eq!(
             folder.clone().timestamp_creation.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             folder.clone().timestamp_modification.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             folder.clone().updated_at.unwrap(),
-            "2020-02-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(
             folder.clone().created_at.unwrap(),
-            "2020-01-01T00:00:00.000Z"
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(folder.clone().size.unwrap(), 123456);
         assert_eq!(folder.clone().classification.unwrap(), 4);

@@ -13,6 +13,8 @@ pub const DRACOON_REDIRECT_URL: &str = "oauth/callback";
 pub const DRACOON_TOKEN_REVOKE_URL: &str = "oauth/revoke";
 pub const TOKEN_TYPE_HINT_ACCESS_TOKEN: &str = "access_token";
 pub const TOKEN_TYPE_HINT_REFRESH_TOKEN: &str = "refresh_token";
+pub const MAX_TOKEN_COUNT: u8 = 5;
+pub const MIN_TOKEN_COUNT: u8 = 1;
 
 // API
 pub const DRACOON_API_PREFIX: &str = "api/v4";
@@ -37,6 +39,8 @@ pub const ROOMS_ENCRYPT: &str = "encrypt";
 pub const ROOMS_USERS: &str = "users";
 pub const ROOMS_GROUPS: &str = "groups";
 pub const ROOMS_POLICIES: &str = "policies";
+// note: needed for NFS upload (DRACOON Server)
+pub const UPLOADS_BASE: &str = "uploads";
 
 // SHARES
 pub const SHARES_BASE: &str = "shares";
@@ -100,6 +104,13 @@ pub const CONFIG_PRODUCT_PACKAGES: &str = "product_packages";
 pub const CONFIG_S3_TAGS: &str = "s3_tags";
 pub const CONFIG_PRODUCT_PACKAGES_CURRENT: &str = "current";
 pub const CONFIG_CLASSIFICATION_POLICIES: &str = "classifications";
+
+// PUBLIC
+pub const PUBLIC_BASE: &str = "public";
+pub const PUBLIC_SOFTWARE_BASE: &str = "software";
+pub const PUBLIC_VERSION: &str = "version";
+pub const PUBLIC_SYSTEM_BASE: &str = "system";
+pub const PUBLIC_INFO: &str = "info";
 
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));

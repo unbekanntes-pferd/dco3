@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use chrono::DateTime;
+
     use crate::{
         auth::Provisioning,
         provisioning::{Customer, FirstAdminUser, NewCustomerRequest, UpdateCustomerRequest},
@@ -30,28 +32,36 @@ mod tests {
         assert_eq!(customer.user_used, 100);
         assert_eq!(customer.cnt_guest_user.unwrap(), 1);
         assert_eq!(customer.cnt_internal_user.unwrap(), 99);
-        assert_eq!(customer.created_at, "2020-01-00T00:00:00.000Z");
+        assert_eq!(
+            customer.created_at,
+            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+        );
         assert_eq!(
             customer.updated_at.as_ref().unwrap(),
-            "2020-01-00T00:00:00.000Z"
+            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
         );
         assert_eq!(customer.trial_days_left.unwrap(), 0);
         assert_eq!(customer.customer_uuid.as_ref().unwrap(), "string");
         assert!(customer.customer_attributes.is_some());
-        assert!(customer.customer_attributes.as_ref().unwrap().items.len() > 0);
+        assert!(!customer
+            .customer_attributes
+            .as_ref()
+            .unwrap()
+            .items
+            .is_empty());
         assert!(customer
             .customer_attributes
             .as_ref()
             .unwrap()
             .items
-            .get(0)
+            .first()
             .is_some());
         let kv = customer
             .customer_attributes
             .as_ref()
             .unwrap()
             .items
-            .get(0)
+            .first()
             .unwrap();
         assert_eq!(kv.key, "string");
         assert_eq!(kv.value, "string");
@@ -76,7 +86,7 @@ mod tests {
         assert_eq!(customers.range.limit, 0);
         assert_eq!(customers.items.len(), 1);
 
-        let customer = customers.items.get(0).unwrap();
+        let customer = customers.items.first().unwrap();
         assert_customer(customer).await;
 
         customers_mock.assert();
@@ -102,7 +112,7 @@ mod tests {
         assert_eq!(customers.range.limit, 0);
         assert_eq!(customers.items.len(), 1);
 
-        let customer = customers.items.get(0).unwrap();
+        let customer = customers.items.first().unwrap();
         assert_customer(customer).await;
 
         customers_mock.assert();
@@ -128,7 +138,7 @@ mod tests {
         assert_eq!(customers.range.limit, 0);
         assert_eq!(customers.items.len(), 1);
 
-        let customer = customers.items.get(0).unwrap();
+        let customer = customers.items.first().unwrap();
         assert_customer(customer).await;
 
         customers_mock.assert();
@@ -157,7 +167,7 @@ mod tests {
         assert_eq!(customers.range.limit, 0);
         assert_eq!(customers.items.len(), 1);
 
-        let customer = customers.items.get(0).unwrap();
+        let customer = customers.items.first().unwrap();
         assert_customer(customer).await;
 
         customers_mock.assert();
@@ -184,7 +194,7 @@ mod tests {
         assert_eq!(customers.range.limit, 0);
         assert_eq!(customers.items.len(), 1);
 
-        let customer = customers.items.get(0).unwrap();
+        let customer = customers.items.first().unwrap();
         assert_customer(customer).await;
 
         customers_mock.assert();
@@ -243,7 +253,7 @@ mod tests {
             .as_ref()
             .unwrap()
             .items
-            .get(0)
+            .first()
             .unwrap();
 
         assert_eq!(kv.key, "string");
@@ -353,7 +363,7 @@ mod tests {
 
         assert_eq!(users.items.len(), 1);
 
-        let user = users.items.get(0).unwrap();
+        let user = users.items.first().unwrap();
 
         assert_user_item(user);
     }
@@ -379,7 +389,7 @@ mod tests {
 
         assert_eq!(users.items.len(), 1);
 
-        let user = users.items.get(0).unwrap();
+        let user = users.items.first().unwrap();
 
         assert_user_item(user);
     }
@@ -402,7 +412,7 @@ mod tests {
 
         assert_eq!(users.items.len(), 1);
 
-        let user = users.items.get(0).unwrap();
+        let user = users.items.first().unwrap();
 
         assert_user_item(user);
     }

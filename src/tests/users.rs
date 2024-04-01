@@ -15,8 +15,8 @@ pub mod tests {
         assert_eq!(user.first_name, "string");
         assert_eq!(user.last_name, "string");
         assert_eq!(user.email.as_ref().unwrap(), "string");
-        assert_eq!(user.is_locked, false);
-        assert_eq!(user.is_encryption_enabled.unwrap(), true);
+        assert!(!user.is_locked);
+        assert!(user.is_encryption_enabled.unwrap());
         assert_eq!(user.avatar_uuid, "string");
     }
 
@@ -26,8 +26,8 @@ pub mod tests {
         assert_eq!(user.first_name, "string");
         assert_eq!(user.last_name, "string");
         assert_eq!(user.email.as_ref().unwrap(), "string");
-        assert_eq!(user.is_locked, false);
-        assert_eq!(user.is_encryption_enabled.unwrap(), true);
+        assert!(!user.is_locked);
+        assert!(user.is_encryption_enabled.unwrap());
         assert_eq!(user.avatar_uuid, "string");
         assert_eq!(user.auth_data.method, "basic");
         assert_eq!(user.home_room_id.unwrap(), 2);
