@@ -251,7 +251,7 @@ impl DracoonClientBuilder {
             None => APP_USER_AGENT.to_string(),
         };
 
-        let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
+        let http = Client::builder().user_agent(user_agent).build()?;
         let upload_http = http.clone();
 
         let http = ClientBuilder::new(http)
@@ -404,7 +404,9 @@ impl DracoonClient<Disconnected> {
                 additional_connections.push(new_connection);
             }
 
-            self.additional_connections.set(additional_connections).await;
+            self.additional_connections
+                .set(additional_connections)
+                .await;
         }
 
         Ok(DracoonClient {
@@ -673,15 +675,13 @@ impl DracoonClient<Connected> {
                     .connection
                     .get()
                     .await
-                    .expect("Connected client has no connection")
-                    ,
+                    .expect("Connected client has no connection"),
                 Some(CurrentConnection::Additional(idx)) => {
                     let additional_connections = self
                         .additional_connections
                         .get()
                         .await
-                        .expect("Connected client has no additional connections")
-                        ;
+                        .expect("Connected client has no additional connections");
 
                     additional_connections
                         .get(idx as usize)
@@ -710,7 +710,9 @@ impl DracoonClient<Connected> {
                             .expect("Connected client has no additional connections");
 
                         additional_connections[idx as usize] = new_connection;
-                        self.additional_connections.set(additional_connections).await;
+                        self.additional_connections
+                            .set(additional_connections)
+                            .await;
                     }
                     None => self.connection.set(new_connection).await,
                 }
@@ -916,7 +918,14 @@ mod tests {
             .unwrap()
             .refresh_token();
 
-        let expires_in = res.as_ref().unwrap().connection.get().await.unwrap().expires_in();
+        let expires_in = res
+            .as_ref()
+            .unwrap()
+            .connection
+            .get()
+            .await
+            .unwrap()
+            .expires_in();
 
         assert_eq!(access_token, "access_token");
         assert_eq!(refresh_token, "refresh_token");
