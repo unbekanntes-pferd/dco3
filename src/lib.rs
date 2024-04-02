@@ -534,6 +534,13 @@ impl DracoonBuilder {
         self
     }
 
+    /// Sets the token rotation for the client (use amount of tokens per client)
+    #[doc(hidden = "Experimental")]
+    pub fn with_token_rotation(mut self, token_rotation: u8) -> Self {
+        self.client_builder = self.client_builder.with_token_rotation(token_rotation);
+        self
+    }
+
     /// Builds the [Dracoon] struct - fails, if any of the required fields are missing
     pub fn build(self) -> Result<Dracoon<Disconnected>, DracoonClientError> {
         let dracoon = self.client_builder.build()?;
