@@ -999,6 +999,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             .with_timestamp_modification(timestamp_modification)
             .with_timestamp_creation(timestamp_creation)
             .with_expiration(expiration)
+            .with_direct_s3_upload(false)
             .build();
 
         let upload_channel = <Dracoon<Connected> as UploadInternal<R>>::create_upload_channel::<
@@ -1179,6 +1180,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             .with_timestamp_modification(timestamp_modification)
             .with_timestamp_creation(timestamp_creation)
             .with_expiration(expiration)
+            .with_direct_s3_upload(false)
             .build();
 
         let upload_channel = <Dracoon<Connected> as UploadInternal<R>>::create_upload_channel::<

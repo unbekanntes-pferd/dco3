@@ -3,7 +3,8 @@ use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use super::auth::errors::DracoonClientError;
 
@@ -26,23 +27,23 @@ impl<T: Clone> Container<T> {
         }
     }
 
-    pub fn set(&self, data: T) {
-        let mut lock = self.data.write().expect("Could not lock mutex");
+    pub async fn set(&self, data: T) {
+        let mut lock = self.data.write().await;
         *lock = Some(data);
     }
 
-    pub fn get(&self) -> Option<T> {
-        let lock = self.data.read().expect("Could not lock mutex");
+    pub async fn get(&self) -> Option<T> {
+        let lock = self.data.read().await;
         lock.clone()
     }
 
-    pub fn is_some(&self) -> bool {
-        let lock = self.data.read().expect("Could not lock mutex");
+    pub async fn is_some(&self) -> bool {
+        let lock = self.data.read().await;
         lock.is_some()
     }
 
-    pub fn is_none(&self) -> bool {
-        let lock = self.data.read().expect("Could not lock mutex");
+    pub async fn is_none(&self) -> bool {
+        let lock = self.data.read().await;
         lock.is_none()
     }
 }

@@ -29,6 +29,7 @@
 //! * [CustomerProvisioning] - for customer provisioning operations
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! * [Config] - for general configuration information
+//! * [Public] - for public information
 //!
 //!
 //! ### Example
@@ -533,6 +534,13 @@ impl DracoonBuilder {
         self
     }
 
+    /// Sets the token rotation for the client (use amount of tokens per client)
+    #[doc(hidden = "Experimental")]
+    pub fn with_token_rotation(mut self, token_rotation: u8) -> Self {
+        self.client_builder = self.client_builder.with_token_rotation(token_rotation);
+        self
+    }
+
     /// Builds the [Dracoon] struct - fails, if any of the required fields are missing
     pub fn build(self) -> Result<Dracoon<Disconnected>, DracoonClientError> {
         let dracoon = self.client_builder.build()?;
@@ -585,7 +593,7 @@ impl Dracoon<Disconnected> {
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
             let kp = dracoon.get_user_keypair(&encryption_secret).await?;
             dracoon.encryption_secret = None;
-            dracoon.keypair.set(kp);
+            dracoon.keypair.set(kp).await;
             drop(encryption_secret)
         }
 
@@ -602,7 +610,7 @@ impl Dracoon<Connected> {
         self.client
             .get_base_url()
             .join(url_part)
-            .expect("Correct base url")
+            .expect("Invalid base url")
     }
 
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
@@ -613,27 +621,27 @@ impl Dracoon<Connected> {
         self.client.get_base_url()
     }
 
-    pub fn get_refresh_token(&self) -> String {
-        self.client.get_refresh_token()
+    pub async fn get_refresh_token(&self) -> String {
+        self.client.get_refresh_token().await
     }
 
     pub async fn get_user_info(&self) -> Result<UserAccount, DracoonClientError> {
-        if self.user_info.is_none() {
+        if self.user_info.is_none().await {
             let user_info = self.get_user_account().await?;
-            self.user_info.set(user_info);
+            self.user_info.set(user_info).await;
         }
 
-        let user_info = self.user_info.get().expect("Just set user info");
+        let user_info = self.user_info.get().await.expect("No user info set");
         Ok(user_info)
     }
 
     pub async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
-        if self.system_info.is_none() {
+        if self.system_info.is_none().await {
             let system_info = Public::get_system_info(self).await?;
-            self.system_info.set(system_info);
+            self.system_info.set(system_info).await;
         }
 
-        let system_info = self.system_info.get().expect("No system info set");
+        let system_info = self.system_info.get().await.expect("No system info set");
 
         Ok(system_info)
     }
@@ -642,16 +650,16 @@ impl Dracoon<Connected> {
         &self,
         secret: Option<String>,
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
-        if self.keypair.is_none() {
+        if self.keypair.is_none().await {
             if let Some(secret) = secret {
                 let keypair = self.get_user_keypair(&secret).await?;
-                self.keypair.set(keypair);
+                self.keypair.set(keypair).await;
             } else {
                 return Err(DracoonClientError::MissingEncryptionSecret);
             }
         }
 
-        let keypair = self.keypair.get().expect("Keypair is some");
+        let keypair = self.keypair.get().await.expect("No keypair set");
         Ok(keypair)
     }
 }
@@ -665,6 +673,6 @@ impl Dracoon<Provisioning> {
         self.client
             .get_base_url()
             .join(url_part)
-            .expect("Correct base url")
+            .expect("Invalid base url")
     }
 }
