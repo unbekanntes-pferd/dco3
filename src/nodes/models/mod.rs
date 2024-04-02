@@ -590,6 +590,16 @@ impl CreateFileUploadRequestBuilder {
         self.timestamp_modification = Some(timestamp_modification.to_rfc3339());
         self
     }
+
+    pub fn with_direct_s3_upload(mut self, direct_s3_upload: bool) -> Self {
+        if !direct_s3_upload {
+            self.direct_s3_upload = None;
+        } else {
+            self.direct_s3_upload = Some(direct_s3_upload);
+        }
+        self
+    }
+
     pub fn build(self) -> CreateFileUploadRequest {
         CreateFileUploadRequest {
             parent_id: self.parent_id,
