@@ -314,7 +314,7 @@ impl DracoonClientBuilder {
             None => APP_USER_AGENT.to_string(),
         };
 
-        let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
+        let http = Client::builder().user_agent(user_agent).build()?;
         let upload_http = http.clone();
 
         let http = ClientBuilder::new(http)
