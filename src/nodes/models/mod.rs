@@ -403,7 +403,7 @@ pub struct EncryptionInfo {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
-    pub id: u64,
+    pub id: i64,
     pub user_type: UserType,
     pub user_name: Option<String>,
     pub avatar_uuid: String,
