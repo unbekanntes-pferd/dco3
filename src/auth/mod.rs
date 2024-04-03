@@ -314,7 +314,7 @@ impl DracoonClientBuilder {
             None => APP_USER_AGENT.to_string(),
         };
 
-        let http = Client::builder().user_agent(APP_USER_AGENT).build()?;
+        let http = Client::builder().user_agent(user_agent).build()?;
         let upload_http = http.clone();
 
         let http = ClientBuilder::new(http)
@@ -791,6 +791,8 @@ impl DracoonClient<Provisioning> {
 #[cfg(test)]
 mod tests {
 
+    use reqwest::header::USER_AGENT;
+
     use super::*;
 
     fn get_test_client(url: &str) -> DracoonClient<Disconnected> {
@@ -798,7 +800,6 @@ mod tests {
             .with_base_url(url)
             .with_client_id("client_id")
             .with_client_secret("client_secret")
-            .with_user_agent("test_client")
             .with_max_retries(1)
             .with_max_retry_delay(600)
             .with_min_retry_delay(300)
@@ -1324,5 +1325,60 @@ mod tests {
             .build_provisioning();
 
         assert!(dracoon.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_default_user_agent() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let base_url = mock_server.url();
+
+        let auth_res = include_str!("./tests/auth_ok.json");
+
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(auth_res)
+            .match_header(USER_AGENT, APP_USER_AGENT)
+            .create();
+
+        let dracoon = get_test_client(&base_url);
+        let dracoon = dracoon
+            .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
+            .await
+            .unwrap();
+
+        auth_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_custom_user_agent() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let base_url = mock_server.url();
+
+        let auth_res = include_str!("./tests/auth_ok.json");
+
+        let custom_user_agent = format!("{}|{}", "test_client", APP_USER_AGENT);
+
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(auth_res)
+            .match_header(USER_AGENT, custom_user_agent.as_str())
+            .create();
+
+        let dracoon = DracoonClientBuilder::new()
+            .with_base_url(base_url.as_str())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .with_user_agent("test_client")
+            .build()
+            .expect("valid client config")
+            .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
+            .await
+            .unwrap();
+
+        auth_mock.assert();
     }
 }
