@@ -533,11 +533,17 @@ pub enum S3UploadStatus {
 pub struct CreateFileUploadRequest {
     parent_id: u64,
     name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     classification: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     direct_S3_upload: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_creation: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     timestamp_modification: Option<String>,
 }
 
@@ -636,9 +642,13 @@ impl GeneratePresignedUrlsRequest {
 #[serde(rename_all = "camelCase")]
 pub struct CompleteS3FileUploadRequest {
     parts: Vec<S3FileUploadPart>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     resolution_strategy: Option<ResolutionStrategy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     keep_share_links: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_key: Option<FileKey>,
 }
 
@@ -697,9 +707,13 @@ impl CompleteS3FileUploadRequestBuilder {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteUploadRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     resolution_strategy: Option<ResolutionStrategy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     keep_share_links: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_key: Option<FileKey>,
 }
 
@@ -794,7 +808,9 @@ impl From<Vec<u64>> for DeleteNodesRequest {
 #[serde(rename_all = "camelCase")]
 pub struct TransferNodesRequest {
     items: Vec<TransferNode>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     resolution_strategy: Option<ResolutionStrategy>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     keep_share_links: Option<bool>,
 }
 

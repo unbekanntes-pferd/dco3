@@ -42,18 +42,30 @@ pub type DownloadSharesList = RangedItems<DownloadShare>;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+
 pub struct CreateDownloadShareRequest {
     node_id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     internal_notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     receiver_language: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     text_message_recipients: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     keypair: Option<UserKeyPairContainer>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_downloads: Option<u32>,
 }
 
@@ -173,10 +185,15 @@ impl CreateDownloadShareRequestBuilder {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadSharesBulkRequest {
     object_ids: Vec<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_downloads: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_downloads: Option<bool>,
 }
 
@@ -272,18 +289,31 @@ impl DeleteDownloadSharesRequest {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadShareRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     internal_notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_downloads: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     text_message_recipients: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     receiver_language: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     default_country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_password: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_downloads: Option<bool>,
 }
 

@@ -75,17 +75,29 @@ impl UploadShareLinkEmail {
 #[derive(Debug, Serialize)]
 pub struct CreateUploadShareRequest {
     target_id: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_expiry_period: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     internal_notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_slots: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_uploaded_files: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     text_message_recipients: Option<Vec<String>>,
 }
 
@@ -202,22 +214,39 @@ impl CreateUploadShareRequestBuilder {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadShareRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_expiry_period: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     internal_notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_slots: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_uploaded_files: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     text_message_recipients: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_slots: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_size: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_file_expiry_period: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     default_country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     receiver_language: Option<String>,
 }
 
@@ -383,15 +412,25 @@ impl DeleteUploadSharesRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadSharesBulkRequest {
     object_ids: Vec<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     expiration: Option<ObjectExpiration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_creator_username: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     show_uploaded_files: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_slots: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_slots: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_max_size: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file_expiry_period: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     reset_file_expiry_period: Option<bool>,
 }
 
