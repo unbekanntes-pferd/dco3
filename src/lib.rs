@@ -393,7 +393,7 @@
 //! ## Examples
 //! For an example client implementation, see the [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) repository.
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
@@ -441,13 +441,14 @@ pub mod utils;
 /// DRACOON struct - implements all API calls via traits
 #[derive(Clone)]
 pub struct Dracoon<State = Disconnected> {
-    client: DracoonClient<State>,
+    client: Arc<DracoonClient<State>>,
     state: PhantomData<State>,
     user_info: Container<UserAccount>,
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
-}
+    //pub user: impl UserAccountKeyPairs + User
+} 
 
 /// Builder for the `Dracoon` struct.
 /// Requires a base url, client id and client secret.
@@ -546,7 +547,7 @@ impl DracoonBuilder {
         let dracoon = self.client_builder.build()?;
 
         Ok(Dracoon {
-            client: dracoon,
+            client: Arc::new(dracoon),
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
@@ -560,7 +561,7 @@ impl DracoonBuilder {
         let dracoon = self.client_builder.build_provisioning()?;
 
         Ok(Dracoon {
-            client: dracoon,
+            client: Arc::new(dracoon),
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
@@ -582,7 +583,7 @@ impl Dracoon<Disconnected> {
         let client = self.client.connect(oauth_flow).await?;
 
         let mut dracoon = Dracoon {
-            client,
+            client: Arc::new(client),
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),

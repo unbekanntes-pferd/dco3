@@ -377,7 +377,7 @@ impl DracoonClient<Disconnected> {
 
     /// Connects to DRACOON using any of the supported OAuth2 flows
     pub async fn connect(
-        self,
+        &self,
         oauth_flow: OAuth2Flow,
     ) -> Result<DracoonClient<Connected>, DracoonClientError> {
         let connection = match oauth_flow {
@@ -410,17 +410,17 @@ impl DracoonClient<Disconnected> {
         }
 
         Ok(DracoonClient {
-            client_id: self.client_id,
-            client_secret: self.client_secret,
+            client_id: self.client_id.clone(),
+            client_secret: self.client_secret.clone(),
             connection: Container::new_from(connection),
-            additional_connections: self.additional_connections,
-            token_rotation: self.token_rotation,
-            curr_connection: self.curr_connection,
-            base_url: self.base_url,
-            redirect_uri: self.redirect_uri,
+            additional_connections: self.additional_connections.clone(),
+            token_rotation: self.token_rotation.clone(),
+            curr_connection: self.curr_connection.clone(),
+            base_url: self.base_url.clone(),
+            redirect_uri: self.redirect_uri.clone(),
             connected: PhantomData,
-            http: self.http,
-            stream_http: self.stream_http,
+            http: self.http.clone(),
+            stream_http: self.stream_http.clone(),
             provisioning_token: None,
         })
     }
