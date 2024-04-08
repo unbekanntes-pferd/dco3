@@ -5,13 +5,15 @@ use crate::{
     auth::Connected,
     constants::{DRACOON_API_PREFIX, USERS_BASE, USERS_LAST_ADMIN_ROOMS},
     utils::FromResponse,
-    Dracoon, DracoonClientError, ListAllParams, Users,
+    DracoonClientError, ListAllParams, Users,
 };
 
-use super::{CreateUserRequest, LastAdminUserRoomList, UpdateUserRequest, UserData, UserList};
+use super::{
+    CreateUserRequest, LastAdminUserRoomList, UpdateUserRequest, UserData, UserList, UsersEndpoint,
+};
 
 #[async_trait]
-impl Users for Dracoon<Connected> {
+impl Users for UsersEndpoint<Connected> {
     async fn get_users(
         &self,
         params: Option<ListAllParams>,
@@ -20,7 +22,7 @@ impl Users for Dracoon<Connected> {
     ) -> Result<UserList, DracoonClientError> {
         let params = params.unwrap_or_default();
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}");
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -36,10 +38,13 @@ impl Users for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -48,13 +53,16 @@ impl Users for Dracoon<Connected> {
 
     async fn create_user(&self, req: CreateUserRequest) -> Result<UserData, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -69,13 +77,16 @@ impl Users for Dracoon<Connected> {
         effective_roles: Option<bool>,
     ) -> Result<UserData, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}/{user_id}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -88,13 +99,16 @@ impl Users for Dracoon<Connected> {
         req: UpdateUserRequest,
     ) -> Result<UserData, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}/{user_id}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -105,13 +119,16 @@ impl Users for Dracoon<Connected> {
 
     async fn delete_user(&self, user_id: u64) -> Result<(), DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}/{user_id}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -130,13 +147,16 @@ impl Users for Dracoon<Connected> {
     ) -> Result<LastAdminUserRoomList, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{USERS_BASE}/{user_id}/{USERS_LAST_ADMIN_ROOMS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 

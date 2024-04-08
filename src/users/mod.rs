@@ -30,7 +30,7 @@ pub trait Users {
     ///     .with_sort(UsersSortBy::user_name(SortOrder::Desc))
     ///     .build();
     /// // optionally include roles and attributes
-    /// let users = dracoon.get_users(Some(params), None, None).await.unwrap();
+    /// let users = dracoon.users.get_users(Some(params), None, None).await.unwrap();
     ///
     /// # }
     /// ```
@@ -61,7 +61,7 @@ pub trait Users {
     ///    .with_email("jane.doe@localhost")
     ///    .with_auth_data(auth)
     ///    .build();
-    /// let user = dracoon.create_user(user).await.unwrap();
+    /// let user = dracoon.users.create_user(user).await.unwrap();
     ///
     /// // creating an OIDC user
     /// let auth = UserAuthData::new_oidc("jane.doe", 4);
@@ -69,7 +69,7 @@ pub trait Users {
     ///    .with_email("jane.doe@localhost")
     ///    .with_auth_data(auth)
     ///    .build();
-    /// let user = dracoon.create_user(user).await.unwrap();
+    /// let user = dracoon.users.create_user(user).await.unwrap();
     /// # }
     /// ```
     async fn create_user(&self, req: CreateUserRequest) -> Result<UserData, DracoonClientError>;
@@ -88,7 +88,7 @@ pub trait Users {
     /// #  .await
     /// #  .unwrap();
     /// // optionally you can include effective roles
-    /// let user = dracoon.get_user(123, None).await.unwrap();
+    /// let user = dracoon.users.get_user(123, None).await.unwrap();
     /// # }
     /// ```
     async fn get_user(
@@ -114,7 +114,7 @@ pub trait Users {
     ///    .with_first_name("Jane")
     ///    .with_last_name("Doe")
     ///    .build();
-    /// let user = dracoon.update_user(123, update).await.unwrap();
+    /// let user = dracoon.users.update_user(123, update).await.unwrap();
     /// # }
     /// ```
     async fn update_user(
@@ -136,7 +136,7 @@ pub trait Users {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.delete_user(123).await.unwrap();
+    /// dracoon.users.delete_user(123).await.unwrap();
     ///
     /// # }
     /// ```
@@ -155,7 +155,7 @@ pub trait Users {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let rooms = dracoon.get_user_last_admin_rooms(123).await.unwrap();
+    /// let rooms = dracoon.users.get_user_last_admin_rooms(123).await.unwrap();
     /// # }
     /// ```
     async fn get_user_last_admin_rooms(

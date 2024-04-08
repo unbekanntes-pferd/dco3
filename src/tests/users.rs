@@ -47,7 +47,7 @@ pub mod tests {
             .with_body(users_res)
             .create();
 
-        let users = client.get_users(None, None, None).await.unwrap();
+        let users = client.users.get_users(None, None, None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -71,7 +71,7 @@ pub mod tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let users = client.get_users(Some(params), None, None).await.unwrap();
+        let users = client.users.get_users(Some(params), None, None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -95,7 +95,7 @@ pub mod tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let users = client.get_users(Some(params), None, None).await.unwrap();
+        let users = client.users.get_users(Some(params), None, None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -121,7 +121,7 @@ pub mod tests {
             .with_sort(UsersSortBy::CreatedAt(SortOrder::Asc))
             .build();
 
-        let users = client.get_users(Some(params), None, None).await.unwrap();
+        let users = client.users.get_users(Some(params), None, None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -147,7 +147,7 @@ pub mod tests {
             .with_filter(UsersFilter::email_contains("test"))
             .build();
 
-        let users = client.get_users(Some(params), None, None).await.unwrap();
+        let users = client.users.get_users(Some(params), None, None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -169,7 +169,7 @@ pub mod tests {
             .with_body(users_res)
             .create();
 
-        let users = client.get_users(None, Some(true), None).await.unwrap();
+        let users = client.users.get_users(None, Some(true), None).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -191,7 +191,7 @@ pub mod tests {
             .with_body(users_res)
             .create();
 
-        let users = client.get_users(None, None, Some(true)).await.unwrap();
+        let users = client.users.get_users(None, None, Some(true)).await.unwrap();
 
         users_mock.assert();
         assert_eq!(users.range.offset, 0);
@@ -219,7 +219,7 @@ pub mod tests {
             .with_auth_data(auth)
             .build();
 
-        let user = client.create_user(user_req).await.unwrap();
+        let user = client.users.create_user(user_req).await.unwrap();
 
         user_mock.assert();
 
@@ -238,7 +238,7 @@ pub mod tests {
             .with_body(user_res)
             .create();
 
-        let user = client.get_user(123, None).await.unwrap();
+        let user = client.users.get_user(123, None).await.unwrap();
 
         user_mock.assert();
 
@@ -260,7 +260,7 @@ pub mod tests {
             .with_email("foo@localhost")
             .build();
 
-        let user = client.update_user(123, user_req).await.unwrap();
+        let user = client.users.update_user(123, user_req).await.unwrap();
 
         user_mock.assert();
 
@@ -278,7 +278,7 @@ pub mod tests {
             .with_body(user_res)
             .create();
 
-        let res = client.delete_user(123).await;
+        let res = client.users.delete_user(123).await;
 
         assert!(res.is_ok());
 
