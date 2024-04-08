@@ -399,6 +399,7 @@ use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
 use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
+use shares::SharesEndpoint;
 use user::UserEndpoint;
 
 use self::{
@@ -448,6 +449,7 @@ pub struct Dracoon<State = Disconnected> {
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
+    pub shares: SharesEndpoint<State>,
     pub user: UserEndpoint<State>,
     pub public: PublicEndpoint<State>,
 } 
@@ -550,6 +552,7 @@ impl DracoonBuilder {
         let dracoon = Arc::new(dracoon);
         let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
         let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -560,6 +563,7 @@ impl DracoonBuilder {
             encryption_secret: self.encryption_secret,
             user: user_endpoint,
             public: public_endpoint,
+            shares: shares_endpoint,
         })
     }
 
@@ -569,6 +573,7 @@ impl DracoonBuilder {
         let dracoon = Arc::new(dracoon);
         let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
         let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -579,6 +584,7 @@ impl DracoonBuilder {
             encryption_secret: None,
             user: user_endpoint,
             public: public_endpoint,
+            shares: shares_endpoint,
         })
     }
 }
@@ -597,6 +603,7 @@ impl Dracoon<Disconnected> {
         let connected_client = Arc::new(client);
         let user_endpoint = UserEndpoint::new(Arc::clone(&connected_client));
         let public_endpoint = PublicEndpoint::new(Arc::clone(&connected_client));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&connected_client));
 
         let mut dracoon = Dracoon {
             client: connected_client,
@@ -607,6 +614,7 @@ impl Dracoon<Disconnected> {
             encryption_secret: self.encryption_secret,
             user: user_endpoint,
             public: public_endpoint,
+            shares: shares_endpoint,
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {

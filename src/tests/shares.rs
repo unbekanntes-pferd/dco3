@@ -96,7 +96,7 @@ mod download_share_tests {
             .with_body(shares_res)
             .create();
 
-        let shares = client.get_download_shares(None).await.unwrap();
+        let shares = client.shares.get_download_shares(None).await.unwrap();
 
         shares_mock.assert();
 
@@ -123,7 +123,7 @@ mod download_share_tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let shares = client.get_download_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
 
         shares_mock.assert();
 
@@ -150,7 +150,7 @@ mod download_share_tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let shares = client.get_download_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
 
         shares_mock.assert();
 
@@ -182,7 +182,7 @@ mod download_share_tests {
             .with_filter(DownloadSharesFilter::name_contains("test"))
             .build();
 
-        let shares = client.get_download_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
 
         shares_mock.assert();
 
@@ -211,7 +211,7 @@ mod download_share_tests {
             .with_sort(DownloadSharesSortBy::Name(SortOrder::Asc))
             .build();
 
-        let shares = client.get_download_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
 
         shares_mock.assert();
 
@@ -240,7 +240,7 @@ mod download_share_tests {
             .with_max_downloads(2)
             .build();
 
-        let res = client.update_download_shares(update).await;
+        let res = client.shares.update_download_shares(update).await;
 
         shares_mock.assert();
         assert!(res.is_ok());
@@ -259,7 +259,7 @@ mod download_share_tests {
 
         let update = DeleteDownloadSharesRequest::new(share_ids);
 
-        let res = client.delete_download_shares(update).await;
+        let res = client.shares.delete_download_shares(update).await;
 
         shares_mock.assert();
         assert!(res.is_ok());
@@ -283,7 +283,7 @@ mod download_share_tests {
             .with_max_downloads(2)
             .build();
 
-        let share = client.create_download_share(share).await.unwrap();
+        let share = client.shares.create_download_share(share).await.unwrap();
 
         share_mock.assert();
 
@@ -303,7 +303,7 @@ mod download_share_tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let share = client.get_download_share(123).await.unwrap();
+        let share = client.shares.get_download_share(123).await.unwrap();
 
         share_mock.assert();
 
@@ -328,7 +328,7 @@ mod download_share_tests {
             .with_max_downloads(2)
             .build();
 
-        let share = client.update_download_share(123, update).await.unwrap();
+        let share = client.shares.update_download_share(123, update).await.unwrap();
 
         share_mock.assert();
 
@@ -346,7 +346,7 @@ mod download_share_tests {
             .with_status(204)
             .create();
 
-        let res = client.delete_download_share(123).await;
+        let res = client.shares.delete_download_share(123).await;
 
         share_mock.assert();
 
@@ -366,7 +366,7 @@ mod download_share_tests {
 
         let email = DownloadShareLinkEmail::new("test", vec!["foo@localhost".into()], None);
 
-        let res = client.send_download_share_email(123, email).await;
+        let res = client.shares.send_download_share_email(123, email).await;
 
         share_mock.assert();
 
@@ -472,7 +472,7 @@ mod upload_share_tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let shares = client.get_upload_shares(None).await.unwrap();
+        let shares = client.shares.get_upload_shares(None).await.unwrap();
 
         share_mock.assert();
 
@@ -502,7 +502,7 @@ mod upload_share_tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let shares = client.get_upload_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_upload_shares(Some(params)).await.unwrap();
 
         share_mock.assert();
 
@@ -532,7 +532,7 @@ mod upload_share_tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let shares = client.get_upload_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_upload_shares(Some(params)).await.unwrap();
 
         share_mock.assert();
 
@@ -567,7 +567,7 @@ mod upload_share_tests {
             .with_filter(UploadSharesFilter::user_id_equals(2))
             .build();
 
-        let shares = client.get_upload_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_upload_shares(Some(params)).await.unwrap();
 
         share_mock.assert();
 
@@ -599,7 +599,7 @@ mod upload_share_tests {
             .with_sort(UploadSharesSortBy::Name(SortOrder::Asc))
             .build();
 
-        let shares = client.get_upload_shares(Some(params)).await.unwrap();
+        let shares = client.shares.get_upload_shares(Some(params)).await.unwrap();
 
         share_mock.assert();
 
@@ -631,7 +631,7 @@ mod upload_share_tests {
             .with_show_uploaded_files(true)
             .build();
 
-        let res = client.update_upload_shares(update).await;
+        let res = client.shares.update_upload_shares(update).await;
 
         shares_mock.assert();
 
@@ -649,7 +649,7 @@ mod upload_share_tests {
 
         let share_ids = vec![1, 2, 3];
 
-        let res = client.delete_upload_shares(share_ids.into()).await;
+        let res = client.shares.delete_upload_shares(share_ids.into()).await;
 
         shares_mock.assert();
 
@@ -677,7 +677,7 @@ mod upload_share_tests {
             .with_show_creator_username(true)
             .build();
 
-        let share = client.create_upload_share(share).await.unwrap();
+        let share = client.shares.create_upload_share(share).await.unwrap();
 
         share_mock.assert();
 
@@ -697,7 +697,7 @@ mod upload_share_tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let share = client.get_upload_share(123).await.unwrap();
+        let share = client.shares.get_upload_share(123).await.unwrap();
 
         share_mock.assert();
 
@@ -722,7 +722,7 @@ mod upload_share_tests {
             .with_notes("test")
             .build();
 
-        let share = client.update_upload_share(123, update).await.unwrap();
+        let share = client.shares.update_upload_share(123, update).await.unwrap();
 
         share_mock.assert();
 
@@ -738,7 +738,7 @@ mod upload_share_tests {
             .with_status(204)
             .create();
 
-        let res = client.delete_upload_share(123).await;
+        let res = client.shares.delete_upload_share(123).await;
 
         shares_mock.assert();
 
@@ -756,7 +756,7 @@ mod upload_share_tests {
 
         let email = UploadShareLinkEmail::new("test", vec!["foo@localhost".into()], None);
 
-        let res = client.send_upload_share_email(123, email).await;
+        let res = client.shares.send_upload_share_email(123, email).await;
 
         shares_mock.assert();
 

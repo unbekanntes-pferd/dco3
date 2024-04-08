@@ -1,13 +1,34 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use dco3_derive::FromResponse;
 use reqwest::Response;
 use serde::Deserialize;
 
 use crate::{
-    auth::DracoonErrorResponse,
+    auth::{DracoonClient, DracoonErrorResponse},
     utils::{parse_body, FromResponse},
     DracoonClientError,
 };
+
+#[derive(Clone)]
+pub struct SystemAuthEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl <S> SystemAuthEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]

@@ -4,13 +4,13 @@ use reqwest::header;
 use crate::constants::{DRACOON_API_PREFIX, SHARES_BASE, SHARES_DOWNLOAD, SHARES_EMAIL};
 use crate::models::ListAllParams;
 use crate::utils::FromResponse;
-use crate::{auth::Connected, Dracoon, DracoonClientError};
+use crate::{auth::Connected, DracoonClientError};
 
 use super::models::*;
 use super::DownloadShares;
 
 #[async_trait]
-impl DownloadShares for Dracoon<Connected> {
+impl DownloadShares for SharesEndpoint<Connected> {
     async fn get_download_shares(
         &self,
         params: Option<ListAllParams>,
@@ -18,7 +18,7 @@ impl DownloadShares for Dracoon<Connected> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_DOWNLOAD}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -32,10 +32,13 @@ impl DownloadShares for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -49,13 +52,16 @@ impl DownloadShares for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_DOWNLOAD}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&update)
             .send()
@@ -76,13 +82,16 @@ impl DownloadShares for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_DOWNLOAD}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&delete)
             .send()
@@ -103,13 +112,16 @@ impl DownloadShares for Dracoon<Connected> {
     ) -> Result<DownloadShare, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SHARES_BASE}/{SHARES_DOWNLOAD}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&create)
             .send()
@@ -127,13 +139,16 @@ impl DownloadShares for Dracoon<Connected> {
             id = download_share_id
         );
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -151,13 +166,16 @@ impl DownloadShares for Dracoon<Connected> {
             id = download_share_id
         );
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&update)
             .send()
@@ -175,13 +193,16 @@ impl DownloadShares for Dracoon<Connected> {
             id = download_share_id
         );
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -205,13 +226,16 @@ impl DownloadShares for Dracoon<Connected> {
             id = download_share_id
         );
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&email)
             .send()
