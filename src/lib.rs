@@ -399,6 +399,7 @@ use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
 use public::SystemInfo;
 use reqwest::Url;
+use user::UserEndpoint;
 
 use self::{
     auth::{Connected, Disconnected},
@@ -447,7 +448,7 @@ pub struct Dracoon<State = Disconnected> {
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
-    //pub user: impl UserAccountKeyPairs + User
+    pub user: UserEndpoint<State>
 } 
 
 /// Builder for the `Dracoon` struct.
@@ -545,28 +546,34 @@ impl DracoonBuilder {
     /// Builds the [Dracoon] struct - fails, if any of the required fields are missing
     pub fn build(self) -> Result<Dracoon<Disconnected>, DracoonClientError> {
         let dracoon = self.client_builder.build()?;
+        let dracoon = Arc::new(dracoon);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
-            client: Arc::new(dracoon),
+            client: dracoon,
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
+            user: user_endpoint,
         })
     }
 
     /// Builds the [Dracoon] struct set up for provisioning - fails if any of the required fields are missing
     pub fn build_provisioning(self) -> Result<Dracoon<Provisioning>, DracoonClientError> {
         let dracoon = self.client_builder.build_provisioning()?;
+        let dracoon = Arc::new(dracoon);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
-            client: Arc::new(dracoon),
+            client: dracoon,
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: None,
+            user: user_endpoint,
         })
     }
 }
@@ -582,17 +589,21 @@ impl Dracoon<Disconnected> {
     ) -> Result<Dracoon<Connected>, DracoonClientError> {
         let client = self.client.connect(oauth_flow).await?;
 
+        let connected_client = Arc::new(client);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&connected_client));
+
         let mut dracoon = Dracoon {
-            client: Arc::new(client),
+            client: connected_client,
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
+            user: user_endpoint,
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
-            let kp = dracoon.get_user_keypair(&encryption_secret).await?;
+            let kp = dracoon.user.get_user_keypair(&encryption_secret).await?;
             dracoon.encryption_secret = None;
             dracoon.keypair.set(kp).await;
             drop(encryption_secret)
@@ -628,7 +639,7 @@ impl Dracoon<Connected> {
 
     pub async fn get_user_info(&self) -> Result<UserAccount, DracoonClientError> {
         if self.user_info.is_none().await {
-            let user_info = self.get_user_account().await?;
+            let user_info = self.user.get_user_account().await?;
             self.user_info.set(user_info).await;
         }
 
@@ -653,7 +664,7 @@ impl Dracoon<Connected> {
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
         if self.keypair.is_none().await {
             if let Some(secret) = secret {
-                let keypair = self.get_user_keypair(&secret).await?;
+                let keypair = self.user.get_user_keypair(&secret).await?;
                 self.keypair.set(keypair).await;
             } else {
                 return Err(DracoonClientError::MissingEncryptionSecret);

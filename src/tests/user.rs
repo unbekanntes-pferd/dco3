@@ -26,7 +26,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let keypair = client.get_user_keypair("TopSecret1234!").await.unwrap();
+        let keypair = client.user.get_user_keypair("TopSecret1234!").await.unwrap();
 
         keypair_mock.assert();
 
@@ -58,7 +58,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        let res = client.set_user_keypair("TopSecret1234!").await;
+        let res = client.user.set_user_keypair("TopSecret1234!").await;
 
         keypair_mock.assert();
 
@@ -75,7 +75,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        let res = client.delete_user_keypair().await;
+        let res = client.user.delete_user_keypair().await;
 
         keypair_mock.assert();
 
@@ -94,7 +94,7 @@ mod tests {
             .with_body(account_res)
             .create();
 
-        let user_account = client.get_user_account().await.unwrap();
+        let user_account = client.user.get_user_account().await.unwrap();
 
         user_account_mock.assert();
 
@@ -121,7 +121,7 @@ mod tests {
             .with_email("test@localhost")
             .build();
 
-        let user_account = client.update_user_account(update).await.unwrap();
+        let user_account = client.user.update_user_account(update).await.unwrap();
 
         user_account_mock.assert();
 

@@ -771,6 +771,12 @@ impl DracoonClient<Connected> {
             .expect("Connected client has no connection")
             .is_expired()
     }
+
+    pub fn build_api_url(&self, url_part: &str) -> Url {
+        self.base_url
+            .join(url_part)
+            .expect("Invalid base url or url part")
+    }
 }
 
 impl DracoonClient<Provisioning> {
