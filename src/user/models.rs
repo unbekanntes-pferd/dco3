@@ -16,7 +16,6 @@ use crate::{
 pub struct UserEndpoint<S> {
     client: Arc<DracoonClient<S>>,
     state: std::marker::PhantomData<S>,
-
 }
 
 impl <S> UserEndpoint<S> {

@@ -397,7 +397,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
-use public::SystemInfo;
+use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
 use user::UserEndpoint;
 
@@ -448,7 +448,8 @@ pub struct Dracoon<State = Disconnected> {
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
-    pub user: UserEndpoint<State>
+    pub user: UserEndpoint<State>,
+    pub public: PublicEndpoint<State>,
 } 
 
 /// Builder for the `Dracoon` struct.
@@ -548,6 +549,7 @@ impl DracoonBuilder {
         let dracoon = self.client_builder.build()?;
         let dracoon = Arc::new(dracoon);
         let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -557,6 +559,7 @@ impl DracoonBuilder {
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
             user: user_endpoint,
+            public: public_endpoint,
         })
     }
 
@@ -565,6 +568,7 @@ impl DracoonBuilder {
         let dracoon = self.client_builder.build_provisioning()?;
         let dracoon = Arc::new(dracoon);
         let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -574,6 +578,7 @@ impl DracoonBuilder {
             system_info: Container::new(),
             encryption_secret: None,
             user: user_endpoint,
+            public: public_endpoint,
         })
     }
 }
@@ -591,6 +596,7 @@ impl Dracoon<Disconnected> {
 
         let connected_client = Arc::new(client);
         let user_endpoint = UserEndpoint::new(Arc::clone(&connected_client));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&connected_client));
 
         let mut dracoon = Dracoon {
             client: connected_client,
@@ -600,6 +606,7 @@ impl Dracoon<Disconnected> {
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
             user: user_endpoint,
+            public: public_endpoint,
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
@@ -649,7 +656,7 @@ impl Dracoon<Connected> {
 
     pub async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
         if self.system_info.is_none().await {
-            let system_info = Public::get_system_info(self).await?;
+            let system_info = self.public.get_system_info().await?;
             self.system_info.set(system_info).await;
         }
 

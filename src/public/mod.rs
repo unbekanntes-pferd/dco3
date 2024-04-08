@@ -9,7 +9,7 @@ use crate::{
         PUBLIC_VERSION,
     },
     utils::FromResponse,
-    Dracoon, DracoonClientError,
+    DracoonClientError,
 };
 
 pub use self::models::*;
@@ -21,7 +21,7 @@ pub trait Public {
 }
 
 #[async_trait]
-impl Public for Dracoon<Connected> {
+impl Public for PublicEndpoint<Connected> {
     /// Get software version information for the DRACOON backend (API).
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Public};
@@ -37,7 +37,7 @@ impl Public for Dracoon<Connected> {
     /// #  .await
     /// #  .unwrap();
     ///
-    /// let software_version = dracoon.get_software_version().await.unwrap();
+    /// let software_version = dracoon.public.get_software_version().await.unwrap();
     ///
     /// # }
     ///
@@ -45,10 +45,10 @@ impl Public for Dracoon<Connected> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SOFTWARE_BASE}/{PUBLIC_VERSION}");
 
-        let url = self.build_api_url(&url_part);
+        let url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(url)
             .header(header::CONTENT_TYPE, "application/json")
@@ -73,17 +73,17 @@ impl Public for Dracoon<Connected> {
     /// #  .await
     /// #  .unwrap();
     ///
-    /// let system_info = dracoon.get_system_info().await.unwrap();
+    /// let system_info = dracoon.public.get_system_info().await.unwrap();
     ///
     /// # }
     async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SYSTEM_BASE}/{PUBLIC_INFO}");
 
-        let url = self.build_api_url(&url_part);
+        let url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(url)
             .header(header::CONTENT_TYPE, "application/json")
@@ -96,9 +96,10 @@ impl Public for Dracoon<Connected> {
 
 #[cfg(test)]
 mod tests {
+
     use chrono::Datelike;
 
-    use crate::{public::Public, tests::dracoon::get_connected_client};
+    use crate::{tests::dracoon::get_connected_client, Public};
 
     #[tokio::test]
     async fn test_get_system_info() {
@@ -114,7 +115,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let system_info = client.get_system_info().await.unwrap();
+        let system_info = client.public.get_system_info().await.unwrap();
 
         system_info_mock.assert();
 
@@ -139,7 +140,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let software_version = client.get_software_version().await.unwrap();
+        let software_version = client.public.get_software_version().await.unwrap();
 
         software_version_mock.assert();
 
