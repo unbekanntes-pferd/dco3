@@ -48,7 +48,7 @@
 //!       .await
 //!       .unwrap();
 //!
-//!   let user_info = dracoon.get_user_account().await.unwrap();
+//!   let user_info = dracoon.user.get_user_account().await.unwrap();
 //!   println!("User info: {:?}", user_info);
 //! }
 //!```

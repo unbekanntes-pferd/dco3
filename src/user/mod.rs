@@ -27,7 +27,7 @@ pub trait User {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let account = dracoon.get_user_account().await.unwrap();
+    /// let account = dracoon.user.get_user_account().await.unwrap();
     /// # }
     /// ```
     async fn get_user_account(&self) -> Result<UserAccount, DracoonClientError>;
@@ -52,7 +52,7 @@ pub trait User {
     ///                      .with_email("jane.doe@localhost")
     ///                      .build();
     ///
-    /// let account = dracoon.update_user_account(update).await.unwrap();
+    /// let account = dracoon.user.update_user_account(update).await.unwrap();
     /// # }
     /// ```  
     async fn update_user_account(
@@ -78,7 +78,7 @@ pub trait UserAccountKeyPairs {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let keypair = dracoon.get_user_keypair("secret123").await.unwrap();
+    /// let keypair = dracoon.user.get_user_keypair("secret123").await.unwrap();
     /// // note: you will usually not need the plain keypair since encryption / decryption
     /// // is handled by the dracoon client for up- and downloads.
     /// # }
@@ -101,7 +101,7 @@ pub trait UserAccountKeyPairs {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.set_user_keypair("Secret123!").await.unwrap();
+    /// dracoon.user.set_user_keypair("Secret123!").await.unwrap();
     /// // note: you need to delete the existing keypair before setting a new one.
     /// # }
     /// ```
@@ -120,7 +120,7 @@ pub trait UserAccountKeyPairs {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.delete_user_keypair().await.unwrap();
+    /// dracoon.user.delete_user_keypair().await.unwrap();
     /// // note: you need to delete the existing keypair before setting a new one.
     /// # }
     /// ```
