@@ -282,7 +282,7 @@
 //!
 //! // this takes a mandatory name and optional expiration
 //! let group = CreateGroupRequest::new("My Group", None);
-//! let group = dracoon.create_group(group).await.unwrap();
+//! let group = dracoon.groups.create_group(group).await.unwrap();
 //!
 //! # }
 //! ```
@@ -397,6 +397,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use auth::Provisioning;
 use dco3_crypto::PlainUserKeyPairContainer;
+use groups::GroupsEndpoint;
 use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
 use shares::SharesEndpoint;
@@ -450,6 +451,7 @@ pub struct Dracoon<State = Disconnected> {
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
+    pub groups: GroupsEndpoint<State>,
     pub shares: SharesEndpoint<State>,
     pub user: UserEndpoint<State>,
     pub users: UsersEndpoint<State>,
@@ -556,6 +558,7 @@ impl DracoonBuilder {
         let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
         let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
         let users_endpoint = UsersEndpoint::new(Arc::clone(&dracoon));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -568,6 +571,7 @@ impl DracoonBuilder {
             public: public_endpoint,
             shares: shares_endpoint,
             users: users_endpoint,
+            groups: groups_endpoint,
         })
     }
 
@@ -579,6 +583,7 @@ impl DracoonBuilder {
         let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
         let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
         let users_endpoint = UsersEndpoint::new(Arc::clone(&dracoon));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -591,6 +596,7 @@ impl DracoonBuilder {
             public: public_endpoint,
             shares: shares_endpoint,
             users: users_endpoint,
+            groups: groups_endpoint,
         })
     }
 }
@@ -611,6 +617,7 @@ impl Dracoon<Disconnected> {
         let public_endpoint = PublicEndpoint::new(Arc::clone(&connected_client));
         let shares_endpoint = SharesEndpoint::new(Arc::clone(&connected_client));
         let users_endpoint = UsersEndpoint::new(Arc::clone(&connected_client));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&connected_client));
 
         let mut dracoon = Dracoon {
             client: connected_client,
@@ -623,6 +630,7 @@ impl Dracoon<Disconnected> {
             public: public_endpoint,
             shares: shares_endpoint,
             users: users_endpoint,
+            groups: groups_endpoint,
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
