@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
@@ -5,13 +7,32 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::DracoonErrorResponse,
+    auth::{DracoonClient, DracoonErrorResponse},
     models::{FilterOperator, FilterQuery, ObjectExpiration, RangedItems, SortOrder, SortQuery},
     nodes::models::UserInfo,
     user::models::RoleList,
     utils::{parse_body, FromResponse},
     DracoonClientError,
 };
+
+#[derive(Clone)]
+pub struct GroupsEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> GroupsEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]

@@ -9,7 +9,7 @@ use crate::constants::{
     CONFIG_PRODUCT_PACKAGES, CONFIG_PRODUCT_PACKAGES_CURRENT, CONFIG_S3_TAGS, DRACOON_API_PREFIX,
 };
 use crate::utils::FromResponse;
-use crate::{auth::Connected, Dracoon, DracoonClientError};
+use crate::{auth::Connected, DracoonClientError};
 
 pub use self::models::*;
 
@@ -41,17 +41,20 @@ pub trait Config {
 }
 
 #[async_trait]
-impl Config for Dracoon<Connected> {
+impl Config for ConfigEndpoint<Connected> {
     async fn get_defaults(&self) -> Result<SystemDefaults, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_DEFAULTS}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -61,13 +64,16 @@ impl Config for Dracoon<Connected> {
     async fn get_general_settings(&self) -> Result<GeneralSettingsInfo, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_GENERAL}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -79,13 +85,16 @@ impl Config for Dracoon<Connected> {
     ) -> Result<InfrastructureProperties, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_INFRASTRUCTURE}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -97,13 +106,16 @@ impl Config for Dracoon<Connected> {
     ) -> Result<ClassificationPoliciesConfig, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_CLASSIFICATION_POLICIES}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -115,13 +127,16 @@ impl Config for Dracoon<Connected> {
             "/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_POLICIES}/{CONFIG_PASSWORD_POLICIES}"
         );
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -131,13 +146,16 @@ impl Config for Dracoon<Connected> {
     async fn get_algorithms(&self) -> Result<AlgorithmVersionInfoList, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_ALGORITHMS}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -147,13 +165,16 @@ impl Config for Dracoon<Connected> {
     async fn get_product_packages(&self) -> Result<ProductPackageResponseList, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_PRODUCT_PACKAGES}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -165,13 +186,16 @@ impl Config for Dracoon<Connected> {
     ) -> Result<ProductPackageResponseList, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_PRODUCT_PACKAGES}/{CONFIG_PRODUCT_PACKAGES_CURRENT}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -181,13 +205,16 @@ impl Config for Dracoon<Connected> {
     async fn get_s3_tags(&self) -> Result<S3TagList, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{CONFIG_BASE}/{CONFIG_S3_TAGS}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -219,7 +246,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let defaults = client.get_defaults().await.unwrap();
+        let defaults = client.config.get_defaults().await.unwrap();
 
         defaults_mock.assert();
 
@@ -244,7 +271,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let general_settings = client.get_general_settings().await.unwrap();
+        let general_settings = client.config.get_general_settings().await.unwrap();
 
         general_settings_mock.assert();
 
@@ -298,7 +325,8 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let infrastructure_properties = client.get_infrastructure_properties().await.unwrap();
+        let infrastructure_properties =
+            client.config.get_infrastructure_properties().await.unwrap();
 
         infrastructure_properties_mock.assert();
 
@@ -333,7 +361,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let classification_policies = client.get_classification_policies().await.unwrap();
+        let classification_policies = client.config.get_classification_policies().await.unwrap();
 
         classification_policies_mock.assert();
 
@@ -364,7 +392,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let password_policies = client.get_password_policies().await.unwrap();
+        let password_policies = client.config.get_password_policies().await.unwrap();
 
         password_policies_mock.assert();
 
@@ -482,7 +510,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let algorithms = client.get_algorithms().await.unwrap();
+        let algorithms = client.config.get_algorithms().await.unwrap();
 
         algorithms_mock.assert();
 
@@ -512,7 +540,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let product_packages = client.get_product_packages().await.unwrap();
+        let product_packages = client.config.get_product_packages().await.unwrap();
 
         product_packages_mock.assert();
 
@@ -545,7 +573,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let product_packages = client.get_current_product_package().await.unwrap();
+        let product_packages = client.config.get_current_product_package().await.unwrap();
 
         product_packages_mock.assert();
 
@@ -577,7 +605,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let s3_tags = client.get_s3_tags().await.unwrap();
+        let s3_tags = client.config.get_s3_tags().await.unwrap();
 
         s3_tags_mock.assert();
 

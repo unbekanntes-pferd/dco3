@@ -32,7 +32,7 @@ pub trait DownloadShares {
     ///     .with_sort(DownloadSharesSortBy::name(SortOrder::Desc))
     ///     .build();
     /// // pass None if you don't want to use any params
-    /// let shares = dracoon.get_download_shares(Some(params)).await.unwrap();
+    /// let shares = dracoon.shares.get_download_shares(Some(params)).await.unwrap();
     ///
     /// # }
     /// ```
@@ -58,7 +58,7 @@ pub trait DownloadShares {
     /// let update = UpdateDownloadSharesBulkRequest::builder(ids)
     ///     .with_show_creator_name(true)
     ///     .build();
-    /// dracoon.update_download_shares(update).await.unwrap();
+    /// dracoon.shares.update_download_shares(update).await.unwrap();
     /// # }
     /// ```
     async fn update_download_shares(
@@ -80,11 +80,11 @@ pub trait DownloadShares {
     /// #  .await
     /// #  .unwrap();
     /// let ids = vec![1, 2, 3];
-    /// dracoon.delete_download_shares(ids.into()).await.unwrap();
+    /// dracoon.shares.delete_download_shares(ids.into()).await.unwrap();
     /// // you can also use the DeleteDownloadSharesRequest::new() method
     /// let ids = vec![1, 2, 3];
     /// let delete = DeleteDownloadSharesRequest::new(ids);
-    /// dracoon.delete_download_shares(delete).await.unwrap();
+    /// dracoon.shares.delete_download_shares(delete).await.unwrap();
     /// # }
     /// ```
     async fn delete_download_shares(
@@ -108,7 +108,7 @@ pub trait DownloadShares {
     /// let share = CreateDownloadShareRequest::builder(1)
     ///     .with_name("test")
     ///     .build();
-    /// dracoon.create_download_share(share).await.unwrap();
+    /// dracoon.shares.create_download_share(share).await.unwrap();
     /// # }
     /// ```
     async fn create_download_share(
@@ -129,7 +129,7 @@ pub trait DownloadShares {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let file_request = dracoon.get_download_share(1).await.unwrap();
+    /// let file_request = dracoon.shares.get_download_share(1).await.unwrap();
     /// # }
     /// ```
     async fn get_download_share(&self, share_id: u64) -> Result<DownloadShare, DracoonClientError>;
@@ -150,7 +150,7 @@ pub trait DownloadShares {
     /// let update = UpdateDownloadShareRequest::builder()
     ///    .with_name("test")
     ///    .build();
-    /// let file_request = dracoon.update_download_share(123, update).await.unwrap();
+    /// let file_request = dracoon.shares.update_download_share(123, update).await.unwrap();
     /// # }
     /// ```
     async fn update_download_share(
@@ -172,7 +172,7 @@ pub trait DownloadShares {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.delete_upload_share(1).await.unwrap();
+    /// dracoon.shares.delete_upload_share(1).await.unwrap();
     /// # }
     /// ```
     async fn delete_download_share(&self, share_id: u64) -> Result<(), DracoonClientError>;
@@ -192,7 +192,7 @@ pub trait DownloadShares {
     /// #  .unwrap();
     /// let recipients = vec!["test@test.foo".to_string(), "test2@test.foo".to_string()];
     /// let send_mail = DownloadShareLinkEmail::new("Test email", recipients, None);
-    /// dracoon.send_download_share_email(123, send_mail).await.unwrap();
+    /// dracoon.shares.send_download_share_email(123, send_mail).await.unwrap();
     /// # }
     /// ```
     async fn send_download_share_email(
@@ -225,7 +225,7 @@ pub trait UploadShares {
     ///     .with_sort(UploadSharesSortBy::name(SortOrder::Desc))
     ///     .build();
     /// // pass None if you don't want to use any params
-    /// let file_requests = dracoon.get_upload_shares(Some(params)).await.unwrap();
+    /// let file_requests = dracoon.shares.get_upload_shares(Some(params)).await.unwrap();
     ///
     /// # }
     /// ```
@@ -252,7 +252,7 @@ pub trait UploadShares {
     ///     .with_max_size(1024)
     ///     .with_reset_max_size(true)
     ///     .build();
-    /// dracoon.update_upload_shares(update).await.unwrap();
+    /// dracoon.shares.update_upload_shares(update).await.unwrap();
     /// # }
     /// ```
     async fn update_upload_shares(
@@ -274,11 +274,11 @@ pub trait UploadShares {
     /// #  .await
     /// #  .unwrap();
     /// let ids = vec![1, 2, 3];
-    /// dracoon.delete_upload_shares(ids.into()).await.unwrap();
+    /// dracoon.shares.delete_upload_shares(ids.into()).await.unwrap();
     /// // you can also use the DeleteUploadSharesRequest::new() method
     /// let ids = vec![1, 2, 3];
     /// let delete = DeleteUploadSharesRequest::new(ids);
-    /// dracoon.delete_upload_shares(delete).await.unwrap();
+    /// dracoon.shares.delete_upload_shares(delete).await.unwrap();
     /// # }
     /// ```
     async fn delete_upload_shares(
@@ -302,7 +302,7 @@ pub trait UploadShares {
     /// let share = CreateUploadShareRequest::builder(1)
     ///     .with_name("test")
     ///     .build();
-    /// dracoon.create_upload_share(share).await.unwrap();
+    /// dracoon.shares.create_upload_share(share).await.unwrap();
     /// # }
     /// ```
     async fn create_upload_share(
@@ -323,7 +323,7 @@ pub trait UploadShares {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let file_request = dracoon.get_upload_share(1).await.unwrap();
+    /// let file_request = dracoon.shares.get_upload_share(1).await.unwrap();
     /// # }
     /// ```
     async fn get_upload_share(
@@ -347,7 +347,7 @@ pub trait UploadShares {
     /// let update = UpdateUploadShareRequest::builder()
     ///    .with_name("test")
     ///   .build();
-    /// let file_request = dracoon.update_upload_share(123, update).await.unwrap();
+    /// let file_request = dracoon.shares.update_upload_share(123, update).await.unwrap();
     /// # }
     /// ```
     async fn update_upload_share(
@@ -369,7 +369,7 @@ pub trait UploadShares {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.delete_upload_share(1).await.unwrap();
+    /// dracoon.shares.delete_upload_share(1).await.unwrap();
     /// # }
     /// ```
     async fn delete_upload_share(&self, upload_share_id: u64) -> Result<(), DracoonClientError>;
@@ -389,7 +389,7 @@ pub trait UploadShares {
     /// #  .unwrap();
     /// let recipients = vec!["test@test.foo".to_string(), "test2@test.foo".to_string()];
     /// let send_mail = UploadShareLinkEmail::new("Test email", recipients, None);
-    /// dracoon.send_upload_share_email(123, send_mail).await.unwrap();
+    /// dracoon.shares.send_upload_share_email(123, send_mail).await.unwrap();
     /// # }
     /// ```
     async fn send_upload_share_email(

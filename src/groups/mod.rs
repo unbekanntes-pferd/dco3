@@ -34,7 +34,7 @@ pub trait Groups {
     ///     .with_sort(GroupsSortBy::name(SortOrder::Desc))
     ///     .build();
     /// // pass None if you don't want to use any params
-    /// let groups = dracoon.get_groups(Some(params)).await.unwrap();
+    /// let groups = dracoon.groups.get_groups(Some(params)).await.unwrap();
     ///
     /// # }
     /// ```
@@ -58,7 +58,7 @@ pub trait Groups {
     /// #  .unwrap();
     /// // There's no builder - use new and set the required field
     /// let group = CreateGroupRequest::new("test_group", None);
-    /// let group = dracoon.create_group(group).await.unwrap();
+    /// let group = dracoon.groups.create_group(group).await.unwrap();
     /// # }
     /// ```
     async fn create_group(&self, group: CreateGroupRequest) -> Result<Group, DracoonClientError>;
@@ -76,7 +76,7 @@ pub trait Groups {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let group = dracoon.get_group(123).await.unwrap();
+    /// let group = dracoon.groups.get_group(123).await.unwrap();
     /// # }
     /// ```
     async fn get_group(&self, group_id: u64) -> Result<Group, DracoonClientError>;
@@ -96,7 +96,7 @@ pub trait Groups {
     /// #  .unwrap();
     /// // There's no builder - use relevant methods to set the fields (name or expiration)
     /// let update = UpdateGroupRequest::name("new_name");
-    /// let group = dracoon.update_group(123, update).await.unwrap();
+    /// let group = dracoon.groups.update_group(123, update).await.unwrap();
     /// # }
     /// ```
     async fn update_group(
@@ -118,7 +118,7 @@ pub trait Groups {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.delete_group(123).await.unwrap();
+    /// dracoon.groups.delete_group(123).await.unwrap();
     /// # }
     /// ```
     async fn delete_group(&self, group_id: u64) -> Result<(), DracoonClientError>;
@@ -141,7 +141,7 @@ pub trait Groups {
     ///     .with_filter(GroupUsersFilter::user_contains("test"))
     ///     .build();
     /// // pass None if you don't want to use any params
-    /// let groups = dracoon.get_group_users(123, Some(params)).await.unwrap();
+    /// let groups = dracoon.groups.get_group_users(123, Some(params)).await.unwrap();
     ///
     /// # }
     /// ```
@@ -166,10 +166,10 @@ pub trait Groups {
     /// #  .unwrap();
     /// // you can pass a vec and use into()
     /// let user_ids = vec![1, 2, 3];
-    /// dracoon.add_group_users(123, user_ids.into()).await.unwrap();
+    /// dracoon.groups.add_group_users(123, user_ids.into()).await.unwrap();
     /// // or use the ChangeGroupMembersRequest
     /// let user_ids = ChangeGroupMembersRequest::new(vec![1, 2, 3]);
-    /// dracoon.add_group_users(123, user_ids).await.unwrap();
+    /// dracoon.groups.add_group_users(123, user_ids).await.unwrap();
     /// # }
     /// ```
     async fn add_group_users(
@@ -193,10 +193,10 @@ pub trait Groups {
     /// #  .unwrap();
     /// // you can pass a vec and use into()
     /// let user_ids = vec![1, 2, 3];
-    /// dracoon.add_group_users(123, user_ids.into()).await.unwrap();
+    /// dracoon.groups.add_group_users(123, user_ids.into()).await.unwrap();
     /// // or use the ChangeGroupMembersRequest
     /// let user_ids = ChangeGroupMembersRequest::new(vec![1, 2, 3]);
-    /// dracoon.remove_group_users(123, user_ids).await.unwrap();
+    /// dracoon.groups.remove_group_users(123, user_ids).await.unwrap();
     /// # }
     /// ```
     async fn remove_group_users(
@@ -218,7 +218,7 @@ pub trait Groups {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let rooms = dracoon.get_group_last_admin_rooms(123).await.unwrap();
+    /// let rooms = dracoon.groups.get_group_last_admin_rooms(123).await.unwrap();
     /// # }
     /// ```
     async fn get_group_last_admin_rooms(

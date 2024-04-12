@@ -27,6 +27,7 @@
 //! * [Groups] - for group operations
 //! * [Users] - for user management operations
 //! * [CustomerProvisioning] - for customer provisioning operations
+//! * [MissingFileKeys] - for distributing missing keys using the user keypair
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! * [Config] - for general configuration information
 //! * [Public] - for public information
@@ -48,7 +49,7 @@
 //!       .await
 //!       .unwrap();
 //!
-//!   let user_info = dracoon.get_user_account().await.unwrap();
+//!   let user_info = dracoon.user.get_user_account().await.unwrap();
 //!   println!("User info: {:?}", user_info);
 //! }
 //!```
@@ -157,7 +158,7 @@
 //!    .await
 //!    .unwrap();
 //!
-//! let node = dracoon.get_node(123).await;
+//! let node = dracoon.nodes.get_node(123).await;
 //!
 //! match node {
 //!  Ok(node) => println!("Node info: {:?}", node),
@@ -190,7 +191,7 @@
 //!    .await
 //!    .unwrap();
 //!
-//! let node = dracoon.get_node(123).await;
+//! let node = dracoon.nodes.get_node(123).await;
 //!
 //! match node {
 //!  Ok(node) => println!("Node info: {:?}", node),
@@ -261,7 +262,7 @@
 //!            .with_admin_ids(vec![1, 2, 3])
 //!            .build();
 //!
-//! let room = dracoon.create_room(room).await.unwrap();
+//! let room = dracoon.nodes.create_room(room).await.unwrap();
 //!
 //! # }
 //! ```
@@ -282,7 +283,7 @@
 //!
 //! // this takes a mandatory name and optional expiration
 //! let group = CreateGroupRequest::new("My Group", None);
-//! let group = dracoon.create_group(group).await.unwrap();
+//! let group = dracoon.groups.create_group(group).await.unwrap();
 //!
 //! # }
 //! ```
@@ -308,14 +309,14 @@
 //!
 
 //! // This fetches the first 500 nodes without any param
-//!  let mut nodes = dracoon.get_nodes(None, None, None).await.unwrap();
+//!  let mut nodes = dracoon.nodes.get_nodes(None, None, None).await.unwrap();
 //!
 //! // Iterate over the remaining nodes
 //!  for offset in (0..nodes.range.total).step_by(500) {
 //!  let params = ListAllParams::builder()
 //!   .with_offset(offset)
 //!   .build();
-//!  let next_nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+//!  let next_nodes = dracoon.nodes.get_nodes(None, None, Some(params)).await.unwrap();
 //!  
 //!   nodes.items.extend(next_nodes.items);
 //!
@@ -385,7 +386,7 @@
 //!    .unwrap();
 //!
 //! // the client is now in the provisioning state and can be used to manage customers
-//! let customers = dracoon.get_customers(None).await.unwrap();
+//! let customers = dracoon.provisioning.get_customers(None).await.unwrap();
 //!
 //! }
 //! ```
@@ -393,12 +394,21 @@
 //! ## Examples
 //! For an example client implementation, see the [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) repository.
 
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Arc};
 
 use auth::Provisioning;
+use config::ConfigEndpoint;
 use dco3_crypto::PlainUserKeyPairContainer;
-use public::SystemInfo;
+use groups::GroupsEndpoint;
+use nodes::NodesEndpoint;
+use provisioning::ProvisioningEndpoint;
+use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
+use settings::SettingsEndpoint;
+use shares::SharesEndpoint;
+use system::SystemEndpoint;
+use user::UserEndpoint;
+use users::UsersEndpoint;
 
 use self::{
     auth::{Connected, Disconnected},
@@ -413,7 +423,7 @@ pub use self::{
     config::Config,
     groups::Groups,
     models::*,
-    nodes::{Download, Folders, Nodes, Rooms, Upload},
+    nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
     public::Public,
     settings::RescueKeyPair,
@@ -441,12 +451,22 @@ pub mod utils;
 /// DRACOON struct - implements all API calls via traits
 #[derive(Clone)]
 pub struct Dracoon<State = Disconnected> {
-    client: DracoonClient<State>,
+    client: Arc<DracoonClient<State>>,
     state: PhantomData<State>,
     user_info: Container<UserAccount>,
     keypair: Container<PlainUserKeyPairContainer>,
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
+    pub config: ConfigEndpoint<State>,
+    pub groups: GroupsEndpoint<State>,
+    pub nodes: NodesEndpoint<State>,
+    pub shares: SharesEndpoint<State>,
+    pub settings: SettingsEndpoint<State>,
+    pub system: SystemEndpoint<State>,
+    pub user: UserEndpoint<State>,
+    pub users: UsersEndpoint<State>,
+    pub public: PublicEndpoint<State>,
+    pub provisioning: ProvisioningEndpoint<State>,
 }
 
 /// Builder for the `Dracoon` struct.
@@ -544,6 +564,17 @@ impl DracoonBuilder {
     /// Builds the [Dracoon] struct - fails, if any of the required fields are missing
     pub fn build(self) -> Result<Dracoon<Disconnected>, DracoonClientError> {
         let dracoon = self.client_builder.build()?;
+        let dracoon = Arc::new(dracoon);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
+        let users_endpoint = UsersEndpoint::new(Arc::clone(&dracoon));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&dracoon));
+        let settings_endpoint = SettingsEndpoint::new(Arc::clone(&dracoon));
+        let provisioning_endpoint = ProvisioningEndpoint::new(Arc::clone(&dracoon));
+        let config_endpoint = ConfigEndpoint::new(Arc::clone(&dracoon));
+        let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
+        let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -552,12 +583,33 @@ impl DracoonBuilder {
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
+            config: config_endpoint,
+            user: user_endpoint,
+            nodes: nodes_endpoint,
+            public: public_endpoint,
+            provisioning: provisioning_endpoint,
+            shares: shares_endpoint,
+            settings: settings_endpoint,
+            system: system_endpoint,
+            users: users_endpoint,
+            groups: groups_endpoint,
         })
     }
 
     /// Builds the [Dracoon] struct set up for provisioning - fails if any of the required fields are missing
     pub fn build_provisioning(self) -> Result<Dracoon<Provisioning>, DracoonClientError> {
         let dracoon = self.client_builder.build_provisioning()?;
+        let dracoon = Arc::new(dracoon);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&dracoon));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&dracoon));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&dracoon));
+        let users_endpoint = UsersEndpoint::new(Arc::clone(&dracoon));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&dracoon));
+        let settings_endpoint = SettingsEndpoint::new(Arc::clone(&dracoon));
+        let provisioning_endpoint = ProvisioningEndpoint::new(Arc::clone(&dracoon));
+        let config_endpoint = ConfigEndpoint::new(Arc::clone(&dracoon));
+        let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
+        let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -566,6 +618,16 @@ impl DracoonBuilder {
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: None,
+            config: config_endpoint,
+            user: user_endpoint,
+            nodes: nodes_endpoint,
+            public: public_endpoint,
+            provisioning: provisioning_endpoint,
+            shares: shares_endpoint,
+            settings: settings_endpoint,
+            system: system_endpoint,
+            users: users_endpoint,
+            groups: groups_endpoint,
         })
     }
 }
@@ -581,17 +643,39 @@ impl Dracoon<Disconnected> {
     ) -> Result<Dracoon<Connected>, DracoonClientError> {
         let client = self.client.connect(oauth_flow).await?;
 
+        let connected_client = Arc::new(client);
+        let user_endpoint = UserEndpoint::new(Arc::clone(&connected_client));
+        let public_endpoint = PublicEndpoint::new(Arc::clone(&connected_client));
+        let shares_endpoint = SharesEndpoint::new(Arc::clone(&connected_client));
+        let users_endpoint = UsersEndpoint::new(Arc::clone(&connected_client));
+        let groups_endpoint = GroupsEndpoint::new(Arc::clone(&connected_client));
+        let settings_endpoint = SettingsEndpoint::new(Arc::clone(&connected_client));
+        let provisioning_endpoint = ProvisioningEndpoint::new(Arc::clone(&connected_client));
+        let config_endpoint = ConfigEndpoint::new(Arc::clone(&connected_client));
+        let system_endpoint = SystemEndpoint::new(Arc::clone(&connected_client));
+        let nodes_endpoint = NodesEndpoint::new(Arc::clone(&connected_client));
+
         let mut dracoon = Dracoon {
-            client,
+            client: connected_client,
             state: PhantomData,
             user_info: Container::new(),
             keypair: Container::new(),
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
+            config: config_endpoint,
+            user: user_endpoint,
+            public: public_endpoint,
+            provisioning: provisioning_endpoint,
+            nodes: nodes_endpoint,
+            shares: shares_endpoint,
+            settings: settings_endpoint,
+            system: system_endpoint,
+            users: users_endpoint,
+            groups: groups_endpoint,
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
-            let kp = dracoon.get_user_keypair(&encryption_secret).await?;
+            let kp = dracoon.user.get_user_keypair(&encryption_secret).await?;
             dracoon.encryption_secret = None;
             dracoon.keypair.set(kp).await;
             drop(encryption_secret)
@@ -627,7 +711,7 @@ impl Dracoon<Connected> {
 
     pub async fn get_user_info(&self) -> Result<UserAccount, DracoonClientError> {
         if self.user_info.is_none().await {
-            let user_info = self.get_user_account().await?;
+            let user_info = self.user.get_user_account().await?;
             self.user_info.set(user_info).await;
         }
 
@@ -637,7 +721,7 @@ impl Dracoon<Connected> {
 
     pub async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError> {
         if self.system_info.is_none().await {
-            let system_info = Public::get_system_info(self).await?;
+            let system_info = self.public.get_system_info().await?;
             self.system_info.set(system_info).await;
         }
 
@@ -652,7 +736,7 @@ impl Dracoon<Connected> {
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
         if self.keypair.is_none().await {
             if let Some(secret) = secret {
-                let keypair = self.get_user_keypair(&secret).await?;
+                let keypair = self.user.get_user_keypair(&secret).await?;
                 self.keypair.set(keypair).await;
             } else {
                 return Err(DracoonClientError::MissingEncryptionSecret);

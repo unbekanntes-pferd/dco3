@@ -9,7 +9,6 @@ use crate::{
     },
     models::ListAllParams,
     utils::FromResponse,
-    Dracoon,
 };
 
 use self::models::{
@@ -18,24 +17,27 @@ use self::models::{
     RoomUserList, RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
-use super::{models::Node, Rooms};
+use super::{models::Node, NodesEndpoint, Rooms};
 
 pub mod models;
 
 #[async_trait]
-impl Rooms for Dracoon<Connected> {
+impl Rooms for NodesEndpoint<Connected> {
     async fn create_room(
         &self,
         create_room_req: CreateRoomRequest,
     ) -> Result<Node, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&create_room_req)
             .send()
@@ -49,13 +51,16 @@ impl Rooms for Dracoon<Connected> {
         update_room_req: UpdateRoomRequest,
     ) -> Result<Node, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&update_room_req)
             .send()
@@ -70,13 +75,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<Node, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_CONFIG}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&config_room_req)
             .send()
@@ -87,13 +95,16 @@ impl Rooms for Dracoon<Connected> {
     async fn get_room_policies(&self, room_id: u64) -> Result<RoomPolicies, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -106,13 +117,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_POLICIES}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&policy_room_req)
             .send()
@@ -131,13 +145,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<Node, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_ENCRYPT}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&encrypt_room_req)
             .send()
@@ -152,7 +169,7 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<RoomGroupList, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let params = params.unwrap_or_default();
         let filters = params.filter_to_string();
@@ -167,10 +184,13 @@ impl Rooms for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -183,13 +203,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&room_groups_update_req)
             .send()
@@ -208,13 +231,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GROUPS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&room_groups_del_req)
             .send()
@@ -233,7 +259,7 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<RoomUserList, DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let params = params.unwrap_or_default();
 
@@ -249,10 +275,13 @@ impl Rooms for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -265,13 +294,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&room_users_update_req)
             .send()
@@ -290,13 +322,16 @@ impl Rooms for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_USERS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&room_users_del_req)
             .send()

@@ -17,11 +17,11 @@ use crate::{
 
 use super::{
     models::{DeleteNodesRequest, Node, NodeList, TransferNodesRequest},
-    MissingKeysResponse, Nodes, UserFileKeySetBatchRequest,
+    MissingFileKeys, MissingKeysResponse, Nodes, NodesEndpoint, UserFileKeySetBatchRequest,
 };
 
 #[async_trait]
-impl Nodes for Dracoon<Connected> {
+impl Nodes for NodesEndpoint<Connected> {
     async fn get_nodes(
         &self,
         parent_id: Option<u64>,
@@ -31,7 +31,7 @@ impl Nodes for Dracoon<Connected> {
         let params = params.unwrap_or_default();
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -47,10 +47,13 @@ impl Nodes for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -67,7 +70,7 @@ impl Nodes for Dracoon<Connected> {
             DracoonClientError::InvalidPath(path.to_string())
         })?;
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         api_url
             .query_pairs_mut()
@@ -77,10 +80,13 @@ impl Nodes for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -98,13 +104,16 @@ impl Nodes for Dracoon<Connected> {
     async fn get_node(&self, node_id: u64) -> Result<Node, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{node_id}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -122,7 +131,7 @@ impl Nodes for Dracoon<Connected> {
         let params = params.unwrap_or_default();
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{NODES_SEARCH}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -139,10 +148,13 @@ impl Nodes for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -153,13 +165,16 @@ impl Nodes for Dracoon<Connected> {
     async fn delete_node(&self, node_id: u64) -> Result<(), DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{node_id}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -176,13 +191,16 @@ impl Nodes for Dracoon<Connected> {
     async fn delete_nodes(&self, req: DeleteNodesRequest) -> Result<(), DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -205,13 +223,16 @@ impl Nodes for Dracoon<Connected> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{target_parent_id}/{NODES_MOVE}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -228,13 +249,16 @@ impl Nodes for Dracoon<Connected> {
         let url_part =
             format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{target_parent_id}/{NODES_COPY}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -242,7 +266,10 @@ impl Nodes for Dracoon<Connected> {
 
         Node::from_response(response).await
     }
+}
 
+#[async_trait]
+impl MissingFileKeys for Dracoon<Connected> {
     async fn distribute_missing_keys(
         &self,
         room_id: Option<u64>,
@@ -273,7 +300,7 @@ impl Nodes for Dracoon<Connected> {
 }
 
 #[async_trait]
-trait NodesMissingFileKeysInternal {
+trait MissingFileKeysInternal {
     async fn get_missing_file_keys(
         &self,
         room_id: Option<u64>,
@@ -289,7 +316,7 @@ trait NodesMissingFileKeysInternal {
 }
 
 #[async_trait]
-impl NodesMissingFileKeysInternal for Dracoon<Connected> {
+impl MissingFileKeysInternal for Dracoon<Connected> {
     async fn get_missing_file_keys(
         &self,
         room_id: Option<u64>,
@@ -355,6 +382,7 @@ impl NodesMissingFileKeysInternal for Dracoon<Connected> {
 }
 
 type ParsedPath = (String, String, u64);
+
 pub fn parse_node_path(path: &str) -> Result<ParsedPath, DracoonClientError> {
     if path == "/" {
         return Ok((String::from("/"), String::new(), 0));

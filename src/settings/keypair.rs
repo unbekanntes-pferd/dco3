@@ -12,15 +12,15 @@ use crate::{
     },
     nodes::{MissingKeysResponse, UseKey, UserFileKeySetBatchRequest},
     utils::FromResponse,
-    Dracoon, DracoonClientError, ListAllParams,
+    DracoonClientError, ListAllParams,
 };
 
-use super::RescueKeyPair;
+use super::{models::SettingsEndpoint, RescueKeyPair};
 
 const MISSING_KEYS_LIMIT: u64 = 100;
 
 #[async_trait]
-impl RescueKeyPair for Dracoon<Connected> {
+impl RescueKeyPair for SettingsEndpoint<Connected> {
     async fn distribute_missing_keys(
         &self,
         rescue_key_secret: &str,
@@ -73,7 +73,7 @@ trait RescueKeypairInternal {
 }
 
 #[async_trait]
-impl RescueKeypairInternal for Dracoon<Connected> {
+impl RescueKeypairInternal for SettingsEndpoint<Connected> {
     async fn get_missing_file_keys(
         &self,
         room_id: Option<u64>,
@@ -86,7 +86,7 @@ impl RescueKeypairInternal for Dracoon<Connected> {
 
         let limit = params.limit.unwrap_or(100);
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let sorts = params.sort_to_string();
 
@@ -104,10 +104,13 @@ impl RescueKeypairInternal for Dracoon<Connected> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -120,13 +123,16 @@ impl RescueKeypairInternal for Dracoon<Connected> {
     ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{NODES_BASE}/{FILES_BASE}/{FILES_KEYS}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .json(&req)
             .send()
             .await?;
@@ -146,13 +152,16 @@ impl RescueKeypairInternal for Dracoon<Connected> {
     ) -> Result<PlainUserKeyPairContainer, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SETTINGS_BASE}/{SETTINGS_KEYPAIR}",);
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -191,6 +200,7 @@ mod tests {
             .create();
 
         let missing_keys = client
+            .settings
             .get_missing_file_keys(None, None, None, None)
             .await
             .unwrap();
@@ -246,6 +256,7 @@ mod tests {
             .create();
 
         let keypair = client
+            .settings
             .get_system_rescue_keypair("TopSecret1234!")
             .await
             .unwrap();
@@ -278,6 +289,7 @@ mod tests {
             .create();
 
         let res = client
+            .settings
             .distribute_missing_keys("TopSecret1234!", None, None, None)
             .await;
 
@@ -312,6 +324,7 @@ mod tests {
             .create();
 
         let res = client
+            .settings
             .distribute_missing_keys("wrongsecret", None, None, None)
             .await;
 
@@ -350,6 +363,7 @@ mod tests {
             .create();
 
         let res = client
+            .settings
             .distribute_missing_keys("TopSecret1234!", Some(1), None, None)
             .await;
 
@@ -384,6 +398,7 @@ mod tests {
             .create();
 
         let res = client
+            .settings
             .distribute_missing_keys("TopSecret1234!", None, Some(3), None)
             .await;
 
@@ -418,6 +433,7 @@ mod tests {
             .create();
 
         let res = client
+            .settings
             .distribute_missing_keys("TopSecret1234!", None, None, Some(2))
             .await;
 

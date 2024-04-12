@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::utils::FromResponse;
-use crate::{auth::Connected, Dracoon, DracoonClientError};
+use crate::{auth::Connected, DracoonClientError};
 
 use crate::constants::{
     DRACOON_API_PREFIX, SYSTEM_AUTH_ADS, SYSTEM_AUTH_BASE, SYSTEM_AUTH_OPENID,
@@ -25,19 +25,22 @@ pub trait AuthenticationMethods {
 }
 
 #[async_trait]
-impl AuthenticationMethods for Dracoon<Connected> {
+impl AuthenticationMethods for SystemAuthEndpoint<Connected> {
     async fn get_active_directory_configurations(
         &self,
     ) -> Result<ActiveDirectoryConfigList, DracoonClientError> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_ADS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -49,13 +52,16 @@ impl AuthenticationMethods for Dracoon<Connected> {
         &self,
     ) -> Result<Vec<OpenIdIdpConfig>, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_OPENID}/{SYSTEM_AUTH_OPENID_IDPS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -82,7 +88,12 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let ad_configs = client.get_active_directory_configurations().await.unwrap();
+        let ad_configs = client
+            .system
+            .auth
+            .get_active_directory_configurations()
+            .await
+            .unwrap();
 
         ad_config_mock.assert();
 
@@ -115,7 +126,12 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let openid_configs = client.get_openid_idp_configurations().await.unwrap();
+        let openid_configs = client
+            .system
+            .auth
+            .get_openid_idp_configurations()
+            .await
+            .unwrap();
 
         openid_config_mock.assert();
 

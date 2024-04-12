@@ -5,25 +5,27 @@ use crate::{
     auth::{errors::DracoonClientError, Connected},
     constants::{DRACOON_API_PREFIX, FOLDERS_BASE, NODES_BASE},
     utils::FromResponse,
-    Dracoon,
 };
 
 use super::{
     models::{CreateFolderRequest, Node, UpdateFolderRequest},
-    Folders,
+    Folders, NodesEndpoint,
 };
 
 #[async_trait]
-impl Folders for Dracoon<Connected> {
+impl Folders for NodesEndpoint<Connected> {
     async fn create_folder(&self, req: CreateFolderRequest) -> Result<Node, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{FOLDERS_BASE}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -39,13 +41,16 @@ impl Folders for Dracoon<Connected> {
     ) -> Result<Node, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{NODES_BASE}/{FOLDERS_BASE}/{folder_id}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&req)
             .send()
@@ -143,7 +148,7 @@ mod tests {
             .create();
 
         let folder = CreateFolderRequest::builder("test", 123).build();
-        let folder = dracoon.create_folder(folder).await.unwrap();
+        let folder = dracoon.nodes.create_folder(folder).await.unwrap();
 
         assert_folder(&folder);
     }
@@ -166,7 +171,7 @@ mod tests {
         let update = UpdateFolderRequest::builder()
             .with_name("other test")
             .build();
-        let folder = dracoon.update_folder(123, update).await.unwrap();
+        let folder = dracoon.nodes.update_folder(123, update).await.unwrap();
 
         assert_folder(&folder);
     }

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use dco3_crypto::UserKeyPairContainer;
@@ -6,9 +8,28 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::{errors::DracoonClientError, models::DracoonErrorResponse},
+    auth::{errors::DracoonClientError, models::DracoonErrorResponse, DracoonClient},
     utils::{parse_body, FromResponse},
 };
+
+#[derive(Clone)]
+pub struct UserEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> UserEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]

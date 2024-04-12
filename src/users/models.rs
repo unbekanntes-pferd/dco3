@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use dco3_crypto::PublicKeyContainer;
@@ -6,7 +8,7 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::DracoonErrorResponse,
+    auth::{DracoonClient, DracoonErrorResponse},
     models::{ObjectExpiration, RangedItems},
     user::RoleList,
     utils::{parse_body, FromResponse},
@@ -14,6 +16,25 @@ use crate::{
 };
 
 pub use crate::user::UserAuthData;
+
+#[derive(Clone)]
+pub struct UsersEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> UsersEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
@@ -406,8 +427,14 @@ impl UserAuthData {
         UserAuthDataBuilder::new(auth_method)
     }
 
-    pub fn new_basic(password: Option<String>) -> Self {
-        let must_change_password = password.is_some();
+    pub fn new_basic(password: Option<String>, must_change_password: Option<bool>) -> Self {
+        // password change is default (notify user is also default)
+        let mut must_change_password = must_change_password.unwrap_or(true);
+
+        // password must be changed if set on creation
+        if password.is_some() && !must_change_password {
+            must_change_password = true;
+        }
 
         Self {
             method: AuthMethod::Basic.into(),

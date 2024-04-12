@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
@@ -5,11 +7,30 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::DracoonErrorResponse,
+    auth::{DracoonClient, DracoonErrorResponse},
     user::UserAuthData,
     utils::{parse_body, FromResponse},
     DracoonClientError, KeyValueEntry, RangedItems,
 };
+
+#[derive(Clone)]
+pub struct ProvisioningEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> ProvisioningEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct CustomerAttributes {
@@ -95,7 +116,7 @@ impl FirstAdminUser {
         email: impl Into<String>,
         receiver_language: Option<String>,
     ) -> FirstAdminUser {
-        let auth_data = UserAuthData::new_basic(None);
+        let auth_data = UserAuthData::new_basic(None, None);
 
         FirstAdminUser {
             first_name: first_name.into(),
