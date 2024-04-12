@@ -11,7 +11,7 @@ use dco3_crypto::{
 use reqwest::header;
 
 #[async_trait]
-impl UserAccountKeyPairs for UserEndpoint<Connected>  {
+impl UserAccountKeyPairs for UserEndpoint<Connected> {
     async fn get_user_keypair(
         &self,
         secret: &str,
@@ -25,7 +25,10 @@ impl UserAccountKeyPairs for UserEndpoint<Connected>  {
             .client()
             .http
             .get(url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;
@@ -50,7 +53,10 @@ impl UserAccountKeyPairs for UserEndpoint<Connected>  {
             .client()
             .http
             .post(url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&enc_keypair)
             .send()
@@ -69,7 +75,10 @@ impl UserAccountKeyPairs for UserEndpoint<Connected>  {
             .client()
             .http
             .delete(url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .send()
             .await?;

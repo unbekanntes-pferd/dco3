@@ -12,7 +12,7 @@ pub struct PublicEndpoint<S> {
     state: std::marker::PhantomData<S>,
 }
 
-impl <S> PublicEndpoint<S> {
+impl<S> PublicEndpoint<S> {
     pub fn new(client: Arc<DracoonClient<S>>) -> Self {
         Self {
             client,

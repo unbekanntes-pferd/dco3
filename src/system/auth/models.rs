@@ -17,7 +17,7 @@ pub struct SystemAuthEndpoint<S> {
     state: std::marker::PhantomData<S>,
 }
 
-impl <S> SystemAuthEndpoint<S> {
+impl<S> SystemAuthEndpoint<S> {
     pub fn new(client: Arc<DracoonClient<S>>) -> Self {
         Self {
             client,

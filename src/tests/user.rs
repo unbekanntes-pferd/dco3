@@ -26,7 +26,11 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let keypair = client.user.get_user_keypair("TopSecret1234!").await.unwrap();
+        let keypair = client
+            .user
+            .get_user_keypair("TopSecret1234!")
+            .await
+            .unwrap();
 
         keypair_mock.assert();
 

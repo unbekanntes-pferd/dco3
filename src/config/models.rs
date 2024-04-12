@@ -1,8 +1,29 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use serde::Deserialize;
 
-use crate::nodes::UserInfo;
+use crate::{auth::DracoonClient, nodes::UserInfo};
+
+#[derive(Clone)]
+pub struct ConfigEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> ConfigEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]

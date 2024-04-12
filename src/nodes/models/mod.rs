@@ -18,6 +18,7 @@ use std::fmt::Formatter;
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::auth::DracoonClient;
 use crate::{
     auth::{errors::DracoonClientError, models::DracoonErrorResponse},
     models::{ObjectExpiration, Range, RangedItems},
@@ -33,6 +34,25 @@ use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
 use super::rooms::models::NodePermissionsBuilder;
+
+#[derive(Clone)]
+pub struct NodesEndpoint<S> {
+    client: Arc<DracoonClient<S>>,
+    state: std::marker::PhantomData<S>,
+}
+
+impl<S> NodesEndpoint<S> {
+    pub fn new(client: Arc<DracoonClient<S>>) -> Self {
+        Self {
+            client,
+            state: std::marker::PhantomData,
+        }
+    }
+
+    pub fn client(&self) -> &Arc<DracoonClient<S>> {
+        &self.client
+    }
+}
 
 /// A callback function that is called after each chunk is processed (download)
 pub type DownloadProgressCallback = Box<dyn FnMut(u64, u64) + Send + Sync>;

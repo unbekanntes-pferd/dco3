@@ -123,7 +123,11 @@ mod download_share_tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
+        let shares = client
+            .shares
+            .get_download_shares(Some(params))
+            .await
+            .unwrap();
 
         shares_mock.assert();
 
@@ -150,7 +154,11 @@ mod download_share_tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
+        let shares = client
+            .shares
+            .get_download_shares(Some(params))
+            .await
+            .unwrap();
 
         shares_mock.assert();
 
@@ -182,7 +190,11 @@ mod download_share_tests {
             .with_filter(DownloadSharesFilter::name_contains("test"))
             .build();
 
-        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
+        let shares = client
+            .shares
+            .get_download_shares(Some(params))
+            .await
+            .unwrap();
 
         shares_mock.assert();
 
@@ -211,7 +223,11 @@ mod download_share_tests {
             .with_sort(DownloadSharesSortBy::Name(SortOrder::Asc))
             .build();
 
-        let shares = client.shares.get_download_shares(Some(params)).await.unwrap();
+        let shares = client
+            .shares
+            .get_download_shares(Some(params))
+            .await
+            .unwrap();
 
         shares_mock.assert();
 
@@ -328,7 +344,11 @@ mod download_share_tests {
             .with_max_downloads(2)
             .build();
 
-        let share = client.shares.update_download_share(123, update).await.unwrap();
+        let share = client
+            .shares
+            .update_download_share(123, update)
+            .await
+            .unwrap();
 
         share_mock.assert();
 
@@ -722,7 +742,11 @@ mod upload_share_tests {
             .with_notes("test")
             .build();
 
-        let share = client.shares.update_upload_share(123, update).await.unwrap();
+        let share = client
+            .shares
+            .update_upload_share(123, update)
+            .await
+            .unwrap();
 
         share_mock.assert();
 

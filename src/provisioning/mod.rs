@@ -12,7 +12,7 @@ use crate::{
     },
     users::UserList,
     utils::FromResponse,
-    Dracoon, DracoonClientError, ListAllParams,
+    DracoonClientError, ListAllParams,
 };
 
 #[async_trait]
@@ -34,7 +34,7 @@ use crate::{
 ///    .unwrap();
 ///
 /// // now you can use the client in provisioning state
-/// let customers = dracoon.get_customers(None).await.unwrap();
+/// let customers = dracoon.provisioning.get_customers(None).await.unwrap();
 ///
 /// }
 pub trait CustomerProvisioning {
@@ -48,7 +48,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let customers = dracoon.get_customers(None).await.unwrap();
+    /// let customers = dracoon.provisioning.get_customers(None).await.unwrap();
     /// # }
     async fn get_customers(
         &self,
@@ -66,7 +66,7 @@ pub trait CustomerProvisioning {
     /// #   .unwrap();
     /// let first_admin = FirstAdminUser::new_local("admin", "admin", None, "admin@localhost", None);
     /// let customer = NewCustomerRequest::builder("pay", 100000, 100, first_admin).build();
-    /// let customer = dracoon.create_customer(customer).await.unwrap();
+    /// let customer = dracoon.provisioning.create_customer(customer).await.unwrap();
     /// # }
     async fn create_customer(
         &self,
@@ -82,10 +82,10 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let customer = dracoon.get_customer(123, None).await.unwrap();
+    /// let customer = dracoon.provisioning.get_customer(123, None).await.unwrap();
     ///
     /// // include attributes
-    /// let customer = dracoon.get_customer(123, Some(true)).await.unwrap();
+    /// let customer = dracoon.provisioning.get_customer(123, Some(true)).await.unwrap();
     /// # }
     async fn get_customer(
         &self,
@@ -107,7 +107,7 @@ pub trait CustomerProvisioning {
     ///    .with_company_name("Foo Inc.")
     ///    .build();
 
-    /// let customer = dracoon.update_customer(123, update).await.unwrap();
+    /// let customer = dracoon.provisioning.update_customer(123, update).await.unwrap();
     ///
     /// # }
     async fn update_customer(
@@ -126,7 +126,7 @@ pub trait CustomerProvisioning {
     /// #   .build_provisioning()
     /// #   .unwrap();
     ///
-    /// dracoon.delete_customer(123).await.unwrap();
+    /// dracoon.provisioning.delete_customer(123).await.unwrap();
     ///
     /// # }
     async fn delete_customer(&self, id: u64) -> Result<(), DracoonClientError>;
@@ -140,7 +140,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let users = dracoon.get_customer_users(123, None).await.unwrap();
+    /// let users = dracoon.provisioning.get_customer_users(123, None).await.unwrap();
     /// # }
     async fn get_customer_users(
         &self,
@@ -157,7 +157,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let attributes = dracoon.get_customer_attributes(123, None).await.unwrap();
+    /// let attributes = dracoon.provisioning.get_customer_attributes(123, None).await.unwrap();
     /// # }
     async fn get_customer_attributes(
         &self,
@@ -176,7 +176,7 @@ pub trait CustomerProvisioning {
     /// #   .unwrap();
     /// let mut attributes = CustomerAttributes::new();
     /// attributes.add_attribute("foo", "bar");
-    /// let customer = dracoon.update_customer_attributes(123, attributes).await.unwrap();
+    /// let customer = dracoon.provisioning.update_customer_attributes(123, attributes).await.unwrap();
     /// # }
     async fn update_customer_attributes(
         &self,
@@ -193,7 +193,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// dracoon.delete_customer_attribute(123, "foo".to_string()).await.unwrap();
+    /// dracoon.provisioning.delete_customer_attribute(123, "foo".to_string()).await.unwrap();
     /// # }
     async fn delete_customer_attribute(
         &self,
@@ -203,7 +203,7 @@ pub trait CustomerProvisioning {
 }
 
 #[async_trait]
-impl CustomerProvisioning for Dracoon<Provisioning> {
+impl CustomerProvisioning for ProvisioningEndpoint<Provisioning> {
     async fn get_customers(
         &self,
         params: Option<ListAllParams>,
@@ -211,7 +211,7 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -225,10 +225,10 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 
@@ -239,13 +239,13 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         req: NewCustomerRequest,
     ) -> Result<NewCustomerResponse, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .post(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .json(&req)
             .send()
             .await?;
@@ -260,7 +260,7 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         if include_attributes.is_some() {
             api_url
@@ -270,10 +270,10 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         }
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 
@@ -286,13 +286,13 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
     ) -> Result<UpdateCustomerResponse, DracoonClientError> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}");
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .json(&req)
             .send()
             .await?;
@@ -304,13 +304,13 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         let url_part =
             format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 
@@ -330,7 +330,7 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}/{PROVISIONING_CUSTOMER_USERS}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -344,10 +344,10 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 
@@ -361,7 +361,7 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}/{PROVISIONING_CUSTOMER_ATTRIBUTES}");
 
-        let mut api_url = self.build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
 
         let filters = params.filter_to_string();
         let sorts = params.sort_to_string();
@@ -375,10 +375,10 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
             .finish();
 
         let response = self
-            .client
+            .client()
             .http
             .get(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 
@@ -391,13 +391,13 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
     ) -> Result<Customer, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}/{PROVISIONING_CUSTOMER_ATTRIBUTES}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .put(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .json(&req)
             .send()
             .await?;
@@ -411,13 +411,13 @@ impl CustomerProvisioning for Dracoon<Provisioning> {
     ) -> Result<(), DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{PROVISIONING_BASE}/{PROVISIONING_CUSTOMERS}/{id}/{PROVISIONING_CUSTOMER_ATTRIBUTES}/{key}");
 
-        let api_url = self.build_api_url(&url_part);
+        let api_url = self.client().build_api_url(&url_part);
 
         let response = self
-            .client
+            .client()
             .http
             .delete(api_url)
-            .header(PROVISIONING_TOKEN_HEADER, self.get_service_token())
+            .header(PROVISIONING_TOKEN_HEADER, self.client().get_service_token())
             .send()
             .await?;
 

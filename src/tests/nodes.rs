@@ -87,7 +87,7 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let nodes = dracoon.get_nodes(None, None, None).await.unwrap();
+        let nodes = dracoon.nodes.get_nodes(None, None, None).await.unwrap();
 
         nodes_mock.assert();
 
@@ -113,7 +113,11 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let _nodes = dracoon.get_nodes(Some(123), None, None).await.unwrap();
+        let _nodes = dracoon
+            .nodes
+            .get_nodes(Some(123), None, None)
+            .await
+            .unwrap();
 
         nodes_mock.assert();
     }
@@ -134,7 +138,11 @@ pub mod tests {
             .create();
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let _nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+        let _nodes = dracoon
+            .nodes
+            .get_nodes(None, None, Some(params))
+            .await
+            .unwrap();
 
         nodes_mock.assert();
     }
@@ -156,7 +164,11 @@ pub mod tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let _nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+        let _nodes = dracoon
+            .nodes
+            .get_nodes(None, None, Some(params))
+            .await
+            .unwrap();
 
         nodes_mock.assert();
     }
@@ -180,7 +192,11 @@ pub mod tests {
             .with_filter(NodesFilter::name_equals("test"))
             .build();
 
-        let _nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+        let _nodes = dracoon
+            .nodes
+            .get_nodes(None, None, Some(params))
+            .await
+            .unwrap();
 
         nodes_mock.assert();
     }
@@ -204,7 +220,11 @@ pub mod tests {
             .with_sort(NodesSortBy::Name(SortOrder::Asc))
             .build();
 
-        let _nodes = dracoon.get_nodes(None, None, Some(params)).await.unwrap();
+        let _nodes = dracoon
+            .nodes
+            .get_nodes(None, None, Some(params))
+            .await
+            .unwrap();
 
         nodes_mock.assert();
     }
@@ -226,7 +246,7 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let node = dracoon.get_node_from_path(path).await.unwrap();
+        let node = dracoon.nodes.get_node_from_path(path).await.unwrap();
 
         nodes_mock.assert();
 
@@ -254,7 +274,7 @@ pub mod tests {
             .with_body(nodes_res)
             .create();
 
-        let node = dracoon.get_node_from_path(path).await.unwrap();
+        let node = dracoon.nodes.get_node_from_path(path).await.unwrap();
 
         nodes_mock.assert();
 
@@ -276,7 +296,7 @@ pub mod tests {
             .with_body(node_res)
             .create();
 
-        let node = dracoon.get_node(123).await.unwrap();
+        let node = dracoon.nodes.get_node(123).await.unwrap();
 
         assert_node(&node);
     }
@@ -293,7 +313,7 @@ pub mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        dracoon.delete_node(123).await.unwrap();
+        dracoon.nodes.delete_node(123).await.unwrap();
 
         node_mock.assert();
     }
@@ -312,7 +332,7 @@ pub mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        dracoon.delete_nodes(node_ids.into()).await.unwrap();
+        dracoon.nodes.delete_nodes(node_ids.into()).await.unwrap();
 
         node_mock.assert();
     }
@@ -334,7 +354,11 @@ pub mod tests {
             .with_body(node_res)
             .create();
 
-        let target_node = dracoon.copy_nodes(node_ids.into(), 123).await.unwrap();
+        let target_node = dracoon
+            .nodes
+            .copy_nodes(node_ids.into(), 123)
+            .await
+            .unwrap();
 
         copy_mock.assert();
 
@@ -358,7 +382,11 @@ pub mod tests {
             .with_body(node_res)
             .create();
 
-        let target_node = dracoon.move_nodes(node_ids.into(), 123).await.unwrap();
+        let target_node = dracoon
+            .nodes
+            .move_nodes(node_ids.into(), 123)
+            .await
+            .unwrap();
 
         move_mock.assert();
 
@@ -381,6 +409,7 @@ pub mod tests {
             .create();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, None, None)
             .await
             .unwrap();
@@ -413,6 +442,7 @@ pub mod tests {
             .create();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", Some(123), None, None)
             .await
             .unwrap();
@@ -447,6 +477,7 @@ pub mod tests {
         let params = ListAllParams::builder().with_limit(100).build();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, None, Some(params))
             .await
             .unwrap();
@@ -478,6 +509,7 @@ pub mod tests {
         let params = ListAllParams::builder().with_offset(500).build();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, None, Some(params))
             .await
             .unwrap();
@@ -514,6 +546,7 @@ pub mod tests {
             .build();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, None, Some(params))
             .await
             .unwrap();
@@ -550,6 +583,7 @@ pub mod tests {
             .build();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, None, Some(params))
             .await
             .unwrap();
@@ -582,6 +616,7 @@ pub mod tests {
             .create();
 
         let nodes = dracoon
+            .nodes
             .search_nodes("test", None, Some(-1), None)
             .await
             .unwrap();

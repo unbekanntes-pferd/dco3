@@ -38,7 +38,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -54,7 +57,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&group)
             .send()
@@ -72,7 +78,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -92,7 +101,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .put(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&group)
             .send()
@@ -110,7 +122,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -136,7 +151,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 
@@ -156,7 +174,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .post(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&user_ids)
             .send()
@@ -178,7 +199,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .delete(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&user_ids)
             .send()
@@ -200,7 +224,10 @@ impl Groups for GroupsEndpoint<Connected> {
             .client()
             .http
             .get(api_url)
-            .header(header::AUTHORIZATION, self.client().get_auth_header().await?)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
             .send()
             .await?;
 

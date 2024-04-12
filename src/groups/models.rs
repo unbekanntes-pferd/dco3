@@ -21,7 +21,7 @@ pub struct GroupsEndpoint<S> {
     state: std::marker::PhantomData<S>,
 }
 
-impl <S> GroupsEndpoint<S> {
+impl<S> GroupsEndpoint<S> {
     pub fn new(client: Arc<DracoonClient<S>>) -> Self {
         Self {
             client,

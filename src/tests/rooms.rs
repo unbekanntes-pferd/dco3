@@ -105,7 +105,7 @@ mod tests {
 
         let room_req = CreateRoomRequest::builder("test").build();
 
-        let room = client.create_room(room_req).await.unwrap();
+        let room = client.nodes.create_room(room_req).await.unwrap();
 
         assert_node(&room);
     }
@@ -125,7 +125,7 @@ mod tests {
 
         let update = UpdateRoomRequest::builder().with_quota(1234567890).build();
 
-        let room = client.update_room(123, update).await.unwrap();
+        let room = client.nodes.update_room(123, update).await.unwrap();
 
         assert_node(&room);
     }
@@ -148,7 +148,7 @@ mod tests {
             .with_admin_ids(vec![1])
             .build();
 
-        let room = client.config_room(123, config).await.unwrap();
+        let room = client.nodes.config_room(123, config).await.unwrap();
 
         assert_node(&room);
     }
@@ -166,7 +166,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let room_policies = client.get_room_policies(123).await.unwrap();
+        let room_policies = client.nodes.get_room_policies(123).await.unwrap();
 
         assert_eq!(room_policies.default_expiration_period, 0);
         assert!(!room_policies.is_virus_protection_enabled);
@@ -187,7 +187,7 @@ mod tests {
             .with_virus_protection_enabled(true)
             .build();
 
-        let result = client.update_room_policies(123, room_policies).await;
+        let result = client.nodes.update_room_policies(123, room_policies).await;
 
         assert!(result.is_ok());
     }
@@ -209,7 +209,7 @@ mod tests {
             .with_use_data_space_rescue_key(true)
             .build();
 
-        let room = client.encrypt_room(123, room_enc).await.unwrap();
+        let room = client.nodes.encrypt_room(123, room_enc).await.unwrap();
 
         assert_node(&room);
     }
@@ -232,7 +232,7 @@ mod tests {
             .unwrap()
             .build();
 
-        let room = client.encrypt_room(123, room_enc).await.unwrap();
+        let room = client.nodes.encrypt_room(123, room_enc).await.unwrap();
 
         assert_node(&room);
     }
@@ -250,7 +250,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let room_users = client.get_room_users(123, None).await.unwrap();
+        let room_users = client.nodes.get_room_users(123, None).await.unwrap();
 
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
@@ -277,7 +277,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let room_users = client.get_room_users(123, Some(params)).await.unwrap();
+        let room_users = client
+            .nodes
+            .get_room_users(123, Some(params))
+            .await
+            .unwrap();
 
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
@@ -304,7 +308,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let room_users = client.get_room_users(123, Some(params)).await.unwrap();
+        let room_users = client
+            .nodes
+            .get_room_users(123, Some(params))
+            .await
+            .unwrap();
 
         assert_eq!(room_users.range.total, 1);
         assert_eq!(room_users.items.len(), 1);
@@ -331,6 +339,7 @@ mod tests {
         )];
 
         client
+            .nodes
             .update_room_users(123, user_updates.into())
             .await
             .unwrap();
@@ -350,6 +359,7 @@ mod tests {
         let user_ids = vec![1, 2, 3];
 
         client
+            .nodes
             .delete_room_users(123, user_ids.into())
             .await
             .unwrap();
@@ -370,7 +380,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let room_groups = client.get_room_groups(123, None).await.unwrap();
+        let room_groups = client.nodes.get_room_groups(123, None).await.unwrap();
 
         room_groups_mock.assert();
 
@@ -396,7 +406,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(100).build();
 
-        let room_groups = client.get_room_groups(123, Some(params)).await.unwrap();
+        let room_groups = client
+            .nodes
+            .get_room_groups(123, Some(params))
+            .await
+            .unwrap();
 
         room_groups_mock.assert();
 
@@ -422,7 +436,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_offset(500).build();
 
-        let room_groups = client.get_room_groups(123, Some(params)).await.unwrap();
+        let room_groups = client
+            .nodes
+            .get_room_groups(123, Some(params))
+            .await
+            .unwrap();
 
         assert_eq!(room_groups.range.total, 1);
         assert_eq!(room_groups.items.len(), 1);
@@ -450,6 +468,7 @@ mod tests {
         )];
 
         client
+            .nodes
             .update_room_groups(123, group_updates.into())
             .await
             .unwrap();
@@ -469,6 +488,7 @@ mod tests {
         let group_ids = vec![1, 2, 3];
 
         client
+            .nodes
             .delete_room_groups(123, group_ids.into())
             .await
             .unwrap();

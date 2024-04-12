@@ -1,20 +1,14 @@
-mod download;
-mod upload;
-
 use std::sync::Arc;
-
-pub use download::*;
-pub use upload::*;
 
 use crate::auth::DracoonClient;
 
 #[derive(Clone)]
-pub struct SharesEndpoint<S> {
+pub struct SettingsEndpoint<S> {
     client: Arc<DracoonClient<S>>,
     state: std::marker::PhantomData<S>,
 }
 
-impl<S> SharesEndpoint<S> {
+impl<S> SettingsEndpoint<S> {
     pub fn new(client: Arc<DracoonClient<S>>) -> Self {
         Self {
             client,

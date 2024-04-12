@@ -414,7 +414,7 @@ impl DracoonClient<Disconnected> {
             client_secret: self.client_secret.clone(),
             connection: Container::new_from(connection),
             additional_connections: self.additional_connections.clone(),
-            token_rotation: self.token_rotation.clone(),
+            token_rotation: self.token_rotation,
             curr_connection: self.curr_connection.clone(),
             base_url: self.base_url.clone(),
             redirect_uri: self.redirect_uri.clone(),
@@ -579,11 +579,6 @@ impl DracoonClient<Connected> {
             stream_http: self.stream_http,
             provisioning_token: None,
         })
-    }
-
-    /// Returns the base url of the DRACOON instance
-    pub fn get_base_url(&self) -> &Url {
-        &self.base_url
     }
 
     /// Returns the token url for any OAuth2 flow
@@ -771,12 +766,6 @@ impl DracoonClient<Connected> {
             .expect("Connected client has no connection")
             .is_expired()
     }
-
-    pub fn build_api_url(&self, url_part: &str) -> Url {
-        self.base_url
-            .join(url_part)
-            .expect("Invalid base url or url part")
-    }
 }
 
 impl DracoonClient<Provisioning> {
@@ -787,10 +776,18 @@ impl DracoonClient<Provisioning> {
             .expect("Provisioning client has no token")
             .to_string()
     }
+}
 
+impl<S> DracoonClient<S> {
     /// Returns the base url of the DRACOON instance
     pub fn get_base_url(&self) -> &Url {
         &self.base_url
+    }
+
+    pub fn build_api_url(&self, url_part: &str) -> Url {
+        self.base_url
+            .join(url_part)
+            .expect("Invalid base url or url part")
     }
 }
 
@@ -1345,7 +1342,7 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(auth_res)
-            .match_header(USER_AGENT, APP_USER_AGENT)
+            .match_header(USER_AGENT.as_str(), APP_USER_AGENT)
             .create();
 
         let dracoon = get_test_client(&base_url);
@@ -1371,7 +1368,7 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(auth_res)
-            .match_header(USER_AGENT, custom_user_agent.as_str())
+            .match_header(USER_AGENT.as_str(), custom_user_agent.as_str())
             .create();
 
         let dracoon = DracoonClientBuilder::new()
