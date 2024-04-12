@@ -14,37 +14,37 @@ description = "Async API wrapper for DRACOON in Rust."
 
 
 [dependencies]
-reqwest = {version = "0.12.3", features = ["json", "stream"]}
-reqwest-middleware = {version = "0.3.0", features = ["json"]}
-reqwest-retry = "0.5.0"
+reqwest = {version = "0.12", features = ["json", "stream"]}
+reqwest-middleware = {version = "0.3", features = ["json"]}
+reqwest-retry = "0.5"
 
 # crypto 
-dco3_crypto = "0.6.0"
+dco3_crypto = "0.6"
 
 # async runtime and utils
 tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7.10", features = ["full"] }
-async-trait = "0.1.78"
-async-stream = "0.3.5"
-futures-util = "0.3.30"
-bytes = "1.5.0"
+tokio-util = { version = "0.7", features = ["full"] }
+async-trait = "0.1"
+async-stream = "0.3"
+futures-util = "0.3"
+bytes = "1.6"
 
 # parsing
 serde = { version = "1", features = ["derive"] }
-serde-xml-rs = "0.6.0"
+serde-xml-rs = "0.6"
 serde_json = "1"
 
 # error handling
 thiserror = "1"
-retry-policies = "0.3.0"
+retry-policies = "0.3"
 
 # logging and tracing
-tracing = "0.1.40"
+tracing = "0.1"
 
 # utils
-url = "2.5.0"
-base64 = "0.22.0"
-chrono = {version = "0.4.35", features = ["serde"]}
+url = "2"
+base64 = "0.22"
+chrono = {version = "0.4", features = ["serde"]}
 dco3_derive = { path = "dco3_derive", version = "0.1.0"}
 
 
