@@ -427,8 +427,14 @@ impl UserAuthData {
         UserAuthDataBuilder::new(auth_method)
     }
 
-    pub fn new_basic(password: Option<String>) -> Self {
-        let must_change_password = password.is_some();
+    pub fn new_basic(password: Option<String>, must_change_password: Option<bool>) -> Self {
+        // password change is default (notify user is also default)
+        let mut must_change_password = must_change_password.unwrap_or(true);
+
+        // password must be changed if set on creation
+        if password.is_some() && !must_change_password {
+            must_change_password = true;
+        }
 
         Self {
             method: AuthMethod::Basic.into(),

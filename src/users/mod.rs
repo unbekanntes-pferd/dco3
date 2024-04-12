@@ -55,7 +55,7 @@ pub trait Users {
     /// #  .await
     /// #  .unwrap();
     /// // optionally a password can be set for local users
-    /// let auth = UserAuthData::new_basic(None);
+    /// let auth = UserAuthData::new_basic(None, None);
     /// let user = CreateUserRequest::builder("Jane", "Doe")
     ///    .with_user_name("jane.doe")
     ///    .with_email("jane.doe@localhost")

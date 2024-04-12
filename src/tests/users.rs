@@ -237,7 +237,7 @@ pub mod tests {
             .with_body(user_res)
             .create();
 
-        let auth = UserAuthData::new_basic(None);
+        let auth = UserAuthData::new_basic(None, None);
         let user_req = CreateUserRequest::builder("test", "test")
             .with_email("test@localhost")
             .with_auth_data(auth)

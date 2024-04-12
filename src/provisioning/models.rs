@@ -116,7 +116,7 @@ impl FirstAdminUser {
         email: impl Into<String>,
         receiver_language: Option<String>,
     ) -> FirstAdminUser {
-        let auth_data = UserAuthData::new_basic(None);
+        let auth_data = UserAuthData::new_basic(None, None);
 
         FirstAdminUser {
             first_name: first_name.into(),
