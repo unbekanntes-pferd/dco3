@@ -16,14 +16,11 @@ where
     E: DeserializeOwned + Into<DracoonClientError>,
 {
     match Into::<StatusCodeState>::into(res.status()) {
-        StatusCodeState::Ok(_) => Ok(res
-            .json::<T>()
-            .await
-            .map_err(|err| {
-                eprintln!("Failed to parse response body: {}", err);
-                error!("{}", err);
-            })
-            .expect("Correct response type")),
+        StatusCodeState::Ok(_) => Ok(res.json::<T>().await.map_err(|err| {
+            eprintln!("Failed to parse response body: {}", err);
+            error!("{}", err);
+            err
+        })?),
         StatusCodeState::Error(_) => Err(build_error_body::<E>(res.json::<E>().await.map_err(
             |err| {
                 error!("Failed to parse error body: {}", err);
