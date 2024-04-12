@@ -130,6 +130,7 @@ pub struct CreateUserRequest {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MfaConfig {
     mfa_enforced: bool,
 }
