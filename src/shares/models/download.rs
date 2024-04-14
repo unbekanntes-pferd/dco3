@@ -118,8 +118,8 @@ impl CreateDownloadShareRequestBuilder {
         self
     }
 
-    pub fn with_expiration(mut self, expiration: ObjectExpiration) -> Self {
-        self.expiration = Some(expiration);
+    pub fn with_expiration(mut self, expiration: impl Into<ObjectExpiration>) -> Self {
+        self.expiration = Some(expiration.into());
         self
     }
 
@@ -231,8 +231,8 @@ impl UpdateDownloadSharesBulkRequestBuilder {
         }
     }
 
-    pub fn with_expiration(mut self, expiration: ObjectExpiration) -> Self {
-        self.expiration = Some(expiration);
+    pub fn with_expiration(mut self, expiration: impl Into<ObjectExpiration>) -> Self {
+        self.expiration = Some(expiration.into());
         self
     }
 
@@ -355,8 +355,8 @@ impl UpdateDownloadShareRequestBuilder {
         self
     }
 
-    pub fn with_expiration(mut self, expiration: ObjectExpiration) -> Self {
-        self.expiration = Some(expiration);
+    pub fn with_expiration(mut self, expiration: impl Into<ObjectExpiration>) -> Self {
+        self.expiration = Some(expiration.into());
         self
     }
 
