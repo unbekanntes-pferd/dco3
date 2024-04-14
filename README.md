@@ -1,7 +1,7 @@
 # dco3 - DRACOON API wrapper in Rust
 
 ![tests](https://github.com/unbekanntes-pferd/dco3/actions/workflows/ci.yml/badge.svg)
-![Crates.io Version](https://img.shields.io/crates/v/:crate)
+![Crates.io Version](https://img.shields.io/crates/v/dco3)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/dco3)
 
 ## What is this?
