@@ -237,6 +237,12 @@ impl AsRef<ObjectExpiration> for ObjectExpiration {
     }
 }
 
+impl From<DateTime<Utc>> for ObjectExpiration {
+    fn from(value: DateTime<Utc>) -> Self {
+        Self::new(value)
+    }
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct RangedItems<T> {
     pub range: Range,

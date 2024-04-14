@@ -1,6 +1,8 @@
 # dco3 - DRACOON API wrapper in Rust
 
 ![tests](https://github.com/unbekanntes-pferd/dco3/actions/workflows/ci.yml/badge.svg)
+![Crates.io Version](https://img.shields.io/crates/v/:crate)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/dco3)
 
 ## What is this?
 This is an async wrapper around the DRACOON API [dracoon.com](https://dracoon.com).
@@ -29,6 +31,6 @@ To contribute, fork the repository and create a pull request.
 ## Roadmap
 
 * implement missing API calls
-    * config
+    * branding
 * improve upload callback (chunk stream)
 * add examples

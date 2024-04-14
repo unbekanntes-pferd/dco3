@@ -178,8 +178,8 @@ impl UploadOptionsBuilder {
         }
     }
 
-    pub fn with_expiration(mut self, expiration: ObjectExpiration) -> Self {
-        self.expiration = Some(expiration);
+    pub fn with_expiration(mut self, expiration: impl Into<ObjectExpiration>) -> Self {
+        self.expiration = Some(expiration.into());
         self
     }
 
@@ -604,8 +604,8 @@ impl CreateFileUploadRequestBuilder {
         self
     }
 
-    pub fn with_expiration(mut self, expiration: ObjectExpiration) -> Self {
-        self.expiration = Some(expiration);
+    pub fn with_expiration(mut self, expiration: impl Into<ObjectExpiration>) -> Self {
+        self.expiration = Some(expiration.into());
         self
     }
     pub fn with_timestamp_creation(mut self, timestamp_creation: DateTime<Utc>) -> Self {
