@@ -19,7 +19,7 @@ reqwest-middleware = {version = "0.3", features = ["json"]}
 reqwest-retry = "0.5"
 
 # crypto 
-dco3_crypto = "0.6"
+dco3_crypto = "0.7"
 
 # async runtime and utils
 tokio = { version = "1", features = ["full"] }

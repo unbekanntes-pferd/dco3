@@ -167,7 +167,7 @@ impl RescueKeypairInternal for SettingsEndpoint<Connected> {
 
         let keypair = UserKeyPairContainer::from_response(response).await?;
 
-        let keypair = DracoonCrypto::decrypt_private_key(secret, keypair)?;
+        let keypair = DracoonCrypto::decrypt_keypair(secret, keypair)?;
 
         Ok(keypair)
     }

@@ -108,7 +108,7 @@ pub struct OAuth2TokenResponse {
 }
 
 /// DRACOON http error response
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DracoonErrorResponse {
     code: i32,

@@ -535,7 +535,7 @@ pub struct S3FileUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 pub enum S3UploadStatus {
     #[serde(rename = "transfer")]
     Transfer,
@@ -1178,7 +1178,7 @@ impl UserFileKeySetBatchRequest {
                     .clone();
 
                 let plain_file_key =
-                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                    DracoonCrypto::decrypt_file_key(file_key, keypair.clone()).map_err(|err| {
                         error!("Could not decrypt file key: {:?}", err);
                         DracoonClientError::CryptoError(err)
                     })?;

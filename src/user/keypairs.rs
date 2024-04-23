@@ -34,7 +34,7 @@ impl UserAccountKeyPairs for UserEndpoint<Connected> {
             .await?;
 
         let enc_keypair = UserKeyPairContainer::from_response(response).await?;
-        let plain_keypair = DracoonCrypto::decrypt_private_key(secret, enc_keypair)?;
+        let plain_keypair = DracoonCrypto::decrypt_keypair(secret, enc_keypair)?;
 
         Ok(plain_keypair)
     }
