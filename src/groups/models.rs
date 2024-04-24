@@ -57,7 +57,7 @@ impl FromResponse for GroupList {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGroupRequest {
     name: String,
@@ -74,7 +74,7 @@ impl CreateGroupRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGroupRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -155,7 +155,7 @@ impl FromResponse for GroupUserList {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GroupsFilter {
     Name(FilterOperator, String),
     HasRole(FilterOperator, String),
@@ -186,7 +186,7 @@ impl GroupsFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GroupsSortBy {
     Name(SortOrder),
     CreatedAt(SortOrder),
@@ -247,7 +247,7 @@ impl From<GroupsFilter> for Box<dyn FilterQuery> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum GroupUsersFilter {
     User(FilterOperator, String),
     IsMember(FilterOperator, bool),
