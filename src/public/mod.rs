@@ -210,7 +210,7 @@ mod tests {
     };
 
     use crate::{
-        public::{PublicDownloadShare, PublicDownloadTokenGenerateRequest}, tests::dracoon::get_connected_client, Dracoon,
+        public::PublicDownloadTokenGenerateRequest, tests::dracoon::get_connected_client, Dracoon,
         Public, PublicDownload,
     };
 
@@ -352,7 +352,10 @@ mod tests {
 
         assert_eq!(public_download_share.file_name, "string");
         assert_eq!(public_download_share.size, 123456);
-        assert_eq!(public_download_share.creator_name, Some("string".to_string()));
+        assert_eq!(
+            public_download_share.creator_name,
+            Some("string".to_string())
+        );
         assert_eq!(public_download_share.media_type, "string");
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
@@ -413,7 +416,10 @@ mod tests {
 
         assert_eq!(public_download_share.file_name, "string");
         assert_eq!(public_download_share.size, 123456);
-        assert_eq!(public_download_share.creator_name, Some("string".to_string()));
+        assert_eq!(
+            public_download_share.creator_name,
+            Some("string".to_string())
+        );
         assert_eq!(public_download_share.media_type, "string");
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
@@ -648,7 +654,6 @@ mod tests {
     #[tokio::test]
     #[ignore = "not needed in CI (only for manual testing)"]
     async fn test_download_unencrypted_staging() {
-
         let access_key = "aXBpSgdf8pP8yV2axsruGrtt8f81Fbfo";
         let expected_content = b"Blububububbububu";
 
@@ -684,13 +689,11 @@ mod tests {
 
         assert_eq!(writer.buffer().len(), 16);
         assert_eq!(writer.buffer(), expected_content);
-
     }
 
     #[tokio::test]
     #[ignore = "not needed in CI (only for manual testing)"]
     async fn test_download_encrypted_staging() {
-
         let access_key = "Nyg9kGoBaQzPfK0pTz10AifibzrQues4";
         let expected_content = b"Blububububbububu";
 
@@ -726,8 +729,5 @@ mod tests {
 
         assert_eq!(writer.buffer().len(), 16);
         assert_eq!(writer.buffer(), expected_content);
-
-
     }
 }
-
