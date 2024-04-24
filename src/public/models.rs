@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use dco3_derive::FromResponse;
 use dco3_crypto::{FileKey, PrivateKeyContainer};
+use dco3_derive::FromResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -58,7 +58,6 @@ pub struct S3ShareUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
-
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicDownloadShare {
@@ -66,7 +65,7 @@ pub struct PublicDownloadShare {
     pub file_name: String,
     pub size: u64,
     pub limit_reached: bool,
-    pub creator_name: String,
+    pub creator_name: Option<String>,
     pub created_at: DateTime<Utc>,
     pub has_download_limit: bool,
     pub media_type: String,
@@ -82,13 +81,13 @@ pub struct PublicDownloadShare {
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct PublicDownloadTokenGenerateRequest {
-    password: Option<String>
+    password: Option<String>,
 }
 
 impl PublicDownloadTokenGenerateRequest {
     pub fn new(password: impl Into<String>) -> Self {
         Self {
-            password: Some(password.into())
+            password: Some(password.into()),
         }
     }
 
@@ -97,9 +96,22 @@ impl PublicDownloadTokenGenerateRequest {
     }
 }
 
-
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicDownloadTokenGenerateResponse {
-    pub download_url: String
+    pub download_url: String,
+}
+
+pub struct PublicShareEncryption {
+    pub file_key: FileKey,
+    pub private_key_container: PrivateKeyContainer,
+}
+
+impl PublicShareEncryption {
+    pub fn new(file_key: FileKey, private_key_container: PrivateKeyContainer) -> Self {
+        Self {
+            file_key,
+            private_key_container,
+        }
+    }
 }

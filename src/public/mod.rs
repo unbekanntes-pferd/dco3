@@ -90,7 +90,7 @@ pub trait Public {
 pub trait PublicDownload {
     /// Download a file from a public download share.
     /// ```no_run
-    /// # use dco3::{Dracoon, auth::OAuth2Flow, Public};
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Public, PublicDownload};
     /// # #[tokio::main]
     /// # async fn main() {
     /// # let dracoon = Dracoon::builder()
@@ -104,22 +104,24 @@ pub trait PublicDownload {
     /// #  .unwrap();
     /// let access_key = "access_key";
     /// let share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
+    /// // the password must be set for encrypted shares and for protected shares
     /// let password = Some("TopSecret123!".to_string());
-    /// 
+    ///
     /// let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
-    /// 
+    ///
     /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, None).await.unwrap();
-    /// 
+    ///
     /// // or with a progress callback
-    /// 
-    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, Some(Box::new(|progress| {
+    /// let share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
+    /// let password = Some("TopSecret123!".to_string());
+    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, Some(Box::new(|progress, total| {
     ///    println!("Downloaded: {}%", progress);
     /// }))).await.unwrap();
     /// # }
     /// ```
     async fn download<'w>(
         &'w self,
-        access_key: String,
+        access_key: impl Into<String> + Send + Sync,
         share: PublicDownloadShare,
         password: Option<String>,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
@@ -203,9 +205,14 @@ impl<S: Send + Sync> Public for PublicEndpoint<S> {
 mod tests {
 
     use chrono::Datelike;
-    use dco3_crypto::{FileKeyVersion, UserKeyPairVersion};
+    use dco3_crypto::{
+        DracoonCrypto, DracoonRSACrypto, Encrypt, FileKeyVersion, UserKeyPairVersion,
+    };
 
-    use crate::{tests::dracoon::get_connected_client, Dracoon, Public};
+    use crate::{
+        public::{PublicDownloadShare, PublicDownloadTokenGenerateRequest}, tests::dracoon::get_connected_client, Dracoon,
+        Public, PublicDownload,
+    };
 
     #[tokio::test]
     async fn test_get_system_info_connected() {
@@ -325,7 +332,8 @@ mod tests {
         let (client, mock_server) = get_connected_client().await;
         let mut mock_server = mock_server;
 
-        let public_download_share_res = include_str!("../tests/responses/public/download_share_ok.json");
+        let public_download_share_res =
+            include_str!("../tests/responses/public/download_share_ok.json");
 
         let public_download_share_mock = mock_server
             .mock("GET", "/api/v4/public/shares/downloads/test")
@@ -344,7 +352,7 @@ mod tests {
 
         assert_eq!(public_download_share.file_name, "string");
         assert_eq!(public_download_share.size, 123456);
-        assert_eq!(public_download_share.creator_name, "string");
+        assert_eq!(public_download_share.creator_name, Some("string".to_string()));
         assert_eq!(public_download_share.media_type, "string");
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
@@ -353,8 +361,14 @@ mod tests {
         assert_eq!(public_download_share.created_at.day(), 1);
         assert_eq!(public_download_share.created_at.year(), 2021);
         assert_eq!(public_download_share.notes, Some("string".to_string()));
-        assert_eq!(public_download_share.expire_at, Some("2021-01-01T00:00:00Z".parse().unwrap()));
-        assert_eq!(public_download_share.creator_username, Some("string".to_string()));
+        assert_eq!(
+            public_download_share.expire_at,
+            Some("2021-01-01T00:00:00Z".parse().unwrap())
+        );
+        assert_eq!(
+            public_download_share.creator_username,
+            Some("string".to_string())
+        );
         assert_eq!(public_download_share.name, Some("string".to_string()));
 
         let file_key = public_download_share.file_key.unwrap();
@@ -366,7 +380,6 @@ mod tests {
         let private_key_container = public_download_share.private_key_container.unwrap();
         assert_eq!(private_key_container.version, UserKeyPairVersion::RSA4096);
         assert_eq!(private_key_container.created_by, Some(1));
-
     }
 
     #[tokio::test]
@@ -380,7 +393,8 @@ mod tests {
             .build()
             .unwrap();
 
-        let public_download_share_res = include_str!("../tests/responses/public/download_share_ok.json");
+        let public_download_share_res =
+            include_str!("../tests/responses/public/download_share_ok.json");
 
         let public_download_share_mock = mock_server
             .mock("GET", "/api/v4/public/shares/downloads/test")
@@ -399,7 +413,7 @@ mod tests {
 
         assert_eq!(public_download_share.file_name, "string");
         assert_eq!(public_download_share.size, 123456);
-        assert_eq!(public_download_share.creator_name, "string");
+        assert_eq!(public_download_share.creator_name, Some("string".to_string()));
         assert_eq!(public_download_share.media_type, "string");
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
@@ -408,8 +422,14 @@ mod tests {
         assert_eq!(public_download_share.created_at.day(), 1);
         assert_eq!(public_download_share.created_at.year(), 2021);
         assert_eq!(public_download_share.notes, Some("string".to_string()));
-        assert_eq!(public_download_share.expire_at, Some("2021-01-01T00:00:00Z".parse().unwrap()));
-        assert_eq!(public_download_share.creator_username, Some("string".to_string()));
+        assert_eq!(
+            public_download_share.expire_at,
+            Some("2021-01-01T00:00:00Z".parse().unwrap())
+        );
+        assert_eq!(
+            public_download_share.creator_username,
+            Some("string".to_string())
+        );
         assert_eq!(public_download_share.name, Some("string".to_string()));
 
         let file_key = public_download_share.file_key.unwrap();
@@ -421,5 +441,293 @@ mod tests {
         let private_key_container = public_download_share.private_key_container.unwrap();
         assert_eq!(private_key_container.version, UserKeyPairVersion::RSA4096);
         assert_eq!(private_key_container.created_by, Some(1));
+    }
+
+    #[tokio::test]
+    async fn test_public_download_unencrypted() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        let client = Dracoon::builder()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_download_share_res =
+            include_str!("../tests/responses/public/download_share_ok_templated.json");
+
+        // must be unencrypted
+        let public_download_share_res =
+            public_download_share_res.replace(r#""$ENCRYPTED""#, "false");
+
+        // size must be 16 (mock_bytes below)
+        let public_download_share_res = public_download_share_res.replace(r#""$SIZE""#, "16");
+
+        // remove private key container
+        let public_download_share_res = public_download_share_res
+            .replace(r#""privateKeyContainer": "$PRIVATE_KEY_CONTAINER","#, "");
+
+        // remove file key
+        let public_download_share_res =
+            public_download_share_res.replace(r#""fileKey": "$FILE_KEY","#, "");
+
+        let public_download_share_mock = mock_server
+            .mock("GET", "/api/v4/public/shares/downloads/test")
+            .with_status(200)
+            .with_body(public_download_share_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let public_download_share = client
+            .public
+            .get_public_download_share("test")
+            .await
+            .unwrap();
+
+        public_download_share_mock.assert();
+
+        let mock_bytes = b"testtesttesttest".to_vec();
+        let mock_compare = mock_bytes.clone();
+
+        let buffer = Vec::with_capacity(16);
+
+        let mut writer = tokio::io::BufWriter::new(buffer);
+
+        let download_url_res = r#"{"downloadUrl": "/some/download/url"}"#;
+        let download_url_res = download_url_res.replace(
+            "/some/download/url",
+            format!("{}/some/download/url", mock_server.url()).as_str(),
+        );
+
+        let payload = PublicDownloadTokenGenerateRequest::new("TopSecret1234!");
+        let payload = serde_json::to_string(&payload).unwrap();
+
+        let url_mock = mock_server
+            .mock("POST", "/api/v4/public/shares/downloads/test")
+            .with_status(200)
+            .with_body(download_url_res)
+            .match_body(&*payload)
+            .create();
+
+        let download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(200)
+            .with_header("content-type", "application/octet-stream")
+            .with_body(mock_bytes)
+            .create();
+
+        client
+            .public
+            .download(
+                "test",
+                public_download_share,
+                Some("TopSecret1234!".to_string()),
+                &mut writer,
+                None,
+            )
+            .await
+            .unwrap();
+
+        url_mock.assert();
+        download_mock.assert();
+
+        assert_eq!(writer.buffer().len(), 16);
+
+        assert_eq!(writer.buffer(), mock_compare);
+    }
+
+    #[tokio::test]
+    async fn test_public_download_encrypted() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        let client = Dracoon::builder()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_download_share_res =
+            include_str!("../tests/responses/public/download_share_ok_templated.json");
+
+        // size must be 16 (mock_bytes below)
+        let public_download_share_res =
+            public_download_share_res.replace(r#""size": 123456"#, r#""size": 16"#);
+
+        let mock_bytes = b"testtesttesttest".to_vec();
+        let mock_compare = mock_bytes.clone();
+        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
+
+        let plain_key = mock_bytes_encrypted.1.clone();
+
+        let keypair =
+            DracoonCrypto::create_plain_user_keypair(dco3_crypto::UserKeyPairVersion::RSA4096)
+                .unwrap();
+        let enc_keypair =
+            DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
+
+        let private_key_container = enc_keypair.private_key_container.clone();
+        let private_key_json = serde_json::to_string(&private_key_container).unwrap();
+        let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
+        let file_key_json = serde_json::to_string(&file_key).unwrap();
+
+        // must be encrypted
+        let public_download_share_res =
+            public_download_share_res.replace(r#""$ENCRYPTED""#, "true");
+
+        // size must be 16 (mock_bytes below)
+        let public_download_share_res = public_download_share_res.replace(r#""$SIZE""#, "16");
+
+        // inject private key container
+        let public_download_share_res =
+            public_download_share_res.replace(r#""$PRIVATE_KEY_CONTAINER""#, &private_key_json);
+
+        // inject file key
+        let public_download_share_res =
+            public_download_share_res.replace(r#""$FILE_KEY""#, &file_key_json);
+
+        let public_download_share_mock = mock_server
+            .mock("GET", "/api/v4/public/shares/downloads/test")
+            .with_status(200)
+            .with_body(public_download_share_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let public_download_share = client
+            .public
+            .get_public_download_share("test")
+            .await
+            .unwrap();
+
+        public_download_share_mock.assert();
+
+        let buffer = Vec::with_capacity(16);
+
+        let mut writer = tokio::io::BufWriter::new(buffer);
+
+        let download_url_res = r#"{"downloadUrl": "/some/download/url"}"#;
+        let download_url_res = download_url_res.replace(
+            "/some/download/url",
+            format!("{}/some/download/url", mock_server.url()).as_str(),
+        );
+
+        let url_mock = mock_server
+            .mock("POST", "/api/v4/public/shares/downloads/test")
+            .with_status(200)
+            .with_body(download_url_res)
+            .create();
+
+        let download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(200)
+            .with_header("content-type", "application/octet-stream")
+            .with_body(mock_bytes_encrypted.0)
+            .create();
+
+        client
+            .public
+            .download(
+                "test",
+                public_download_share,
+                Some("TopSecret1234!".to_string()),
+                &mut writer,
+                None,
+            )
+            .await
+            .unwrap();
+
+        url_mock.assert();
+        download_mock.assert();
+
+        assert_eq!(writer.buffer().len(), 16);
+
+        assert_eq!(writer.buffer(), mock_compare);
+    }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_download_unencrypted_staging() {
+
+        let access_key = "aXBpSgdf8pP8yV2axsruGrtt8f81Fbfo";
+        let expected_content = b"Blububububbububu";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://staging.dracoon.com")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_download_share = client
+            .public
+            .get_public_download_share(access_key)
+            .await
+            .unwrap();
+
+        let buffer = Vec::with_capacity(16);
+
+        let mut writer = tokio::io::BufWriter::new(buffer);
+        let password = "Test1234!".to_string();
+
+        client
+            .public
+            .download(
+                access_key,
+                public_download_share,
+                Some(password),
+                &mut writer,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(writer.buffer().len(), 16);
+        assert_eq!(writer.buffer(), expected_content);
+
+    }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_download_encrypted_staging() {
+
+        let access_key = "Nyg9kGoBaQzPfK0pTz10AifibzrQues4";
+        let expected_content = b"Blububububbububu";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://staging.dracoon.com")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_download_share = client
+            .public
+            .get_public_download_share(access_key)
+            .await
+            .unwrap();
+
+        let buffer = Vec::with_capacity(16);
+
+        let mut writer = tokio::io::BufWriter::new(buffer);
+        let password = "Test1234!".to_string();
+
+        client
+            .public
+            .download(
+                access_key,
+                public_download_share,
+                Some(password),
+                &mut writer,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(writer.buffer().len(), 16);
+        assert_eq!(writer.buffer(), expected_content);
+
+
+    }
 }
-}
+

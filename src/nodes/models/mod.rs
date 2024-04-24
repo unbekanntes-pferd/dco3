@@ -1177,8 +1177,8 @@ impl UserFileKeySetBatchRequest {
                     .file_key_container
                     .clone();
 
-                let plain_file_key =
-                    DracoonCrypto::decrypt_file_key(file_key, keypair.clone()).map_err(|err| {
+                let plain_file_key = DracoonCrypto::decrypt_file_key(file_key, keypair.clone())
+                    .map_err(|err| {
                         error!("Could not decrypt file key: {:?}", err);
                         DracoonClientError::CryptoError(err)
                     })?;

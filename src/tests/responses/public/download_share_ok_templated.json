@@ -1,0 +1,22 @@
+{
+    "isProtected": true,
+    "fileName": "string",
+    "size": "$SIZE",
+    "limitReached": false,
+    "creatorName": "string",
+    "createdAt": "2021-01-01T00:00:00.000Z",
+    "hasDownloadLimit": true,
+    "mediaType": "string",
+    "name": "string",
+    "creatorUsername": "string",
+    "expireAt": "2021-01-01T00:00:00.000Z",
+    "notes": "string",
+    "isEncrypted": "$ENCRYPTED",
+    "fileKey": "$FILE_KEY",      
+    "privateKeyContainer": "$PRIVATE_KEY_CONTAINER",
+    "virusProtectionInfo": {
+        "verdict": "NOT_SCANNING",
+        "lastCheckedAt": "2021-01-01T00:00:00.000Z",
+        "sha256": "string"
+    }
+}

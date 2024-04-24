@@ -425,7 +425,7 @@ pub use self::{
     models::*,
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
-    public::Public,
+    public::{Public, PublicDownload},
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
     user::{User, UserAccountKeyPairs},

@@ -1,13 +1,11 @@
 use std::cmp::min;
 
 use async_trait::async_trait;
-use dco3_crypto::{
-    ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto, FileKey, PrivateKeyContainer,
-};
+use dco3_crypto::{ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto};
 use futures_util::TryStreamExt;
-use reqwest::header::{self, CONTENT_LENGTH, RANGE};
+use reqwest::header::{self, RANGE};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
-use tracing::{debug, error};
+use tracing::error;
 
 use crate::{
     constants::{
@@ -20,14 +18,14 @@ use crate::{
 
 use super::{
     PublicDownload, PublicDownloadShare, PublicDownloadTokenGenerateRequest,
-    PublicDownloadTokenGenerateResponse, PublicEndpoint,
+    PublicDownloadTokenGenerateResponse, PublicEndpoint, PublicShareEncryption,
 };
 
 #[async_trait]
 impl<S: Send + Sync> PublicDownload for PublicEndpoint<S> {
     async fn download<'w>(
         &'w self,
-        access_key: String,
+        access_key: impl Into<String> + Send + Sync,
         share: PublicDownloadShare,
         password: Option<String>,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
@@ -42,13 +40,16 @@ impl<S: Send + Sync> PublicDownload for PublicEndpoint<S> {
                 return Err(DracoonClientError::MissingArgument);
             };
             self.generate_download_url(
-                access_key,
+                access_key.into(),
                 PublicDownloadTokenGenerateRequest::new(password),
             )
             .await?
         } else {
-            self.generate_download_url(access_key, PublicDownloadTokenGenerateRequest::default())
-                .await?
+            self.generate_download_url(
+                access_key.into(),
+                PublicDownloadTokenGenerateRequest::default(),
+            )
+            .await?
         };
 
         match share.is_encrypted.unwrap_or(false) {
@@ -64,22 +65,16 @@ impl<S: Send + Sync> PublicDownload for PublicEndpoint<S> {
                 self.download_encrypted(
                     &download_url.download_url,
                     password,
-                    file_key,
-                    private_key_container,
+                    PublicShareEncryption::new(file_key, private_key_container),
                     writer,
-                    Some(share.size),
+                    share.size,
                     callback,
                 )
                 .await?;
             }
             false => {
-                self.download_unencrypted(
-                    &download_url.download_url,
-                    writer,
-                    Some(share.size),
-                    callback,
-                )
-                .await?;
+                self.download_unencrypted(&download_url.download_url, writer, share.size, callback)
+                    .await?;
             }
         }
 
@@ -99,7 +94,7 @@ trait PublicDownloadInternal {
         &self,
         url: &str,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
+        size: u64,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 
@@ -107,10 +102,9 @@ trait PublicDownloadInternal {
         &self,
         url: &str,
         password: String,
-        file_key: FileKey,
-        private_key_container: PrivateKeyContainer,
+        encryption_info: PublicShareEncryption,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
+        size: u64,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 }
@@ -140,8 +134,8 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
             self.client()
                 .http
                 .post(url)
-                .json(&req)
                 .header(header::CONTENT_TYPE, "application/json")
+                .json(&req)
                 .send()
                 .await?
         };
@@ -153,39 +147,17 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         &self,
         url: &str,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
+        size: u64,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
-        // get content length from header
-        let content_length = self
-            .client()
-            .http
-            .head(url)
-            .send()
-            .await
-            .map_err(|err| {
-                debug!("Error while getting content length: {}", err);
-                err
-            })?
-            .headers()
-            .get(CONTENT_LENGTH)
-            .and_then(|val| val.to_str().ok())
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(0);
-
-        // if size is given, use it
-        let content_length = size.unwrap_or(content_length);
-
         // offset (in bytes)
         let mut downloaded_bytes = 0u64;
 
-        debug!("Content length: {}", content_length);
-
         // loop until all bytes are downloaded
-        while downloaded_bytes < content_length {
+        while downloaded_bytes < size {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(start + CHUNK_SIZE as u64 - 1, size - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -220,9 +192,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
 
                 // call progress callback if provided
                 if let Some(ref mut callback) = callback {
-                    callback(len, content_length);
+                    callback(len, size);
                 }
-                if downloaded_bytes >= content_length {
+                if downloaded_bytes >= size {
                     break;
                 }
             }
@@ -235,52 +207,30 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         &self,
         url: &str,
         password: String,
-        file_key: FileKey,
-        private_key_container: PrivateKeyContainer,
+        encryption_info: PublicShareEncryption,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
+        size: u64,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
         let plain_private_key =
-            DracoonCrypto::decrypt_private_key(&password, &private_key_container)?;
-        let plain_key = DracoonCrypto::decrypt_file_key(file_key, plain_private_key)?;
-
-        // get content length from header
-        let content_length = self
-            .client()
-            .http
-            .head(url)
-            .send()
-            .await
-            .map_err(|err| {
-                debug!("Error while getting content length: {}", err);
-                err
-            })?
-            .headers()
-            .get(CONTENT_LENGTH)
-            .and_then(|val| val.to_str().ok())
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(0);
-
-        // if size is given, use it
-        let content_length = size.unwrap_or(content_length);
+            DracoonCrypto::decrypt_private_key(&password, &encryption_info.private_key_container)?;
+        let plain_key =
+            DracoonCrypto::decrypt_file_key(encryption_info.file_key, plain_private_key)?;
 
         // this is safe, because the maximum size of a file (encrypted) is 60 GB
         #[allow(clippy::cast_possible_truncation)]
-        let mut buffer = vec![0u8; content_length as usize];
+        let mut buffer = vec![0u8; size as usize];
 
         let mut crypter = DracoonCrypto::decrypter(plain_key, &mut buffer)?;
 
         // offset (in bytes)
         let mut downloaded_bytes = 0u64;
 
-        debug!("Content length: {}", content_length);
-
         // loop until all bytes are downloaded
-        while downloaded_bytes < content_length {
+        while downloaded_bytes < size {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(start + CHUNK_SIZE as u64 - 1, size - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -313,9 +263,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
 
                 // call progress callback if provided
                 if let Some(ref mut callback) = callback {
-                    callback(len, content_length);
+                    callback(len, size);
                 }
-                if downloaded_bytes >= content_length {
+                if downloaded_bytes >= size {
                     break;
                 }
             }
@@ -336,7 +286,10 @@ mod tests {
     use dco3_crypto::{DracoonCrypto, DracoonRSACrypto, Encrypt};
 
     use crate::{
-        public::{download::PublicDownloadInternal, PublicDownloadTokenGenerateRequest},
+        public::{
+            download::PublicDownloadInternal, PublicDownloadTokenGenerateRequest,
+            PublicShareEncryption,
+        },
         Dracoon,
     };
 
@@ -390,16 +343,9 @@ mod tests {
             .build()
             .unwrap();
 
-        let content_length_mock = mock_server
-            .mock("HEAD", "/some/download/url")
-            .with_status(200)
-            .with_header("content-length", "16")
-            .create();
-
         let download_mock = mock_server
             .mock("GET", "/some/download/url")
             .with_status(200)
-            .with_header("content-type", "application/octet-stream")
             .with_body(mock_bytes)
             .create();
 
@@ -411,7 +357,7 @@ mod tests {
 
         client
             .public
-            .download_unencrypted(&download_url, &mut writer, Some(16), None)
+            .download_unencrypted(&download_url, &mut writer, 16, None)
             .await
             .unwrap();
 
@@ -432,12 +378,6 @@ mod tests {
             .with_client_secret("client_secret")
             .build()
             .unwrap();
-
-        let content_length_mock = mock_server
-            .mock("HEAD", "/some/download/url")
-            .with_status(200)
-            .with_header("content-length", "16")
-            .create();
 
         // create bytes for mocking byte response
         let mock_bytes: [u8; 16] = [
@@ -479,16 +419,13 @@ mod tests {
             .download_encrypted(
                 &download_url,
                 secret.to_string(),
-                file_key,
-                enc_keypair.private_key_container,
+                PublicShareEncryption::new(file_key, enc_keypair.private_key_container),
                 &mut writer,
-                None,
+                16,
                 None,
             )
             .await
             .unwrap();
-
-        content_length_mock.assert();
 
         download_mock.assert();
 
