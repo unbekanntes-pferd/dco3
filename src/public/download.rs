@@ -30,6 +30,7 @@ impl<S: Send + Sync> PublicDownload for PublicEndpoint<S> {
         password: Option<String>,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         callback: Option<DownloadProgressCallback>,
+        chunksize: Option<usize>
     ) -> Result<(), DracoonClientError> {
         if password.is_none() && (share.is_protected || share.is_encrypted.unwrap_or(false)) {
             return Err(DracoonClientError::MissingArgument);

@@ -6,7 +6,7 @@ use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 use crate::{
     constants::{
         DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES, PUBLIC_INFO, PUBLIC_SHARES_BASE,
-        PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_VERSION,
+        PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_VERSION, PUBLIC_UPLOAD_SHARES,
     },
     nodes::{DownloadProgressCallback, FileMeta, UploadOptions, UploadProgressCallback},
     utils::FromResponse,
@@ -84,6 +84,32 @@ pub trait Public {
         &self,
         access_key: impl Into<String> + Send + Sync,
     ) -> Result<PublicDownloadShare, DracoonClientError>;
+
+    /// Get public upload share information for a DRACOON upload share.
+    /// 
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, Public};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client_secret")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::password_flow("username", "password"))
+    /// #  .await
+    /// #  .unwrap();
+    /// let access_key = "access_key";
+    /// 
+    /// let public_upload_share = dracoon.public.get_public_upload_share(access_key.to_string()).await.unwrap();
+    /// 
+    /// # }
+    /// ```
+    async fn get_public_upload_share(
+        &self,
+        access_key: impl Into<String> + Send + Sync,
+    ) -> Result<PublicUploadShare, DracoonClientError>;
 }
 
 #[async_trait]
@@ -109,14 +135,14 @@ pub trait PublicDownload {
     ///
     /// let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
     ///
-    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, None).await.unwrap();
+    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, None, None).await.unwrap();
     ///
     /// // or with a progress callback
     /// let share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
     /// let password = Some("TopSecret123!".to_string());
     /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, Some(Box::new(|progress, total| {
     ///    println!("Downloaded: {}%", progress);
-    /// }))).await.unwrap();
+    /// })), None).await.unwrap();
     /// # }
     /// ```
     async fn download<'w>(
@@ -126,6 +152,7 @@ pub trait PublicDownload {
         password: Option<String>,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         mut callback: Option<DownloadProgressCallback>,
+        chunksize: Option<usize>
     ) -> Result<(), DracoonClientError>;
 }
 
@@ -198,6 +225,28 @@ impl<S: Send + Sync> Public for PublicEndpoint<S> {
             .await?;
 
         Ok(PublicDownloadShare::from_response(response).await?)
+    }
+
+    async fn get_public_upload_share(
+        &self,
+        access_key: impl Into<String> + Send + Sync,
+    ) -> Result<PublicUploadShare, DracoonClientError> {
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}",
+            access_key.into()
+        );
+
+        let url = self.client().build_api_url(&url_part);
+
+        let response = self
+            .client()
+            .http
+            .get(url)
+            .header(header::CONTENT_TYPE, "application/json")
+            .send()
+            .await?;
+
+        Ok(PublicUploadShare::from_response(response).await?)
     }
 }
 
@@ -531,6 +580,7 @@ mod tests {
                 Some("TopSecret1234!".to_string()),
                 &mut writer,
                 None,
+                None
             )
             .await
             .unwrap();
@@ -639,6 +689,7 @@ mod tests {
                 Some("TopSecret1234!".to_string()),
                 &mut writer,
                 None,
+                None
             )
             .await
             .unwrap();
@@ -683,6 +734,7 @@ mod tests {
                 Some(password),
                 &mut writer,
                 None,
+                None
             )
             .await
             .unwrap();
@@ -723,11 +775,60 @@ mod tests {
                 Some(password),
                 &mut writer,
                 None,
+                None
             )
             .await
             .unwrap();
 
         assert_eq!(writer.buffer().len(), 16);
         assert_eq!(writer.buffer(), expected_content);
+    }
+
+    #[tokio::test]
+    async fn test_get_public_upload_share_disconnected() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        let client = Dracoon::builder()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_upload_share_res =
+            include_str!("../tests/responses/public/upload_share_ok.json");
+
+        let public_upload_share_mock = mock_server
+            .mock("GET", "/api/v4/public/shares/uploads/test")
+            .with_status(200)
+            .with_body(public_upload_share_res)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let public_upload_share = client
+            .public
+            .get_public_upload_share("test")
+            .await
+            .unwrap();
+
+        public_upload_share_mock.assert();
+
+        assert!(public_upload_share.is_protected);
+        assert_eq!(public_upload_share.created_at.month(), 1);
+        assert_eq!(public_upload_share.created_at.day(), 1);
+        assert_eq!(public_upload_share.created_at.year(), 2021);
+        assert_eq!(public_upload_share.name, Some("string".to_string()));
+        assert_eq!(public_upload_share.notes, Some("string".to_string()));
+        assert_eq!(public_upload_share.expire_at, Some("2021-01-01T00:00:00Z".parse().unwrap()));
+        assert_eq!(public_upload_share.show_uploaded_files, Some(true));
+        assert_eq!(public_upload_share.remaining_size, None);
+        assert_eq!(public_upload_share.remaining_slots, Some(1));
+        assert_eq!(public_upload_share.is_encrypted, Some(false));
+        assert_eq!(public_upload_share.is_protected, true);
+        let uploaded_files = public_upload_share.uploaded_files.unwrap();
+        assert_eq!(uploaded_files.len(), 1);
+        let uploaded_file = uploaded_files.first().unwrap();
+        assert_eq!(uploaded_file.name, "string");
+        assert_eq!(uploaded_file.size, 16);
     }
 }

@@ -1103,7 +1103,7 @@ pub struct UserIdFileItem {
     pub file_id: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUserPublicKey {
     pub id: u64,

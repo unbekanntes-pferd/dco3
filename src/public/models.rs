@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{DracoonClient, DracoonErrorResponse},
-    nodes::S3UploadStatus,
+    nodes::{S3UploadStatus, UserUserPublicKey},
 };
 
 #[derive(Clone)]
@@ -115,3 +115,35 @@ impl PublicShareEncryption {
         }
     }
 }
+
+#[derive(Debug, Deserialize, Clone, FromResponse)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUploadShare {
+    pub is_protected: bool,
+    pub created_at: DateTime<Utc>,
+    pub name: Option<String>,
+    pub is_encrypted: Option<bool>,
+    pub expire_at: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+    pub uploaded_files: Option<Vec<PublicUploadedFileData>>,
+    pub user_user_public_key_list: Option<UserUserPublicKeyList>,
+    pub show_uploaded_files: Option<bool>,
+    pub remaining_size: Option<u64>,
+    pub remaining_slots: Option<u32>,
+
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicUploadedFileData {
+    pub name: String,
+    pub size: u64,
+    pub created_at: DateTime<Utc>,
+    pub hash: Option<String>
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct UserUserPublicKeyList {
+    items: Vec<UserUserPublicKey>
+}
+
