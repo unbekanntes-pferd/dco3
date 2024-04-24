@@ -1126,7 +1126,7 @@ pub struct MissingKeysResponse {
     pub files: Vec<FileFileKeys>,
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetBatchRequest {
     items: Vec<UserFileKeySetRequest>,
@@ -1204,7 +1204,7 @@ impl From<Vec<UserFileKeySetRequest>> for UserFileKeySetBatchRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetRequest {
     user_id: u64,

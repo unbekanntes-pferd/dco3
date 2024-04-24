@@ -5,7 +5,7 @@ use crate::{
 
 use super::NodeType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodesFilter {
     Name(FilterOperator, String),
     Type(FilterOperator, NodeType),
@@ -114,7 +114,7 @@ impl From<NodesFilter> for Box<dyn FilterQuery> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodesSearchFilter {
     Type(FilterOperator, NodeType),
     FileType(FilterOperator, String),
