@@ -54,7 +54,7 @@ pub struct SystemInfo {
     pub use_s3_storage: bool,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct S3ShareUploadStatus {

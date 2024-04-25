@@ -259,8 +259,10 @@ mod tests {
     };
 
     use crate::{
-        public::PublicDownloadTokenGenerateRequest, tests::dracoon::get_connected_client, Dracoon,
-        Public, PublicDownload,
+        nodes::{FileMeta, UploadOptions},
+        public::{PublicDownloadTokenGenerateRequest, PublicUpload},
+        tests::dracoon::get_connected_client,
+        Dracoon, Public, PublicDownload,
     };
 
     #[tokio::test]
@@ -829,5 +831,95 @@ mod tests {
         let uploaded_file = uploaded_files.first().unwrap();
         assert_eq!(uploaded_file.name, "string");
         assert_eq!(uploaded_file.size, 16);
+    }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_upload_unencrypted_staging() {
+        let access_key = "Eb41f2Ac8nxhln99ddrp9KyIhlO5fwoi";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://staging.dracoon.com")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_upload_share = client
+            .public
+            .get_public_upload_share(access_key)
+            .await
+            .unwrap();
+
+        let mock_bytes = b"Blububububbububu";
+
+        let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
+
+        let file_meta = FileMeta::builder()
+            .with_name("test.txt".to_string())
+            .with_size(16)
+            .build();
+
+        let upload_opts = UploadOptions::builder(file_meta).build();
+
+        let file_name = client
+            .public
+            .upload(
+                access_key,
+                public_upload_share,
+                upload_opts,
+                reader,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(file_name, "test.txt");
+    }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_upload_encrypted_staging() {
+        let access_key = "xwHSQhIpdtXXLEnNbkwLDCUQuIpoLSCn";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://staging.dracoon.com")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_upload_share = client
+            .public
+            .get_public_upload_share(access_key)
+            .await
+            .unwrap();
+
+        let mock_bytes = b"Blububububbububu";
+
+        let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
+
+        let file_meta = FileMeta::builder()
+            .with_name("test.txt".to_string())
+            .with_size(16)
+            .build();
+
+        let upload_opts = UploadOptions::builder(file_meta).build();
+
+        let file_name = client
+            .public
+            .upload(
+                access_key,
+                public_upload_share,
+                upload_opts,
+                reader,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(file_name, "test.txt");
     }
 }

@@ -31,7 +31,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin+ 'static> PublicUpload<R
         share: PublicUploadShare,
         upload_options: UploadOptions,
         reader: BufReader<R>,
-        mut callback: Option<UploadProgressCallback>,
+        callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
         let use_s3_storage = self.get_system_info().await?.use_s3_storage;
@@ -72,6 +72,8 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             access_key
         );
 
+        eprintln!("access_key: {}", access_key);
+
         let url = self.client().build_api_url(&url_part);
 
         let response = self
@@ -92,8 +94,8 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         generate_urls_req: GeneratePresignedUrlsRequest,
     ) -> Result<PresignedUrlList, DracoonClientError> {
         let url_part = format!(
-            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{FILES_S3_URLS}",
-            access_key
+            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{}/{FILES_S3_URLS}",
+            access_key, upload_id
         );
 
         let url = self.client().build_api_url(&url_part);
@@ -303,7 +305,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         share: &PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
-        mut callback: Option<UploadProgressCallback>,
+        callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
 
@@ -358,6 +360,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             .with_size(fm.1.clone())
             .with_timestamp_modification(timestamp_modification)
             .with_timestamp_creation(timestamp_creation)
+            .with_direct_s3_upload(true)
             .build();
 
         let upload_channel = 
@@ -563,8 +566,8 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         complete_file_upload_req: CompleteS3ShareUploadRequest,
     ) -> Result<(), DracoonClientError> {
         let url_part = format!(
-            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{FILES_S3_COMPLETE}",
-            access_key
+            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{}/{FILES_S3_COMPLETE}",
+            access_key, upload_id
         );
 
         let url = self.client().build_api_url(&url_part);
@@ -589,7 +592,16 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         access_key: String,
         upload_id: String,
     ) -> Result<S3ShareUploadStatus, DracoonClientError> {
-        todo!()
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{}",
+            access_key, upload_id
+        );
+
+        let url = self.client().build_api_url(&url_part);
+
+        let response = self.client().http.get(url).send().await?;
+
+        S3ShareUploadStatus::from_response(response).await
     }
 }
 
