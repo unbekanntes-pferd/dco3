@@ -6,9 +6,9 @@ use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 use crate::{
     constants::{
         DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES, PUBLIC_INFO, PUBLIC_SHARES_BASE,
-        PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_VERSION, PUBLIC_UPLOAD_SHARES,
+        PUBLIC_SOFTWARE_BASE, PUBLIC_SYSTEM_BASE, PUBLIC_UPLOAD_SHARES, PUBLIC_VERSION,
     },
-    nodes::{DownloadProgressCallback, FileMeta, UploadOptions, UploadProgressCallback},
+    nodes::{DownloadProgressCallback, UploadOptions, UploadProgressCallback},
     utils::FromResponse,
     DracoonClientError,
 };
@@ -86,7 +86,7 @@ pub trait Public {
     ) -> Result<PublicDownloadShare, DracoonClientError>;
 
     /// Get public upload share information for a DRACOON upload share.
-    /// 
+    ///
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Public};
     /// # #[tokio::main]
@@ -101,9 +101,9 @@ pub trait Public {
     /// #  .await
     /// #  .unwrap();
     /// let access_key = "access_key";
-    /// 
+    ///
     /// let public_upload_share = dracoon.public.get_public_upload_share(access_key.to_string()).await.unwrap();
-    /// 
+    ///
     /// # }
     /// ```
     async fn get_public_upload_share(
@@ -152,7 +152,7 @@ pub trait PublicDownload {
         password: Option<String>,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         mut callback: Option<DownloadProgressCallback>,
-        chunksize: Option<usize>
+        chunksize: Option<usize>,
     ) -> Result<(), DracoonClientError>;
 }
 
@@ -160,13 +160,13 @@ pub trait PublicDownload {
 pub trait PublicUpload<R: AsyncRead> {
     async fn upload<'r>(
         &'r self,
-        file_meta: FileMeta,
-        share: String,
+        access_key: impl Into<String> + Send + Sync,
+        share: PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
         mut callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
-    ) -> Result<S3ShareUploadStatus, DracoonClientError>;
+    ) -> Result<FileName, DracoonClientError>;
 }
 
 #[async_trait]
@@ -580,7 +580,7 @@ mod tests {
                 Some("TopSecret1234!".to_string()),
                 &mut writer,
                 None,
-                None
+                None,
             )
             .await
             .unwrap();
@@ -689,7 +689,7 @@ mod tests {
                 Some("TopSecret1234!".to_string()),
                 &mut writer,
                 None,
-                None
+                None,
             )
             .await
             .unwrap();
@@ -734,7 +734,7 @@ mod tests {
                 Some(password),
                 &mut writer,
                 None,
-                None
+                None,
             )
             .await
             .unwrap();
@@ -775,7 +775,7 @@ mod tests {
                 Some(password),
                 &mut writer,
                 None,
-                None
+                None,
             )
             .await
             .unwrap();
@@ -805,11 +805,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let public_upload_share = client
-            .public
-            .get_public_upload_share("test")
-            .await
-            .unwrap();
+        let public_upload_share = client.public.get_public_upload_share("test").await.unwrap();
 
         public_upload_share_mock.assert();
 
@@ -819,7 +815,10 @@ mod tests {
         assert_eq!(public_upload_share.created_at.year(), 2021);
         assert_eq!(public_upload_share.name, Some("string".to_string()));
         assert_eq!(public_upload_share.notes, Some("string".to_string()));
-        assert_eq!(public_upload_share.expire_at, Some("2021-01-01T00:00:00Z".parse().unwrap()));
+        assert_eq!(
+            public_upload_share.expire_at,
+            Some("2021-01-01T00:00:00Z".parse().unwrap())
+        );
         assert_eq!(public_upload_share.show_uploaded_files, Some(true));
         assert_eq!(public_upload_share.remaining_size, None);
         assert_eq!(public_upload_share.remaining_slots, Some(1));

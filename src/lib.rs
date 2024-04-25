@@ -396,7 +396,7 @@
 
 use std::{marker::PhantomData, sync::Arc};
 
-use auth::Provisioning;
+use auth::{GetClient, Provisioning};
 use config::ConfigEndpoint;
 use dco3_crypto::PlainUserKeyPairContainer;
 use groups::GroupsEndpoint;
@@ -467,6 +467,12 @@ pub struct Dracoon<State = Disconnected> {
     pub users: UsersEndpoint<State>,
     pub public: PublicEndpoint<State>,
     pub provisioning: ProvisioningEndpoint<State>,
+}
+
+impl <S: Send + Sync> GetClient<S> for Dracoon<S> {
+    fn get_client(&self) -> &DracoonClient<S> {
+        &self.client
+    }
 }
 
 /// Builder for the `Dracoon` struct.

@@ -141,7 +141,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
                 .await?
         };
 
-        Ok(PublicDownloadTokenGenerateResponse::from_response(response).await?)
+        PublicDownloadTokenGenerateResponse::from_response(response).await
     }
 
     async fn download_unencrypted(

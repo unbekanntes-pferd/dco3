@@ -757,7 +757,6 @@ pub trait Upload<R: AsyncRead> {
     ///
     async fn upload<'r>(
         &'r self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,

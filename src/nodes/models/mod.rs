@@ -146,22 +146,25 @@ impl FileMetaBuilder {
 }
 
 /// upload options (expiration, classification, keep share links, resolution strategy)
-#[derive(Debug, Clone, Default)]
-pub struct UploadOptions(
-    pub Option<ObjectExpiration>,
-    pub Option<u8>,
-    pub Option<bool>,
-    pub Option<ResolutionStrategy>,
-);
+#[derive(Debug, Clone)]
+pub struct UploadOptions {
+    pub expiration : Option<ObjectExpiration>,
+    pub classification : Option<u8>,
+    pub keep_share_links : Option<bool>,
+    pub resolution_strategy : Option<ResolutionStrategy>,
+    pub file_meta: FileMeta
+
+}
 
 impl UploadOptions {
-    pub fn builder() -> UploadOptionsBuilder {
-        UploadOptionsBuilder::new()
+    pub fn builder(file_meta: FileMeta) -> UploadOptionsBuilder {
+        UploadOptionsBuilder::new(file_meta)
     }
 }
 
-#[derive(Default)]
+
 pub struct UploadOptionsBuilder {
+    file_meta: FileMeta,
     expiration: Option<ObjectExpiration>,
     classification: Option<u8>,
     keep_share_links: Option<bool>,
@@ -169,12 +172,13 @@ pub struct UploadOptionsBuilder {
 }
 
 impl UploadOptionsBuilder {
-    pub fn new() -> Self {
+    pub fn new(file_meta: FileMeta) -> Self {
         Self {
             expiration: None,
             classification: None,
             keep_share_links: None,
             resolution_strategy: None,
+            file_meta
         }
     }
 
@@ -199,12 +203,14 @@ impl UploadOptionsBuilder {
     }
 
     pub fn build(self) -> UploadOptions {
-        UploadOptions(
-            self.expiration,
-            self.classification,
-            self.keep_share_links,
-            self.resolution_strategy,
-        )
+
+        UploadOptions {
+            expiration: self.expiration,
+            classification: self.classification,
+            keep_share_links: self.keep_share_links,
+            resolution_strategy: self.resolution_strategy,
+            file_meta: self.file_meta
+        }
     }
 }
 
@@ -796,7 +802,7 @@ pub enum ResolutionStrategy {
     Fail,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadPart {
     part_number: u32,
