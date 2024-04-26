@@ -72,8 +72,6 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             access_key
         );
 
-        eprintln!("access_key: {}", access_key);
-
         let url = self.client().build_api_url(&url_part);
 
         let response = self

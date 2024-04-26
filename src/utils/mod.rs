@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::Response;
 use serde::de::DeserializeOwned;
 use serde_xml_rs::from_str;
-use tracing::{debug, error};
+use tracing::error;
 
 use super::{
     auth::{errors::DracoonClientError, models::StatusCodeState},
@@ -17,7 +17,6 @@ where
 {
     match Into::<StatusCodeState>::into(res.status()) {
         StatusCodeState::Ok(_) => Ok(res.json::<T>().await.map_err(|err| {
-            eprintln!("Failed to parse response body: {}", err);
             error!("{}", err);
             err
         })?),
@@ -42,12 +41,12 @@ where
 pub async fn build_s3_error(response: Response) -> DracoonClientError {
     let status = &response.status();
     let Ok(text) = response.text().await else {
-        debug!("Failed to read S3 XML error body: {}", status);
+        error!("Failed to read S3 XML error body: {}", status);
         return DracoonClientError::Unknown;
     };
 
     let Ok(error) = from_str(&text) else {
-        debug!("Failed to parse S3 XML error response: {}", text);
+        error!("Failed to parse S3 XML error response: {}", text);
         return DracoonClientError::Unknown;
     };
     let err_response = S3ErrorResponse::from_xml_error(*status, error);
