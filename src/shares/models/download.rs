@@ -40,7 +40,7 @@ pub struct DownloadShare {
 
 pub type DownloadSharesList = RangedItems<DownloadShare>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 
 pub struct CreateDownloadShareRequest {
@@ -181,7 +181,7 @@ impl CreateDownloadShareRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadSharesBulkRequest {
     object_ids: Vec<u64>,
@@ -268,7 +268,7 @@ impl UpdateDownloadSharesBulkRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteDownloadSharesRequest {
     share_ids: Vec<u64>,
@@ -286,7 +286,7 @@ impl DeleteDownloadSharesRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadShareRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -429,7 +429,7 @@ impl UpdateDownloadShareRequestBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DownloadSharesFilter {
     Name(FilterOperator, String),
     CreatedAt(FilterOperator, String),
@@ -540,7 +540,7 @@ impl DownloadSharesFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DownloadSharesSortBy {
     Name(SortOrder),
     NotifyCreator(SortOrder),
@@ -619,7 +619,7 @@ impl DownloadSharesSortBy {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct DownloadShareLinkEmail {
     recipients: Vec<String>,
     body: String,

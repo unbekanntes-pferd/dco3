@@ -111,6 +111,9 @@ pub const PUBLIC_SOFTWARE_BASE: &str = "software";
 pub const PUBLIC_VERSION: &str = "version";
 pub const PUBLIC_SYSTEM_BASE: &str = "system";
 pub const PUBLIC_INFO: &str = "info";
+pub const PUBLIC_SHARES_BASE: &str = "shares";
+pub const PUBLIC_DOWNLOAD_SHARES: &str = "downloads";
+pub const PUBLIC_UPLOAD_SHARES: &str = "uploads";
 
 /// user agent header
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "|", env!("CARGO_PKG_VERSION"));

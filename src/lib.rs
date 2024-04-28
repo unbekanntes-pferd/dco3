@@ -31,7 +31,8 @@
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! * [Config] - for general configuration information
 //! * [Public] - for public information
-//!
+//! * [PublicDownload] - for public download via share
+//! * [PublicUpload] - for public upload via file request
 //!
 //! ### Example
 //! ```no_run
@@ -396,7 +397,7 @@
 
 use std::{marker::PhantomData, sync::Arc};
 
-use auth::Provisioning;
+use auth::{GetClient, Provisioning};
 use config::ConfigEndpoint;
 use dco3_crypto::PlainUserKeyPairContainer;
 use groups::GroupsEndpoint;
@@ -425,7 +426,7 @@ pub use self::{
     models::*,
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
-    public::Public,
+    public::{Public, PublicDownload, PublicUpload},
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
     user::{User, UserAccountKeyPairs},
@@ -467,6 +468,12 @@ pub struct Dracoon<State = Disconnected> {
     pub users: UsersEndpoint<State>,
     pub public: PublicEndpoint<State>,
     pub provisioning: ProvisioningEndpoint<State>,
+}
+
+impl<S: Send + Sync> GetClient<S> for Dracoon<S> {
+    fn get_client(&self) -> &DracoonClient<S> {
+        &self.client
+    }
 }
 
 /// Builder for the `Dracoon` struct.

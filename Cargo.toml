@@ -1,6 +1,6 @@
 [package]
 name = "dco3"
-version = "0.10.2"
+version = "0.11.0"
 edition = "2021"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3"
@@ -19,7 +19,7 @@ reqwest-middleware = {version = "0.3", features = ["json"]}
 reqwest-retry = "0.5"
 
 # crypto 
-dco3_crypto = "0.6"
+dco3_crypto = "0.7"
 
 # async runtime and utils
 tokio = { version = "1", features = ["full"] }

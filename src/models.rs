@@ -283,7 +283,7 @@ pub trait SortQuery: Debug + Send + Sync {
 pub type FilterQueries = Vec<Box<dyn FilterQuery>>;
 pub type SortQueries = Vec<Box<dyn SortQuery>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum FilterOperator {
     Eq,
     Cn,
@@ -316,7 +316,7 @@ impl From<&FilterOperator> for String {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SortOrder {
     Asc,
     Desc,
@@ -438,7 +438,7 @@ impl From<String> for Box<dyn SortQuery> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KeyValueEntry {
     pub key: String,
     pub value: String,

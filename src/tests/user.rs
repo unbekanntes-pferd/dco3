@@ -17,7 +17,7 @@ mod tests {
 
         let kp_from_json = serde_json::from_str::<UserKeyPairContainer>(keypair_res).unwrap();
         let plain_kp_compare =
-            DracoonCrypto::decrypt_private_key("TopSecret1234!", kp_from_json).unwrap();
+            DracoonCrypto::decrypt_keypair("TopSecret1234!", kp_from_json).unwrap();
 
         let keypair_mock = mock_server
             .mock("GET", "/api/v4/user/account/keypair")

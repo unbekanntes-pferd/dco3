@@ -10,7 +10,11 @@ use crate::{
     utils::parse_body,
 };
 
-use super::{errors::DracoonClientError, Connection};
+use super::{errors::DracoonClientError, Connection, DracoonClient};
+
+pub(crate) trait GetClient<S> {
+    fn get_client(&self) -> &DracoonClient<S>;
+}
 
 /// represents form data payload for `OAuth2` password flow
 #[derive(Debug, Serialize, Deserialize)]
@@ -108,7 +112,7 @@ pub struct OAuth2TokenResponse {
 }
 
 /// DRACOON http error response
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DracoonErrorResponse {
     code: i32,

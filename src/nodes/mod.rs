@@ -728,13 +728,13 @@ pub trait Upload<R: AsyncRead> {
     ///
     /// let reader = tokio::io::BufReader::new(file);
     ///
-    /// let options = UploadOptions::builder()
+    /// let options = UploadOptions::builder(file_meta)
     ///               .with_resolution_strategy(ResolutionStrategy::AutoRename)
     ///               .build();
     ///
     /// let chunk_size = 1024 * 1024 * 10; // 10 MB - DEFAULT is 32 MB
     ///
-    /// client.upload(file_meta, &parent_node, options, reader, None, Some(chunk_size)).await.unwrap();
+    /// client.upload(&parent_node, options, reader, None, Some(chunk_size)).await.unwrap();
     ///
     /// // or with progress callback (boxed closure)
     /// let file = tokio::fs::File::open("test.txt").await.unwrap();
@@ -743,11 +743,11 @@ pub trait Upload<R: AsyncRead> {
     /// .with_size(123456)
     /// .with_timestamp_modification("2020-01-01T00:00:00.000Z".parse().unwrap())
     /// .build();
-    /// let options = UploadOptions::builder()
+    /// let options = UploadOptions::builder(file_meta)
     ///               .with_resolution_strategy(ResolutionStrategy::AutoRename)
     ///               .build();
     /// let reader = tokio::io::BufReader::new(file);
-    /// client.upload(file_meta, &parent_node, options, reader, Some(Box::new(|progress, total| {  
+    /// client.upload(&parent_node, options, reader, Some(Box::new(|progress, total| {  
     ///   println!("Upload progress: {}", progress);
     ///  println!("File total: {}", total);
     /// })), Some(chunk_size)).await.unwrap();
@@ -757,7 +757,6 @@ pub trait Upload<R: AsyncRead> {
     ///
     async fn upload<'r>(
         &'r self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,

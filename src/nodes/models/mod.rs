@@ -146,22 +146,23 @@ impl FileMetaBuilder {
 }
 
 /// upload options (expiration, classification, keep share links, resolution strategy)
-#[derive(Debug, Clone, Default)]
-pub struct UploadOptions(
-    pub Option<ObjectExpiration>,
-    pub Option<u8>,
-    pub Option<bool>,
-    pub Option<ResolutionStrategy>,
-);
+#[derive(Debug, Clone)]
+pub struct UploadOptions {
+    pub expiration: Option<ObjectExpiration>,
+    pub classification: Option<u8>,
+    pub keep_share_links: Option<bool>,
+    pub resolution_strategy: Option<ResolutionStrategy>,
+    pub file_meta: FileMeta,
+}
 
 impl UploadOptions {
-    pub fn builder() -> UploadOptionsBuilder {
-        UploadOptionsBuilder::new()
+    pub fn builder(file_meta: FileMeta) -> UploadOptionsBuilder {
+        UploadOptionsBuilder::new(file_meta)
     }
 }
 
-#[derive(Default)]
 pub struct UploadOptionsBuilder {
+    file_meta: FileMeta,
     expiration: Option<ObjectExpiration>,
     classification: Option<u8>,
     keep_share_links: Option<bool>,
@@ -169,12 +170,13 @@ pub struct UploadOptionsBuilder {
 }
 
 impl UploadOptionsBuilder {
-    pub fn new() -> Self {
+    pub fn new(file_meta: FileMeta) -> Self {
         Self {
             expiration: None,
             classification: None,
             keep_share_links: None,
             resolution_strategy: None,
+            file_meta,
         }
     }
 
@@ -199,12 +201,13 @@ impl UploadOptionsBuilder {
     }
 
     pub fn build(self) -> UploadOptions {
-        UploadOptions(
-            self.expiration,
-            self.classification,
-            self.keep_share_links,
-            self.resolution_strategy,
-        )
+        UploadOptions {
+            expiration: self.expiration,
+            classification: self.classification,
+            keep_share_links: self.keep_share_links,
+            resolution_strategy: self.resolution_strategy,
+            file_meta: self.file_meta,
+        }
     }
 }
 
@@ -514,20 +517,20 @@ pub struct CreateFileUploadResponse {
     pub token: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrl {
     pub url: String,
     pub part_number: u32,
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrlList {
     pub urls: Vec<PresignedUrl>,
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadStatus {
     pub status: S3UploadStatus,
@@ -535,7 +538,7 @@ pub struct S3FileUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 pub enum S3UploadStatus {
     #[serde(rename = "transfer")]
     Transfer,
@@ -547,7 +550,7 @@ pub enum S3UploadStatus {
     Error,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct CreateFileUploadRequest {
@@ -640,7 +643,7 @@ impl CreateFileUploadRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePresignedUrlsRequest {
     size: u64,
@@ -658,7 +661,7 @@ impl GeneratePresignedUrlsRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteS3FileUploadRequest {
     parts: Vec<S3FileUploadPart>,
@@ -724,7 +727,7 @@ impl CompleteS3FileUploadRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteUploadRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -796,7 +799,7 @@ pub enum ResolutionStrategy {
     Fail,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadPart {
     part_number: u32,
@@ -812,7 +815,7 @@ impl S3FileUploadPart {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteNodesRequest {
     node_ids: Vec<u64>,
@@ -824,7 +827,7 @@ impl From<Vec<u64>> for DeleteNodesRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferNodesRequest {
     items: Vec<TransferNode>,
@@ -834,7 +837,7 @@ pub struct TransferNodesRequest {
     keep_share_links: Option<bool>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferNode {
     id: u64,
@@ -948,7 +951,7 @@ impl TransferNode {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFolderRequest {
     name: String,
@@ -1021,7 +1024,7 @@ impl CreateFolderRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateFolderRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1096,28 +1099,28 @@ impl UpdateFolderRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserIdFileItem {
     pub user_id: u64,
     pub file_id: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUserPublicKey {
     pub id: u64,
     pub public_key_container: PublicKeyContainer,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FileFileKeys {
     pub id: u64,
     pub file_key_container: FileKey,
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
     pub range: Option<Range>,
@@ -1126,7 +1129,7 @@ pub struct MissingKeysResponse {
     pub files: Vec<FileFileKeys>,
 }
 
-#[derive(Debug, Serialize, Default)]
+#[derive(Debug, Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetBatchRequest {
     items: Vec<UserFileKeySetRequest>,
@@ -1177,8 +1180,8 @@ impl UserFileKeySetBatchRequest {
                     .file_key_container
                     .clone();
 
-                let plain_file_key =
-                    DracoonCrypto::decrypt_file_key(file_key, keypair).map_err(|err| {
+                let plain_file_key = DracoonCrypto::decrypt_file_key(file_key, keypair.clone())
+                    .map_err(|err| {
                         error!("Could not decrypt file key: {:?}", err);
                         DracoonClientError::CryptoError(err)
                     })?;
@@ -1204,7 +1207,7 @@ impl From<Vec<UserFileKeySetRequest>> for UserFileKeySetBatchRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetRequest {
     user_id: u64,

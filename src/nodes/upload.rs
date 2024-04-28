@@ -10,7 +10,7 @@ use super::{
     CompleteUploadRequest, Upload,
 };
 use crate::{
-    auth::{errors::DracoonClientError, Connected},
+    auth::{errors::DracoonClientError, Connected, GetClient},
     constants::{
         CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS,
         FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY,
@@ -33,7 +33,6 @@ use tracing::error;
 impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connected> {
     async fn upload<'r>(
         &'r self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         reader: BufReader<R>,
@@ -52,7 +51,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
 
         upload_fn(
             self,
-            file_meta,
             parent_node,
             upload_options,
             reader,
@@ -78,7 +76,6 @@ trait UploadInternal<R: AsyncRead> {
 
     async fn upload_to_s3_unencrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         reader: BufReader<R>,
@@ -87,7 +84,6 @@ trait UploadInternal<R: AsyncRead> {
     ) -> Result<Node, DracoonClientError>;
     async fn upload_to_s3_encrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         reader: BufReader<R>,
@@ -105,20 +101,6 @@ trait UploadInternal<R: AsyncRead> {
         &self,
         upload_id: String,
     ) -> Result<S3FileUploadStatus, DracoonClientError>;
-    async fn upload_stream_to_s3<'a>(
-        &self,
-        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
-            + Sync
-            + Send
-            + Unpin
-            + 'static,
-        url: &PresignedUrl,
-        file_meta: FileMeta,
-        chunk_size: usize,
-        curr_pos: Option<u64>,
-        callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<String, DracoonClientError>;
-
     async fn get_missing_file_keys(
         &self,
         file_id: u64,
@@ -131,31 +113,74 @@ trait UploadInternal<R: AsyncRead> {
 }
 
 #[async_trait]
-trait UploadInternalNfs<R: AsyncRead> {
-    async fn upload_to_nfs_unencrypted(
+pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
+    async fn upload_stream_to_s3<'a>(
         &self,
+        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
+            + Sync
+            + Send
+            + Unpin
+            + 'static,
+        url: &PresignedUrl,
         file_meta: FileMeta,
-        parent_node: &Node,
-        upload_options: UploadOptions,
-        reader: BufReader<R>,
-        mut callback: Option<UploadProgressCallback>,
-        chunk_size: Option<usize>,
-    ) -> Result<Node, DracoonClientError>;
-    async fn upload_to_nfs_encrypted(
-        &self,
-        file_meta: FileMeta,
-        parent_node: &Node,
-        upload_options: UploadOptions,
-        reader: BufReader<R>,
-        mut callback: Option<UploadProgressCallback>,
-        chunk_size: Option<usize>,
-    ) -> Result<Node, DracoonClientError>;
+        chunk_size: usize,
+        curr_pos: Option<u64>,
+        callback: Option<CloneableUploadProgressCallback>,
+    ) -> Result<String, DracoonClientError> {
+        // Initialize a variable to keep track of the number of bytes read
+        let mut bytes_read = curr_pos.unwrap_or(0);
+        let file_size = file_meta.1;
+        // Create an async stream from the reader
+        let async_stream = async_stream::stream! {
 
-    async fn finalize_nfs_upload(
-        &self,
-        upload_token: String,
-        complete_file_upload_req: CompleteUploadRequest,
-    ) -> Result<Node, DracoonClientError>;
+            while let Some(chunk) = stream.next().await {
+                if let Ok(chunk) = &chunk {
+                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
+                    bytes_read = processed;
+
+                    if let Some(cb) = callback.clone() {
+                        cb.call(bytes_read, file_meta.1);
+                    }
+                }
+                yield chunk
+            }
+        };
+
+        let body = Body::wrap_stream(async_stream);
+
+        let res = self
+            .get_client()
+            .stream_http
+            .put(&url.url)
+            .body(body)
+            .header(header::CONTENT_LENGTH, chunk_size)
+            .send()
+            .await
+            .map_err(|e| {
+                error!("Connection error (S3 upload): {:?}", e);
+                e
+            })?;
+
+        // handle error
+        if res.error_for_status_ref().is_err() {
+            error!(
+                "Error uploading file to S3: {:?}",
+                res.error_for_status_ref().unwrap_err()
+            );
+            let error = build_s3_error(res).await;
+            return Err(error);
+        }
+
+        let e_tag_header = res
+            .headers()
+            .get("etag")
+            .expect("ETag header missing")
+            .to_str()
+            .expect("ETag header invalid");
+        let e_tag = e_tag_header.trim_start_matches('"').trim_end_matches('"');
+
+        Ok(e_tag.to_string())
+    }
 
     async fn upload_stream_to_nfs<'a>(
         &self,
@@ -169,7 +194,92 @@ trait UploadInternalNfs<R: AsyncRead> {
         chunk_size: usize,
         curr_pos: Option<u64>,
         callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<(), DracoonClientError>;
+    ) -> Result<(), DracoonClientError> {
+        // Initialize a variable to keep track of the number of bytes read
+        let mut bytes_read = curr_pos.unwrap_or(0);
+        let file_size = file_meta.1;
+        // Create an async stream from the reader
+        let async_stream = async_stream::stream! {
+
+            while let Some(chunk) = stream.next().await {
+                if let Ok(chunk) = &chunk {
+                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
+                    bytes_read = processed;
+
+                    if let Some(cb) = callback.clone() {
+                        cb.call(bytes_read, file_meta.1);
+                    }
+                }
+                yield chunk
+            }
+        };
+
+        let body = Body::wrap_stream(async_stream);
+
+        let start_range = bytes_read;
+        let end_range = if bytes_read + chunk_size as u64 > file_size {
+            file_size
+        } else {
+            bytes_read + chunk_size as u64
+        };
+
+        let res = self
+            .get_client()
+            .stream_http
+            .post(url)
+            .body(body)
+            .header(
+                header::CONTENT_RANGE,
+                format!("bytes {}-{}/{}", start_range, end_range, file_size),
+            )
+            .header(header::CONTENT_LENGTH, chunk_size)
+            .send()
+            .await
+            .map_err(|e| {
+                error!("Connection error (NFS upload): {:?}", e);
+                e
+            })?;
+
+        // handle error
+        if res.error_for_status_ref().is_err() {
+            error!(
+                "Error uploading file to NFS: {:?}",
+                res.error_for_status_ref().unwrap_err()
+            );
+            return Err(DracoonClientError::from_response(res)
+                .await
+                .unwrap_or(DracoonClientError::Unknown));
+        }
+        Ok(())
+    }
+}
+
+impl StreamUploadInternal<Connected> for Dracoon<Connected> {}
+
+#[async_trait]
+trait UploadInternalNfs<R: AsyncRead, S>: StreamUploadInternal<S> {
+    async fn upload_to_nfs_unencrypted(
+        &self,
+        parent_node: &Node,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<Node, DracoonClientError>;
+    async fn upload_to_nfs_encrypted(
+        &self,
+        parent_node: &Node,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<Node, DracoonClientError>;
+
+    async fn finalize_nfs_upload(
+        &self,
+        upload_token: String,
+        complete_file_upload_req: CompleteUploadRequest,
+    ) -> Result<Node, DracoonClientError>;
 }
 
 #[async_trait]
@@ -267,7 +377,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     #[allow(clippy::too_many_lines)]
     async fn upload_to_s3_unencrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
@@ -282,9 +391,9 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             expiration,
             resolution_strategy,
             keep_share_links,
-        ) = parse_upload_options(&file_meta, &upload_options);
+        ) = parse_upload_options(&upload_options);
 
-        let fm = file_meta.clone();
+        let fm = upload_options.file_meta.clone();
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
@@ -307,7 +416,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             err
         })?;
 
-        let fm = &file_meta.clone();
         let mut s3_parts = Vec::new();
 
         let (count_urls, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
@@ -351,11 +459,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                         let curr_pos: u64 = ((url_part - 1) * (chunk_size as u32)) as u64;
 
-                        let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                             self,
                             Box::pin(stream),
                             url,
-                            file_meta.clone(),
+                            upload_options.file_meta.clone(),
                             n,
                             Some(curr_pos),
                             cloneable_callback.clone(),
@@ -415,16 +523,17 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                 let curr_pos: u64 = (url_part - 1) as u64 * (CHUNK_SIZE as u64);
 
-                let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
-                    self,
-                    Box::pin(stream),
-                    url,
-                    file_meta.clone(),
-                    n,
-                    Some(curr_pos),
-                    cloneable_callback.clone(),
-                )
-                .await?;
+                let e_tag =
+                    <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
+                        self,
+                        Box::pin(stream),
+                        url,
+                        upload_options.file_meta.clone(),
+                        n,
+                        Some(curr_pos),
+                        cloneable_callback.clone(),
+                    )
+                    .await?;
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
@@ -491,7 +600,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     #[allow(clippy::too_many_lines)]
     async fn upload_to_s3_encrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
@@ -502,9 +610,22 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
-        let mut crypto_buff =
-            vec![0u8; file_meta.1.try_into().expect("size not larger than 32 MB")];
-        let mut read_buff = vec![0u8; file_meta.1.try_into().expect("size not larger than 32 MB")];
+        let mut crypto_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
+        let mut read_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
         while let Ok(chunk) = reader.read(&mut read_buff).await {
@@ -520,7 +641,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         //TODO: rewrite without buffer clone
         let enc_bytes = crypter.get_message().clone();
 
-        assert_eq!(enc_bytes.len() as u64, file_meta.1);
+        assert_eq!(enc_bytes.len() as u64, upload_options.file_meta.1);
 
         let mut crypto_reader = BufReader::new(enc_bytes.as_slice());
         let plain_file_key = crypter.get_plain_file_key();
@@ -535,9 +656,9 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             expiration,
             resolution_strategy,
             keep_share_links,
-        ) = parse_upload_options(&file_meta, &upload_options);
+        ) = parse_upload_options(&upload_options);
 
-        let fm = file_meta.clone();
+        let fm = upload_options.file_meta.clone();
 
         // create upload channel
         let file_upload_req = CreateFileUploadRequest::builder(parent_node.id, fm.0)
@@ -558,7 +679,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             err
         })?;
 
-        let fm = &file_meta.clone();
         let mut s3_parts = Vec::new();
 
         let (count_urls, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
@@ -605,11 +725,11 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                         let curr_pos: u64 = (url_part - 1) as u64 * (chunk_size as u64);
 
-                        let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                             self,
                             Box::pin(stream),
                             url,
-                            file_meta.clone(),
+                            upload_options.file_meta.clone(),
                             chunk_len,
                             Some(curr_pos),
                             cloneable_callback.clone(),
@@ -671,20 +791,21 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                 let curr_pos: u64 = ((url_part - 1) * (CHUNK_SIZE as u32)) as u64;
 
-                let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
-                    self,
-                    Box::pin(stream),
-                    url,
-                    file_meta.clone(),
-                    n,
-                    Some(curr_pos),
-                    cloneable_callback.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    error!("Error uploading stream to S3: {}", err);
-                    err
-                })?;
+                let e_tag =
+                    <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
+                        self,
+                        Box::pin(stream),
+                        url,
+                        upload_options.file_meta.clone(),
+                        n,
+                        Some(curr_pos),
+                        cloneable_callback.clone(),
+                    )
+                    .await
+                    .map_err(|err| {
+                        error!("Error uploading stream to S3: {}", err);
+                        err
+                    })?;
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
@@ -802,74 +923,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         }
     }
 
-    async fn upload_stream_to_s3<'a>(
-        &self,
-        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
-            + Sync
-            + Send
-            + Unpin
-            + 'static,
-        url: &PresignedUrl,
-        file_meta: FileMeta,
-        chunk_size: usize,
-        curr_pos: Option<u64>,
-        callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<String, DracoonClientError> {
-        // Initialize a variable to keep track of the number of bytes read
-        let mut bytes_read = curr_pos.unwrap_or(0);
-        let file_size = file_meta.1;
-        // Create an async stream from the reader
-        let async_stream = async_stream::stream! {
-
-            while let Some(chunk) = stream.next().await {
-                if let Ok(chunk) = &chunk {
-                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
-                    bytes_read = processed;
-
-                    if let Some(cb) = callback.clone() {
-                        cb.call(bytes_read, file_meta.1);
-                    }
-                }
-                yield chunk
-            }
-        };
-
-        let body = Body::wrap_stream(async_stream);
-
-        let res = self
-            .client
-            .stream_http
-            .put(&url.url)
-            .body(body)
-            .header(header::CONTENT_LENGTH, chunk_size)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Connection error (S3 upload): {:?}", e);
-                e
-            })?;
-
-        // handle error
-        if res.error_for_status_ref().is_err() {
-            error!(
-                "Error uploading file to S3: {:?}",
-                res.error_for_status_ref().unwrap_err()
-            );
-            let error = build_s3_error(res).await;
-            return Err(error);
-        }
-
-        let e_tag_header = res
-            .headers()
-            .get("etag")
-            .expect("ETag header missing")
-            .to_str()
-            .expect("ETag header invalid");
-        let e_tag = e_tag_header.trim_start_matches('"').trim_end_matches('"');
-
-        Ok(e_tag.to_string())
-    }
-
     async fn get_missing_file_keys(
         &self,
         file_id: u64,
@@ -922,8 +975,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     }
 }
 /// helper to parse upload options (file meta and upload options)
-fn parse_upload_options(
-    file_meta: &FileMeta,
+pub fn parse_upload_options(
     upload_options: &UploadOptions,
 ) -> (
     u8,
@@ -933,15 +985,15 @@ fn parse_upload_options(
     ResolutionStrategy,
     bool,
 ) {
-    let classification = upload_options.1.unwrap_or(2);
-    let timestamp_modification = file_meta.3.unwrap_or_else(Utc::now);
-    let timestamp_creation = file_meta.2.unwrap_or_else(Utc::now);
-    let expiration = upload_options.clone().0.unwrap_or_default();
+    let classification = upload_options.classification.unwrap_or(2);
+    let timestamp_modification = upload_options.file_meta.3.unwrap_or_else(Utc::now);
+    let timestamp_creation = upload_options.file_meta.2.unwrap_or_else(Utc::now);
+    let expiration = upload_options.clone().expiration.unwrap_or_default();
     let resolution_strategy = upload_options
-        .3
+        .resolution_strategy
         .as_ref()
         .unwrap_or(&ResolutionStrategy::AutoRename);
-    let keep_share_links = upload_options.2.unwrap_or(false);
+    let keep_share_links = upload_options.keep_share_links.unwrap_or(false);
 
     (
         classification,
@@ -954,7 +1006,7 @@ fn parse_upload_options(
 }
 
 /// helper to calculate the number of S3 urls and the size of the last chunk
-fn calculate_s3_url_count(total_size: u64, chunk_size: u64) -> (u32, u64) {
+pub fn calculate_s3_url_count(total_size: u64, chunk_size: u64) -> (u32, u64) {
     let mut urls = total_size / chunk_size;
     if total_size % chunk_size != 0 {
         urls += 1;
@@ -968,10 +1020,11 @@ fn calculate_s3_url_count(total_size: u64, chunk_size: u64) -> (u32, u64) {
 }
 
 #[async_trait]
-impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Dracoon<Connected> {
+impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connected>
+    for Dracoon<Connected>
+{
     async fn upload_to_nfs_unencrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
@@ -986,9 +1039,9 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             expiration,
             resolution_strategy,
             keep_share_links,
-        ) = parse_upload_options(&file_meta, &upload_options);
+        ) = parse_upload_options(&upload_options);
 
-        let fm = file_meta.clone();
+        let fm = upload_options.file_meta.clone();
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
@@ -1040,11 +1093,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
                         #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                         let curr_pos: u64 = ((chunk_part - 1) * (chunk_size as u32)) as u64;
 
-                        <Dracoon<Connected> as UploadInternalNfs<R>>::upload_stream_to_nfs(
-                            self,
+                        self.upload_stream_to_nfs(
                             Box::pin(stream),
                             &url,
-                            file_meta.clone(),
+                            upload_options.file_meta.clone(),
                             n,
                             Some(curr_pos),
                             cloneable_callback.clone(),
@@ -1086,16 +1138,16 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
                 let curr_pos: u64 = (chunk_part - 1) as u64 * (CHUNK_SIZE as u64);
 
-                let e_tag = <Dracoon<Connected> as UploadInternalNfs<R>>::upload_stream_to_nfs(
-                    self,
-                    Box::pin(stream),
-                    &url,
-                    file_meta.clone(),
-                    n,
-                    Some(curr_pos),
-                    cloneable_callback.clone(),
-                )
-                .await?;
+                let e_tag = self
+                    .upload_stream_to_nfs(
+                        Box::pin(stream),
+                        &url,
+                        upload_options.file_meta.clone(),
+                        n,
+                        Some(curr_pos),
+                        cloneable_callback.clone(),
+                    )
+                    .await?;
             }
             Err(err) => {
                 error!("Error reading file: {}", err);
@@ -1109,11 +1161,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             .with_keep_share_links(keep_share_links)
             .build();
 
-        let node = <Dracoon<Connected> as UploadInternalNfs<R>>::finalize_nfs_upload::<'_, '_>(
-            self,
-            upload_channel.token.clone(),
-            complete_upload_req,
-        )
+        let node = <Dracoon<Connected> as UploadInternalNfs<R, Connected>>::finalize_nfs_upload::<
+            '_,
+            '_,
+        >(self, upload_channel.token.clone(), complete_upload_req)
         .await
         .map_err(|err| {
             error!("Error finalizing upload: {}", err);
@@ -1125,7 +1176,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
     async fn upload_to_nfs_encrypted(
         &self,
-        file_meta: FileMeta,
         parent_node: &Node,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
@@ -1136,9 +1186,22 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
-        let mut crypto_buff =
-            vec![0u8; file_meta.1.try_into().expect("size not larger than 32 MB")];
-        let mut read_buff = vec![0u8; file_meta.1.try_into().expect("size not larger than 32 MB")];
+        let mut crypto_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
+        let mut read_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
         while let Ok(chunk) = reader.read(&mut read_buff).await {
@@ -1154,7 +1217,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
         //TODO: rewrite without buffer clone
         let enc_bytes = crypter.get_message().clone();
 
-        assert_eq!(enc_bytes.len() as u64, file_meta.1);
+        assert_eq!(enc_bytes.len() as u64, upload_options.file_meta.1);
 
         let mut crypto_reader = BufReader::new(enc_bytes.as_slice());
         let plain_file_key = crypter.get_plain_file_key();
@@ -1169,9 +1232,9 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             expiration,
             resolution_strategy,
             keep_share_links,
-        ) = parse_upload_options(&file_meta, &upload_options);
+        ) = parse_upload_options(&upload_options);
 
-        let fm = file_meta.clone();
+        let fm = upload_options.file_meta.clone();
 
         // create upload channel
         let file_upload_req = CreateFileUploadRequest::builder(parent_node.id, fm.0)
@@ -1192,8 +1255,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             error!("Error creating upload channel: {}", err);
             err
         })?;
-
-        let fm = &file_meta.clone();
 
         let (count_chunks, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
         let mut chunk_part: u32 = 1;
@@ -1222,11 +1283,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
 
                         let curr_pos: u64 = (chunk_part - 1) as u64 * (chunk_size as u64);
 
-                        <Dracoon<Connected> as UploadInternalNfs<R>>::upload_stream_to_nfs(
-                            self,
+                        self.upload_stream_to_nfs(
                             Box::pin(stream),
                             &url,
-                            file_meta.clone(),
+                            upload_options.file_meta.clone(),
                             chunk_len,
                             Some(curr_pos),
                             cloneable_callback.clone(),
@@ -1270,11 +1330,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                 let curr_pos: u64 = ((chunk_part - 1) * (CHUNK_SIZE as u32)) as u64;
 
-                <Dracoon<Connected> as UploadInternalNfs<R>>::upload_stream_to_nfs(
-                    self,
+                self.upload_stream_to_nfs(
                     Box::pin(stream),
                     &url,
-                    file_meta.clone(),
+                    upload_options.file_meta.clone(),
                     n,
                     Some(curr_pos),
                     cloneable_callback.clone(),
@@ -1299,11 +1358,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             .with_file_key(file_key)
             .build();
 
-        let node = <Dracoon<Connected> as UploadInternalNfs<R>>::finalize_nfs_upload::<'_, '_>(
-            self,
-            upload_channel.token.clone(),
-            complete_upload_req,
-        )
+        let node = <Dracoon<Connected> as UploadInternalNfs<R, Connected>>::finalize_nfs_upload::<
+            '_,
+            '_,
+        >(self, upload_channel.token.clone(), complete_upload_req)
         .await
         .map_err(|err| {
             error!("Error finalizing upload: {}", err);
@@ -1364,77 +1422,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R> for Drac
             .await?;
 
         Node::from_response(res).await
-    }
-
-    async fn upload_stream_to_nfs<'a>(
-        &self,
-        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
-            + Sync
-            + Send
-            + Unpin
-            + 'static,
-        url: &str,
-        file_meta: FileMeta,
-        chunk_size: usize,
-        curr_pos: Option<u64>,
-        callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<(), DracoonClientError> {
-        // Initialize a variable to keep track of the number of bytes read
-        let mut bytes_read = curr_pos.unwrap_or(0);
-        let file_size = file_meta.1;
-        // Create an async stream from the reader
-        let async_stream = async_stream::stream! {
-
-            while let Some(chunk) = stream.next().await {
-                if let Ok(chunk) = &chunk {
-                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
-                    bytes_read = processed;
-
-                    if let Some(cb) = callback.clone() {
-                        cb.call(bytes_read, file_meta.1);
-                    }
-                }
-                yield chunk
-            }
-        };
-
-        let body = Body::wrap_stream(async_stream);
-
-        let start_range = bytes_read;
-        let end_range = if bytes_read + chunk_size as u64 > file_size {
-            file_size
-        } else {
-            bytes_read + chunk_size as u64
-        };
-
-        let res = self
-            .client
-            .stream_http
-            .post(url)
-            .body(body)
-            .header(
-                header::CONTENT_RANGE,
-                format!("bytes {}-{}/{}", start_range, end_range, file_size),
-            )
-            .header(header::CONTENT_LENGTH, chunk_size)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Connection error (NFS upload): {:?}", e);
-                e
-            })?;
-
-        // handle error
-        if res.error_for_status_ref().is_err() {
-            error!(
-                "Error uploading file to NFS: {:?}",
-                res.error_for_status_ref().unwrap_err()
-            );
-            return Err(DracoonClientError::from_response(res)
-                .await
-                .unwrap_or(DracoonClientError::Unknown));
-        }
-        Ok(())
     }
 }
 
@@ -1675,7 +1662,7 @@ mod tests {
             .with_size(16)
             .build();
 
-        let e_tag = <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::upload_stream_to_s3(
+        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
             &client,
             Box::pin(stream),
             &upload_url,
@@ -1710,7 +1697,7 @@ mod tests {
             .with_size(16)
             .build();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -1763,7 +1750,6 @@ mod tests {
         let node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
-                file_meta,
                 &parent_node,
                 upload_options,
                 reader_clone,
@@ -1800,7 +1786,7 @@ mod tests {
             .with_size(0)
             .build();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -1853,7 +1839,6 @@ mod tests {
         let node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
-                file_meta,
                 &parent_node,
                 upload_options,
                 reader_clone,
@@ -1912,7 +1897,7 @@ mod tests {
             .with_size(16)
             .build();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -1973,7 +1958,6 @@ mod tests {
 
         let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
             &client,
-            file_meta,
             &parent_node,
             upload_options,
             reader_clone,
@@ -2032,7 +2016,7 @@ mod tests {
             .with_size(0)
             .build();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -2093,7 +2077,6 @@ mod tests {
 
         let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
             &client,
-            file_meta,
             &parent_node,
             upload_options,
             reader_clone,
@@ -2141,7 +2124,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -2193,7 +2176,6 @@ mod tests {
 
         let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
-            file_meta,
             &parent_node,
             upload_options,
             reader_clone,
@@ -2263,7 +2245,7 @@ mod tests {
             .with_size(16)
             .build();
 
-        let upload_options = UploadOptions::default();
+        let upload_options = UploadOptions::builder(file_meta).build();
 
         // mock upload channel
         let channel_res = include_str!("../tests/responses/upload/upload_channel_ok.json");
@@ -2324,7 +2306,6 @@ mod tests {
 
         let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
-            file_meta,
             &parent_node,
             upload_options,
             reader_clone,

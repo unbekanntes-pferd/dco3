@@ -14,7 +14,7 @@ use crate::{
     utils::{parse_body, FromResponse},
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRoomRequest {
     name: String,
@@ -44,7 +44,7 @@ pub struct CreateRoomRequest {
     timestamp_modification: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum GroupMemberAcceptance {
     #[serde(rename = "autoallow")]
     AutoAllow,
@@ -171,7 +171,7 @@ impl CreateRoomRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -246,7 +246,7 @@ impl UpdateRoomRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomPoliciesRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -288,14 +288,14 @@ impl RoomPoliciesRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomPolicies {
     pub default_expiration_period: u64,
     pub is_virus_protection_enabled: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -400,7 +400,7 @@ impl ConfigRoomRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EncryptRoomRequest {
     is_encrypted: bool,
@@ -460,7 +460,7 @@ impl FromResponse for RoomGroupList {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroup {
     pub id: u64,
@@ -470,13 +470,13 @@ pub struct RoomGroup {
     pub permissions: Option<NodePermissions>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsAddBatchRequest {
     items: Vec<RoomGroupsAddBatchRequestItem>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsAddBatchRequestItem {
     id: u64,
@@ -589,7 +589,7 @@ impl NodePermissionsBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsDeleteBatchRequest {
     ids: Vec<u64>,
@@ -610,7 +610,7 @@ impl FromResponse for RoomUserList {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUser {
     pub user_info: UserInfo,
@@ -619,13 +619,13 @@ pub struct RoomUser {
     pub public_key_container: Option<PublicKeyContainer>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersAddBatchRequest {
     items: Vec<RoomUsersAddBatchRequestItem>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersAddBatchRequestItem {
     id: u64,
@@ -644,7 +644,7 @@ impl RoomUsersAddBatchRequestItem {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersDeleteBatchRequest {
     ids: Vec<u64>,

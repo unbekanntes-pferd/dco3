@@ -208,7 +208,7 @@ impl DownloadInternal for Dracoon<Connected> {
 
         let keypair = self.get_keypair(None).await?;
 
-        let plain_key = DracoonCrypto::decrypt_file_key(file_key, &keypair)?;
+        let plain_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
 
         // get content length from header
         let content_length = self
