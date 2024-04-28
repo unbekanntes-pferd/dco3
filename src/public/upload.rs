@@ -133,7 +133,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
         // create upload channel
         let file_upload_req = CreateShareUploadChannelRequest::builder(fm.0.clone())
-            .with_size(fm.1.clone())
+            .with_size(fm.1)
             .with_timestamp_creation(timestamp_creation)
             .with_timestamp_modification(timestamp_modification)
             .with_direct_s3_upload(true)
@@ -149,7 +149,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
         let mut s3_parts = Vec::new();
 
-        let (count_urls, last_chunk_size) = calculate_s3_url_count(fm.1.clone(), chunk_size as u64);
+        let (count_urls, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
         let mut url_part: u32 = 1;
 
         let cloneable_callback = callback.map(CloneableUploadProgressCallback::new);
@@ -354,7 +354,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
         // create upload channel
         let file_upload_req = CreateShareUploadChannelRequest::builder(fm.0.clone())
-            .with_size(fm.1.clone())
+            .with_size(fm.1)
             .with_timestamp_modification(timestamp_modification)
             .with_timestamp_creation(timestamp_creation)
             .with_direct_s3_upload(true)
@@ -1055,6 +1055,6 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
 #[cfg(test)]
 mod tests {
 
-
+    // TODO: write unit tests for public upload
 
 }

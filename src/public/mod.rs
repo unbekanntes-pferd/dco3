@@ -825,7 +825,7 @@ mod tests {
         assert_eq!(public_upload_share.remaining_size, None);
         assert_eq!(public_upload_share.remaining_slots, Some(1));
         assert_eq!(public_upload_share.is_encrypted, Some(false));
-        assert_eq!(public_upload_share.is_protected, true);
+        assert!(public_upload_share.is_protected);
         let uploaded_files = public_upload_share.uploaded_files.unwrap();
         assert_eq!(uploaded_files.len(), 1);
         let uploaded_file = uploaded_files.first().unwrap();
