@@ -5,7 +5,7 @@ use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use retry_policies::Jitter;
-use std::{marker::PhantomData, time::Duration};
+use std::{marker::PhantomData, time::Duration, u64::MAX};
 use tracing::{debug, error};
 
 use base64::{
@@ -35,6 +35,7 @@ pub enum OAuth2Flow {
     PasswordFlow(String, String),
     AuthCodeFlow(String),
     RefreshToken(String),
+    Simple(String),
 }
 
 impl OAuth2Flow {
@@ -48,6 +49,10 @@ impl OAuth2Flow {
 
     pub fn refresh_token(refresh_token: impl Into<String>) -> Self {
         OAuth2Flow::RefreshToken(refresh_token.into())
+    }
+
+    pub fn simple(token: impl Into<String>) -> Self {
+        OAuth2Flow::Simple(token.into())
     }
 }
 
@@ -90,6 +95,13 @@ impl Connection {
 
     pub fn is_expired(&self) -> bool {
         let now = Utc::now();
+
+        // this handles OAuth2Flow::Simple (expires_in is not known)
+        // the access token is valid or fails with 401
+        if self.expires_in == MAX {
+            return false;
+        }
+
         let expires_at = self.connected_at
             + chrono::Duration::try_seconds(self.expires_in as i64)
                 .expect("overflow creating seconds");
@@ -101,6 +113,15 @@ impl Connection {
         self.refresh_token = connection.refresh_token;
         self.expires_in = connection.expires_in;
         self.connected_at = connection.connected_at;
+    }
+
+    pub fn new_from_access_token(access_token: String) -> Self {
+        Self {
+            access_token,
+            refresh_token: String::new(),
+            expires_in: MAX,
+            connected_at: Utc::now(),
+        }
     }
 }
 
@@ -393,6 +414,7 @@ impl DracoonClient<Disconnected> {
                 debug!("Connecting with refresh token flow");
                 self.connect_refresh_token(&token).await?
             }
+            OAuth2Flow::Simple(token) => Connection::new_from_access_token(token),
         };
 
         if let Some(token_rotation) = self.token_rotation {
@@ -653,6 +675,13 @@ impl DracoonClient<Connected> {
             .expect("Connected client has no connection")
             .refresh_token
             .clone();
+
+        // this happens for OAuth2Flow::Simple (no refresh token provided)
+        if refresh_token.is_empty() {
+            return Err(DracoonClientError::Auth(
+                DracoonAuthErrorResponse::new_unauthorized(),
+            ));
+        }
 
         let auth =
             OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret, &refresh_token);
@@ -1383,5 +1412,30 @@ mod tests {
             .unwrap();
 
         auth_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_simple_connection() {
+        let dracoon = DracoonClient::builder()
+            .with_base_url("https://test.dracoon.com")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .expect("valid client config")
+            .connect(OAuth2Flow::simple("access_token"))
+            .await;
+
+        assert!(dracoon.is_ok());
+
+        let connected_client = dracoon.unwrap();
+
+        let access_token = connected_client.get_auth_header().await.unwrap();
+
+        assert_eq!(access_token, "Bearer access_token");
+
+        let conn = connected_client.connection.get().await.unwrap();
+        assert_eq!(conn.access_token, "access_token");
+        assert_eq!(conn.refresh_token, "");
+        assert_eq!(conn.expires_in, std::u64::MAX);
     }
 }

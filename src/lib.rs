@@ -131,6 +131,32 @@
 //! }
 //! ```
 //!
+//! ### Simple
+//!
+//! ```no_run
+//! use dco3::{Dracoon, OAuth2Flow};
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!
+//!  // you can also pass the access token directly
+//!  let dracoon = Dracoon::builder()
+//!   .with_base_url("https://dracoon.team")
+//!   .with_client_id("client_id")
+//!   .with_client_secret("client_secret")
+//!   .build()
+//!   .unwrap()
+//!   .connect(OAuth2Flow::simple("access_token"))
+//!   .await
+//!   .unwrap();
+//!
+//!  // be aware that the access token refresh will *not* work
+//!  // once the token is expired, you need to pass a new token
+//!
+//! }
+//! ```
+//!
+//!
 //! ## Error handling
 //!
 //! All errors are wrapped in the [DracoonClientError] enum.
