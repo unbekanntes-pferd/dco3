@@ -223,6 +223,15 @@ pub struct DracoonAuthErrorResponse {
     error_description: Option<String>,
 }
 
+impl DracoonAuthErrorResponse {
+    pub fn new_unauthorized() -> Self {
+        Self {
+            error: "Unauthorized".to_string(),
+            error_description: None,
+        }
+    }
+}
+
 impl Display for DracoonAuthErrorResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
