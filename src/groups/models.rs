@@ -106,7 +106,7 @@ impl UpdateGroupRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangeGroupMembersRequest {
     ids: Vec<u64>,

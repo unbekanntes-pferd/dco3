@@ -32,7 +32,7 @@ impl<S> ProvisioningEndpoint<S> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct CustomerAttributes {
     pub items: Vec<KeyValueEntry>,
 }
@@ -53,7 +53,7 @@ impl CustomerAttributes {
 
 pub type AttributesResponse = RangedItems<KeyValueEntry>;
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Customer {
     pub id: u64,
@@ -90,7 +90,7 @@ impl FromResponse for AttributesResponse {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FirstAdminUser {
     pub first_name: String,
@@ -131,7 +131,7 @@ impl FirstAdminUser {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCustomerRequest {
     pub customer_contract_type: String,
@@ -257,7 +257,7 @@ impl NewCustomerRequestBuilder {
     }
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCustomerResponse {
     pub id: u64,
@@ -274,7 +274,7 @@ pub struct NewCustomerResponse {
     pub webhooks_max: Option<u64>,
 }
 
-#[derive(Debug, Deserialize, FromResponse)]
+#[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCustomerResponse {
     pub id: u64,
@@ -292,7 +292,7 @@ pub struct UpdateCustomerResponse {
     pub webhooks_max: Option<u64>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCustomerRequest {
     #[serde(skip_serializing_if = "Option::is_none")]

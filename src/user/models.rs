@@ -98,7 +98,7 @@ pub struct UserGroup {
     pub name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct UpdateUserAccountRequest {

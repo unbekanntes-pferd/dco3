@@ -1,6 +1,6 @@
 use crate::models::{SortOrder, SortQuery};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodesSortBy {
     Name(SortOrder),
     CreatedAt(SortOrder),
@@ -112,7 +112,7 @@ impl NodesSortBy {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum NodesSearchSortBy {
     Name(SortOrder),
     CreatedAt(SortOrder),

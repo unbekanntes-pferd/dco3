@@ -50,7 +50,7 @@ impl FromResponse for UploadSharesList {
 
 pub type UploadSharesList = RangedItems<UploadShare>;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadShareLinkEmail {
     body: String,
@@ -72,7 +72,7 @@ impl UploadShareLinkEmail {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CreateUploadShareRequest {
     target_id: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -211,7 +211,7 @@ impl CreateUploadShareRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadShareRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -390,7 +390,7 @@ impl UpdateUploadShareRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteUploadSharesRequest {
     share_ids: Vec<u64>,
@@ -408,7 +408,7 @@ impl DeleteUploadSharesRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadSharesBulkRequest {
     object_ids: Vec<u64>,
@@ -530,7 +530,7 @@ impl UpdateUploadSharesBulkRequestBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UploadSharesFilter {
     Name(FilterOperator, String),
     CreatedAt(FilterOperator, String),
@@ -658,7 +658,7 @@ impl UploadSharesFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UploadSharesSortBy {
     Name(SortOrder),
     NotifyCreator(SortOrder),
