@@ -31,7 +31,8 @@
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! * [Config] - for general configuration information
 //! * [Public] - for public information
-//!
+//! * [PublicDownload] - for public download via share
+//! * [PublicUpload] - for public upload via file request
 //!
 //! ### Example
 //! ```no_run
