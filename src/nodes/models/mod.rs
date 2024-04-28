@@ -148,12 +148,11 @@ impl FileMetaBuilder {
 /// upload options (expiration, classification, keep share links, resolution strategy)
 #[derive(Debug, Clone)]
 pub struct UploadOptions {
-    pub expiration : Option<ObjectExpiration>,
-    pub classification : Option<u8>,
-    pub keep_share_links : Option<bool>,
-    pub resolution_strategy : Option<ResolutionStrategy>,
-    pub file_meta: FileMeta
-
+    pub expiration: Option<ObjectExpiration>,
+    pub classification: Option<u8>,
+    pub keep_share_links: Option<bool>,
+    pub resolution_strategy: Option<ResolutionStrategy>,
+    pub file_meta: FileMeta,
 }
 
 impl UploadOptions {
@@ -161,7 +160,6 @@ impl UploadOptions {
         UploadOptionsBuilder::new(file_meta)
     }
 }
-
 
 pub struct UploadOptionsBuilder {
     file_meta: FileMeta,
@@ -178,7 +176,7 @@ impl UploadOptionsBuilder {
             classification: None,
             keep_share_links: None,
             resolution_strategy: None,
-            file_meta
+            file_meta,
         }
     }
 
@@ -203,13 +201,12 @@ impl UploadOptionsBuilder {
     }
 
     pub fn build(self) -> UploadOptions {
-
         UploadOptions {
             expiration: self.expiration,
             classification: self.classification,
             keep_share_links: self.keep_share_links,
             resolution_strategy: self.resolution_strategy,
-            file_meta: self.file_meta
+            file_meta: self.file_meta,
         }
     }
 }

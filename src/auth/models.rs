@@ -12,7 +12,7 @@ use crate::{
 
 use super::{errors::DracoonClientError, Connection, DracoonClient};
 
-pub (crate) trait GetClient<S> {
+pub(crate) trait GetClient<S> {
     fn get_client(&self) -> &DracoonClient<S>;
 }
 

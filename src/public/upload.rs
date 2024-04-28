@@ -18,11 +18,15 @@ use crate::{
 };
 
 use super::{
-    CompleteS3ShareUploadRequest, CreateShareUploadChannelRequest, CreateShareUploadChannelResponse, FileName, PublicEndpoint, PublicUpload, PublicUploadShare, PublicUploadedFileData, S3ShareUploadStatus, UserFileKey, UserFileKeyList
+    CompleteS3ShareUploadRequest, CreateShareUploadChannelRequest,
+    CreateShareUploadChannelResponse, FileName, PublicEndpoint, PublicUpload, PublicUploadShare,
+    PublicUploadedFileData, S3ShareUploadStatus, UserFileKey, UserFileKeyList,
 };
 
 #[async_trait]
-impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin+ 'static> PublicUpload<R> for PublicEndpoint<S> {
+impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUpload<R>
+    for PublicEndpoint<S>
+{
     async fn upload<'r>(
         &'r self,
         access_key: impl Into<String> + Send + Sync,
@@ -37,7 +41,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin+ 'static> PublicUpload<R
 
         let upload_fn = match (use_s3_storage, is_encrypted) {
             (true, true) => PublicUploadInternal::upload_to_s3_encrypted,
-            (true, false) => PublicUploadInternal::upload_to_s3_unencrypted, 
+            (true, false) => PublicUploadInternal::upload_to_s3_unencrypted,
             (false, true) => PublicUploadInternalNfs::upload_to_nfs_encrypted,
             (false, false) => PublicUploadInternalNfs::upload_to_nfs_unencrypted,
         };
@@ -176,7 +180,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             url_part,
                             url_part,
                         );
-                        let url = 
+                        let url =
                         <PublicEndpoint<S> as PublicUploadInternal<R, S>>::
                             create_s3_upload_urls(self, access_key.clone(), upload_channel.upload_id.clone(), url_req)
                             .await?;
@@ -234,10 +238,13 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     url_part,
                     url_part,
                 );
-                let url = 
-                <PublicEndpoint<S> as PublicUploadInternal<R, S>>::
-                    create_s3_upload_urls(self, access_key.clone(), upload_channel.upload_id.clone(), url_req)
-                    .await?;
+                let url = <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_s3_upload_urls(
+                    self,
+                    access_key.clone(),
+                    upload_channel.upload_id.clone(),
+                    url_req,
+                )
+                .await?;
 
                 let url = url.urls.first().expect("Creating S3 url failed");
 
@@ -265,8 +272,13 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // finalize upload
         let complete_upload_req = CompleteS3ShareUploadRequest::new(s3_parts, None);
 
-        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload(self, access_key.clone(), upload_channel.upload_id.clone(), complete_upload_req)
-            .await?;
+        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload(
+            self,
+            access_key.clone(),
+            upload_channel.upload_id.clone(),
+            complete_upload_req,
+        )
+        .await?;
 
         // get upload status
         // return node if upload is done
@@ -274,8 +286,12 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // polling with exponential backoff
         let mut sleep_duration = POLLING_START_DELAY;
         loop {
-            let status_response =  <PublicEndpoint<S> as PublicUploadInternal<R, S>>::
-                get_upload_status(self, access_key.clone(), upload_channel.upload_id.clone())
+            let status_response =
+                <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
+                    self,
+                    access_key.clone(),
+                    upload_channel.upload_id.clone(),
+                )
                 .await?;
 
             match status_response.status {
@@ -305,12 +321,24 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
-
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
-        let mut crypto_buff =
-            vec![0u8; upload_options.file_meta.1.try_into().expect("size not larger than 32 MB")];
-        let mut read_buff = vec![0u8; upload_options.file_meta.1.try_into().expect("size not larger than 32 MB")];
+        let mut crypto_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
+        let mut read_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
         while let Ok(chunk) = reader.read(&mut read_buff).await {
@@ -335,11 +363,18 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
         let public_keys = share.user_user_public_key_list.clone().unwrap_or_default();
 
-        let user_file_keys: Vec<_> = public_keys.items.iter().flat_map(|key| {
-            DracoonCrypto::encrypt_file_key(plain_file_key.clone(), key.public_key_container.clone())
+        let user_file_keys: Vec<_> = public_keys
+            .items
+            .iter()
+            .flat_map(|key| {
+                DracoonCrypto::encrypt_file_key(
+                    plain_file_key.clone(),
+                    key.public_key_container.clone(),
+                )
                 .map(|file_key| UserFileKey::new(key.id, file_key))
-                .into_iter()  
-        }).collect();
+                .into_iter()
+            })
+            .collect();
 
         let (
             classification,
@@ -360,14 +395,17 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             .with_direct_s3_upload(true)
             .build();
 
-        let upload_channel = 
-        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel
-        (self, access_key.clone(), file_upload_req)
-        .await
-        .map_err(|err| {
-            error!("Error creating upload channel: {}", err);
-            err
-        })?;
+        let upload_channel =
+            <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel(
+                self,
+                access_key.clone(),
+                file_upload_req,
+            )
+            .await
+            .map_err(|err| {
+                error!("Error creating upload channel: {}", err);
+                err
+            })?;
 
         let mut s3_parts = Vec::new();
 
@@ -415,19 +453,20 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
                         let curr_pos: u64 = (url_part - 1) as u64 * (chunk_size as u64);
 
-                        let e_tag =  self.upload_stream_to_s3(
-                            Box::pin(stream),
-                            url,
-                            upload_options.file_meta.clone(),
-                            chunk_len,
-                            Some(curr_pos),
-                            cloneable_callback.clone(),
-                        )
-                        .await
-                        .map_err(|err| {
-                            error!("Error uploading stream to S3: {}", err);
-                            err
-                        })?;
+                        let e_tag = self
+                            .upload_stream_to_s3(
+                                Box::pin(stream),
+                                url,
+                                upload_options.file_meta.clone(),
+                                chunk_len,
+                                Some(curr_pos),
+                                cloneable_callback.clone(),
+                            )
+                            .await
+                            .map_err(|err| {
+                                error!("Error uploading stream to S3: {}", err);
+                                err
+                            })?;
 
                         s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
                         url_part += 1;
@@ -463,7 +502,10 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     url_part,
                 );
                 let url =
-                     <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_s3_upload_urls::<'_, '_>(
+                    <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_s3_upload_urls::<
+                        '_,
+                        '_,
+                    >(
                         self,
                         access_key.clone(),
                         upload_channel.upload_id.clone(),
@@ -481,19 +523,20 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                 let curr_pos: u64 = ((url_part - 1) * (CHUNK_SIZE as u32)) as u64;
 
-                let e_tag =  self.upload_stream_to_s3(
-                    Box::pin(stream),
-                    url,
-                    upload_options.file_meta.clone(),
-                    n,
-                    Some(curr_pos),
-                    cloneable_callback.clone(),
-                )
-                .await
-                .map_err(|err| {
-                    error!("Error uploading stream to S3: {}", err);
-                    err
-                })?;
+                let e_tag = self
+                    .upload_stream_to_s3(
+                        Box::pin(stream),
+                        url,
+                        upload_options.file_meta.clone(),
+                        n,
+                        Some(curr_pos),
+                        cloneable_callback.clone(),
+                    )
+                    .await
+                    .map_err(|err| {
+                        error!("Error uploading stream to S3: {}", err);
+                        err
+                    })?;
 
                 s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
             }
@@ -507,7 +550,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // finalize upload
         let complete_upload_req = CompleteS3ShareUploadRequest::new(s3_parts, Some(user_file_keys));
 
-         <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload::<'_, '_>(
+        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload::<'_, '_>(
             self,
             access_key.clone(),
             upload_channel.upload_id.clone(),
@@ -525,21 +568,21 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // polling with exponential backoff
         let mut sleep_duration = POLLING_START_DELAY;
         loop {
-            let status_response =  <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
-                self,
-                access_key.clone(),
-                upload_channel.upload_id.clone(),
-            )
-            .await
-            .map_err(|err| {
-                error!("Error getting upload status: {}", err);
-                err
-            })?;
+            let status_response =
+                <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
+                    self,
+                    access_key.clone(),
+                    upload_channel.upload_id.clone(),
+                )
+                .await
+                .map_err(|err| {
+                    error!("Error getting upload status: {}", err);
+                    err
+                })?;
 
             match status_response.status {
                 S3UploadStatus::Done => {
                     return Ok(status_response.file_name);
-
                 }
                 S3UploadStatus::Error => {
                     return Err(DracoonClientError::Http(
@@ -651,7 +694,9 @@ trait PublicUploadInternal<R: AsyncRead, S>: StreamUploadInternal<S> {
 }
 
 #[async_trait]
-trait PublicUploadInternalNfs<R: AsyncRead, S>: StreamUploadInternal<S> + PublicUploadInternal<R, S>{
+trait PublicUploadInternalNfs<R: AsyncRead, S>:
+    StreamUploadInternal<S> + PublicUploadInternal<R, S>
+{
     async fn upload_to_nfs_unencrypted(
         &self,
         access_key: String,
@@ -679,7 +724,9 @@ trait PublicUploadInternalNfs<R: AsyncRead, S>: StreamUploadInternal<S> + Public
 }
 
 #[async_trait]
-impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadInternalNfs<R, S> for PublicEndpoint<S> {
+impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadInternalNfs<R, S>
+    for PublicEndpoint<S>
+{
     async fn upload_to_nfs_unencrypted(
         &self,
         access_key: String,
@@ -689,112 +736,69 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
-                // parse upload options
-                let (
-                    classification,
-                    timestamp_creation,
-                    timestamp_modification,
-                    expiration,
-                    resolution_strategy,
-                    keep_share_links,
-                ) = parse_upload_options(&upload_options);
-        
-                let fm = upload_options.file_meta.clone();
-        
-                let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
-        
-                // create upload channel
-                let file_upload_req = CreateShareUploadChannelRequest::builder(fm.0.clone())
-                    .with_size(fm.1)
-                    .with_timestamp_modification(timestamp_modification)
-                    .with_timestamp_creation(timestamp_creation)
-                    .with_direct_s3_upload(false)
-                    .build();
-        
-                let upload_channel = <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel::<
-                    '_,
-                    '_,
-                >(self, access_key.clone(), file_upload_req)
-                .await
-                .map_err(|err| {
-                    error!("Error creating upload channel: {}", err);
-                    err
-                })?;
-        
-                let (count_chunks, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
-                let mut chunk_part: u32 = 1;
-        
-                let cloneable_callback = callback.map(CloneableUploadProgressCallback::new);
-        
-                if count_chunks > 1 {
-                    while chunk_part < count_chunks {
-                        let mut buffer = vec![0; chunk_size];
-        
-                        match reader.read_exact(&mut buffer).await {
-                            Ok(0) => break,
-                            Ok(n) => {
-                                buffer.truncate(n);
-                                let chunk = bytes::Bytes::from(buffer);
-        
-                                let stream: async_stream::__private::AsyncStream<
-                                    Result<bytes::Bytes, std::io::Error>,
-                                    _,
-                                > = async_stream::stream! {
-                                    yield Ok(chunk);
-                                };
-        
-                                let url = upload_channel.upload_url.clone();
-        
-                                // truncation is safe because chunk_size is 32 MB
-                                #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                                let curr_pos: u64 = ((chunk_part - 1) * (chunk_size as u32)) as u64;
-        
-                                self.upload_stream_to_nfs(
-                                    Box::pin(stream),
-                                    &url,
-                                    upload_options.file_meta.clone(),
-                                    n,
-                                    Some(curr_pos),
-                                    cloneable_callback.clone(),
-                                )
-                                .await?;
-        
-                                chunk_part += 1;
-                            }
-                            Err(err) => {
-                                error!("Error reading file: {}", err);
-                                return Err(DracoonClientError::IoError);
-                            }
-                        }
-                    }
-                }
-        
-                // upload last chunk
-                let mut buffer = vec![
-                    0;
-                    last_chunk_size
-                        .try_into()
-                        .expect("size not larger than 32 MB")
-                ];
+        // parse upload options
+        let (
+            classification,
+            timestamp_creation,
+            timestamp_modification,
+            expiration,
+            resolution_strategy,
+            keep_share_links,
+        ) = parse_upload_options(&upload_options);
+
+        let fm = upload_options.file_meta.clone();
+
+        let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
+
+        // create upload channel
+        let file_upload_req = CreateShareUploadChannelRequest::builder(fm.0.clone())
+            .with_size(fm.1)
+            .with_timestamp_modification(timestamp_modification)
+            .with_timestamp_creation(timestamp_creation)
+            .with_direct_s3_upload(false)
+            .build();
+
+        let upload_channel =
+            <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel::<'_, '_>(
+                self,
+                access_key.clone(),
+                file_upload_req,
+            )
+            .await
+            .map_err(|err| {
+                error!("Error creating upload channel: {}", err);
+                err
+            })?;
+
+        let (count_chunks, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
+        let mut chunk_part: u32 = 1;
+
+        let cloneable_callback = callback.map(CloneableUploadProgressCallback::new);
+
+        if count_chunks > 1 {
+            while chunk_part < count_chunks {
+                let mut buffer = vec![0; chunk_size];
+
                 match reader.read_exact(&mut buffer).await {
+                    Ok(0) => break,
                     Ok(n) => {
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
+
                         let stream: async_stream::__private::AsyncStream<
                             Result<bytes::Bytes, std::io::Error>,
                             _,
                         > = async_stream::stream! {
-                            // TODO: chunk stream for better progress
-                            // currently the progress is only updated per chunk
                             yield Ok(chunk);
-        
                         };
-        
+
                         let url = upload_channel.upload_url.clone();
-        
-                        let curr_pos: u64 = (chunk_part - 1) as u64 * (CHUNK_SIZE as u64);
-        
-                        let e_tag = self.upload_stream_to_nfs(
+
+                        // truncation is safe because chunk_size is 32 MB
+                        #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
+                        let curr_pos: u64 = ((chunk_part - 1) * (chunk_size as u32)) as u64;
+
+                        self.upload_stream_to_nfs(
                             Box::pin(stream),
                             &url,
                             upload_options.file_meta.clone(),
@@ -803,27 +807,73 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
                             cloneable_callback.clone(),
                         )
                         .await?;
+
+                        chunk_part += 1;
                     }
                     Err(err) => {
                         error!("Error reading file: {}", err);
                         return Err(DracoonClientError::IoError);
                     }
                 }
-        
+            }
+        }
 
-                let public_upload = <PublicEndpoint<S> as PublicUploadInternalNfs<R, S>>::finalize_nfs_upload::<'_, '_>(
-                    self,
-                    access_key.clone(),
-                    upload_channel.upload_id.clone(),
-                    None,
-                )
-                .await
-                .map_err(|err| {
-                    error!("Error finalizing upload: {}", err);
-                    err
-                })?;
-        
-                Ok(public_upload.name)
+        // upload last chunk
+        let mut buffer = vec![
+            0;
+            last_chunk_size
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
+        match reader.read_exact(&mut buffer).await {
+            Ok(n) => {
+                buffer.truncate(n);
+                let chunk = bytes::Bytes::from(buffer);
+                let stream: async_stream::__private::AsyncStream<
+                    Result<bytes::Bytes, std::io::Error>,
+                    _,
+                > = async_stream::stream! {
+                    // TODO: chunk stream for better progress
+                    // currently the progress is only updated per chunk
+                    yield Ok(chunk);
+
+                };
+
+                let url = upload_channel.upload_url.clone();
+
+                let curr_pos: u64 = (chunk_part - 1) as u64 * (CHUNK_SIZE as u64);
+
+                let e_tag = self
+                    .upload_stream_to_nfs(
+                        Box::pin(stream),
+                        &url,
+                        upload_options.file_meta.clone(),
+                        n,
+                        Some(curr_pos),
+                        cloneable_callback.clone(),
+                    )
+                    .await?;
+            }
+            Err(err) => {
+                error!("Error reading file: {}", err);
+                return Err(DracoonClientError::IoError);
+            }
+        }
+
+        let public_upload =
+            <PublicEndpoint<S> as PublicUploadInternalNfs<R, S>>::finalize_nfs_upload::<'_, '_>(
+                self,
+                access_key.clone(),
+                upload_channel.upload_id.clone(),
+                None,
+            )
+            .await
+            .map_err(|err| {
+                error!("Error finalizing upload: {}", err);
+                err
+            })?;
+
+        Ok(public_upload.name)
     }
     async fn upload_to_nfs_encrypted(
         &self,
@@ -834,12 +884,24 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
-
         let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
 
-        let mut crypto_buff =
-            vec![0u8; upload_options.file_meta.1.try_into().expect("size not larger than 32 MB")];
-        let mut read_buff = vec![0u8; upload_options.file_meta.1.try_into().expect("size not larger than 32 MB")];
+        let mut crypto_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
+        let mut read_buff = vec![
+            0u8;
+            upload_options
+                .file_meta
+                .1
+                .try_into()
+                .expect("size not larger than 32 MB")
+        ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
         while let Ok(chunk) = reader.read(&mut read_buff).await {
@@ -860,16 +922,23 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
         let mut crypto_reader = BufReader::new(enc_bytes.as_slice());
         let plain_file_key = crypter.get_plain_file_key();
 
-                // drop the crypto buffer (enc bytes are still in the reader)
-                drop(crypto_buff);
+        // drop the crypto buffer (enc bytes are still in the reader)
+        drop(crypto_buff);
 
         let public_keys = share.user_user_public_key_list.clone().unwrap_or_default();
 
-        let user_file_keys: Vec<_> = public_keys.items.iter().flat_map(|key| {
-            DracoonCrypto::encrypt_file_key(plain_file_key.clone(), key.public_key_container.clone())
+        let user_file_keys: Vec<_> = public_keys
+            .items
+            .iter()
+            .flat_map(|key| {
+                DracoonCrypto::encrypt_file_key(
+                    plain_file_key.clone(),
+                    key.public_key_container.clone(),
+                )
                 .map(|file_key| UserFileKey::new(key.id, file_key))
-                .into_iter()  
-        }).collect();
+                .into_iter()
+            })
+            .collect();
 
         let user_file_keys = UserFileKeyList::from(user_file_keys);
 
@@ -892,15 +961,17 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
             .with_direct_s3_upload(false)
             .build();
 
-        let upload_channel = <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel::<
-            '_,
-            '_,
-        >(self, access_key.clone(), file_upload_req)
-        .await
-        .map_err(|err| {
-            error!("Error creating upload channel: {}", err);
-            err
-        })?;
+        let upload_channel =
+            <PublicEndpoint<S> as PublicUploadInternal<R, S>>::create_upload_channel::<'_, '_>(
+                self,
+                access_key.clone(),
+                file_upload_req,
+            )
+            .await
+            .map_err(|err| {
+                error!("Error creating upload channel: {}", err);
+                err
+            })?;
 
         let (count_chunks, last_chunk_size) = calculate_s3_url_count(fm.1, chunk_size as u64);
         let mut chunk_part: u32 = 1;
@@ -997,17 +1068,18 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
             }
         }
 
-        let public_upload = <PublicEndpoint<S> as PublicUploadInternalNfs<R, S>>::finalize_nfs_upload::<'_, '_>(
-            self,
-            access_key.clone(),
-            upload_channel.upload_id.clone(),
-            Some(user_file_keys),
-        )
-        .await
-        .map_err(|err| {
-            error!("Error finalizing upload: {}", err);
-            err
-        })?;
+        let public_upload =
+            <PublicEndpoint<S> as PublicUploadInternalNfs<R, S>>::finalize_nfs_upload::<'_, '_>(
+                self,
+                access_key.clone(),
+                upload_channel.upload_id.clone(),
+                Some(user_file_keys),
+            )
+            .await
+            .map_err(|err| {
+                error!("Error finalizing upload: {}", err);
+                err
+            })?;
 
         Ok(public_upload.name)
     }
@@ -1025,36 +1097,23 @@ impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUpload
         let url = self.client().build_api_url(&url_part);
 
         let response = match user_file_key_list {
-
             Some(user_file_keys) => {
-                self
-                .client()
-                .http
-                .put(url)
-                .json(&user_file_keys)
-                .send()
-                .await?
-            },
-            None => {
-                self
-                .client()
-                .http
-                .put(url)
-                .send()
-                .await?
+                self.client()
+                    .http
+                    .put(url)
+                    .json(&user_file_keys)
+                    .send()
+                    .await?
             }
+            None => self.client().http.put(url).send().await?,
         };
 
         PublicUploadedFileData::from_response(response).await
-
-
     }
 }
-
 
 #[cfg(test)]
 mod tests {
 
     // TODO: write unit tests for public upload
-
 }

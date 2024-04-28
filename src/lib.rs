@@ -469,7 +469,7 @@ pub struct Dracoon<State = Disconnected> {
     pub provisioning: ProvisioningEndpoint<State>,
 }
 
-impl <S: Send + Sync> GetClient<S> for Dracoon<S> {
+impl<S: Send + Sync> GetClient<S> for Dracoon<S> {
     fn get_client(&self) -> &DracoonClient<S> {
         &self.client
     }

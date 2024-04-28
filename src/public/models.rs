@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{DracoonClient, DracoonErrorResponse, GetClient},
-    nodes::{S3FileUploadPart, S3UploadStatus, UserUserPublicKey}
+    nodes::{S3FileUploadPart, S3UploadStatus, UserUserPublicKey},
 };
 
 #[derive(Clone)]
@@ -29,7 +29,7 @@ impl<S> PublicEndpoint<S> {
     }
 }
 
-impl <S> GetClient<S> for PublicEndpoint<S> {
+impl<S> GetClient<S> for PublicEndpoint<S> {
     fn get_client(&self) -> &DracoonClient<S> {
         &self.client
     }
@@ -136,7 +136,6 @@ pub struct PublicUploadShare {
     pub show_uploaded_files: Option<bool>,
     pub remaining_size: Option<u64>,
     pub remaining_slots: Option<u32>,
-
 }
 
 #[derive(Debug, Deserialize, Clone, FromResponse)]
@@ -145,12 +144,12 @@ pub struct PublicUploadedFileData {
     pub name: String,
     pub size: u64,
     pub created_at: DateTime<Utc>,
-    pub hash: Option<String>
+    pub hash: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct UserUserPublicKeyList {
-    pub items: Vec<UserUserPublicKey>
+    pub items: Vec<UserUserPublicKey>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -235,7 +234,6 @@ impl CreateShareUploadChannelRequestBuilder {
     }
 }
 
-
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateShareUploadChannelResponse {
@@ -252,10 +250,7 @@ pub struct UserFileKey {
 
 impl UserFileKey {
     pub fn new(user_id: u64, file_key: FileKey) -> Self {
-        Self {
-            user_id,
-            file_key,
-        }
+        Self { user_id, file_key }
     }
 }
 
@@ -266,9 +261,7 @@ pub struct UserFileKeyList {
 
 impl From<Vec<UserFileKey>> for UserFileKeyList {
     fn from(items: Vec<UserFileKey>) -> Self {
-        Self {
-            items,
-        }
+        Self { items }
     }
 }
 
@@ -278,14 +271,14 @@ impl From<Vec<UserFileKey>> for UserFileKeyList {
 pub struct CompleteS3ShareUploadRequest {
     parts: Vec<S3FileUploadPart>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    user_file_key_list: Option<Vec<UserFileKey>>
+    user_file_key_list: Option<Vec<UserFileKey>>,
 }
 
 impl CompleteS3ShareUploadRequest {
     pub fn new(parts: Vec<S3FileUploadPart>, user_file_key_list: Option<Vec<UserFileKey>>) -> Self {
         Self {
             parts,
-            user_file_key_list
+            user_file_key_list,
         }
     }
 }
