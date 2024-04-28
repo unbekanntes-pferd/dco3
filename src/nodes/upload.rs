@@ -101,20 +101,6 @@ trait UploadInternal<R: AsyncRead> {
         &self,
         upload_id: String,
     ) -> Result<S3FileUploadStatus, DracoonClientError>;
-    async fn upload_stream_to_s3<'a>(
-        &self,
-        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
-            + Sync
-            + Send
-            + Unpin
-            + 'static,
-        url: &PresignedUrl,
-        file_meta: FileMeta,
-        chunk_size: usize,
-        curr_pos: Option<u64>,
-        callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<String, DracoonClientError>;
-
     async fn get_missing_file_keys(
         &self,
         file_id: u64,
@@ -473,7 +459,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                         let curr_pos: u64 = ((url_part - 1) * (chunk_size as u32)) as u64;
 
-                        let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                             self,
                             Box::pin(stream),
                             url,
@@ -537,7 +523,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                 let curr_pos: u64 = (url_part - 1) as u64 * (CHUNK_SIZE as u64);
 
-                let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                     self,
                     Box::pin(stream),
                     url,
@@ -725,7 +711,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
                         let curr_pos: u64 = (url_part - 1) as u64 * (chunk_size as u64);
 
-                        let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                             self,
                             Box::pin(stream),
                             url,
@@ -791,7 +777,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
                 let curr_pos: u64 = ((url_part - 1) * (CHUNK_SIZE as u32)) as u64;
 
-                let e_tag = <Dracoon<Connected> as UploadInternal<R>>::upload_stream_to_s3(
+                let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
                     self,
                     Box::pin(stream),
                     url,
@@ -920,74 +906,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 }
             }
         }
-    }
-
-    async fn upload_stream_to_s3<'a>(
-        &self,
-        mut stream: impl Stream<Item = Result<bytes::Bytes, impl std::error::Error + Send + Sync + 'static>>
-            + Sync
-            + Send
-            + Unpin
-            + 'static,
-        url: &PresignedUrl,
-        file_meta: FileMeta,
-        chunk_size: usize,
-        curr_pos: Option<u64>,
-        callback: Option<CloneableUploadProgressCallback>,
-    ) -> Result<String, DracoonClientError> {
-        // Initialize a variable to keep track of the number of bytes read
-        let mut bytes_read = curr_pos.unwrap_or(0);
-        let file_size = file_meta.1;
-        // Create an async stream from the reader
-        let async_stream = async_stream::stream! {
-
-            while let Some(chunk) = stream.next().await {
-                if let Ok(chunk) = &chunk {
-                    let processed = min(bytes_read + (chunk.len() as u64), file_meta.1);
-                    bytes_read = processed;
-
-                    if let Some(cb) = callback.clone() {
-                        cb.call(bytes_read, file_meta.1);
-                    }
-                }
-                yield chunk
-            }
-        };
-
-        let body = Body::wrap_stream(async_stream);
-
-        let res = self
-            .client
-            .stream_http
-            .put(&url.url)
-            .body(body)
-            .header(header::CONTENT_LENGTH, chunk_size)
-            .send()
-            .await
-            .map_err(|e| {
-                error!("Connection error (S3 upload): {:?}", e);
-                e
-            })?;
-
-        // handle error
-        if res.error_for_status_ref().is_err() {
-            error!(
-                "Error uploading file to S3: {:?}",
-                res.error_for_status_ref().unwrap_err()
-            );
-            let error = build_s3_error(res).await;
-            return Err(error);
-        }
-
-        let e_tag_header = res
-            .headers()
-            .get("etag")
-            .expect("ETag header missing")
-            .to_str()
-            .expect("ETag header invalid");
-        let e_tag = e_tag_header.trim_start_matches('"').trim_end_matches('"');
-
-        Ok(e_tag.to_string())
     }
 
     async fn get_missing_file_keys(
@@ -1715,7 +1633,7 @@ mod tests {
             .with_size(16)
             .build();
 
-        let e_tag = <Dracoon<Connected> as UploadInternal<BufReader<&[u8]>>>::upload_stream_to_s3(
+        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
             &client,
             Box::pin(stream),
             &upload_url,

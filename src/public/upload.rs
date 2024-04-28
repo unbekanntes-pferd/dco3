@@ -20,7 +20,7 @@ use crate::{
 use super::{
     CompleteS3ShareUploadRequest, CreateShareUploadChannelRequest,
     CreateShareUploadChannelResponse, FileName, PublicEndpoint, PublicUpload, PublicUploadShare,
-    S3ShareUploadStatus, UserFileKey,
+    S3ShareUploadStatus, UserFileKey, UserFileKeyList,
 };
 
 #[async_trait]
@@ -266,7 +266,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // finalize upload
         let complete_upload_req = CompleteS3ShareUploadRequest::new(s3_parts, None);
 
-        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_upload(self, access_key.clone(), upload_channel.upload_id.clone(), complete_upload_req)
+        <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload(self, access_key.clone(), upload_channel.upload_id.clone(), complete_upload_req)
             .await?;
 
         // get upload status
@@ -508,7 +508,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // finalize upload
         let complete_upload_req = CompleteS3ShareUploadRequest::new(s3_parts, Some(user_file_keys));
 
-         <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_upload::<'_, '_>(
+         <PublicEndpoint<S> as PublicUploadInternal<R, S>>::finalize_s3_upload::<'_, '_>(
             self,
             access_key.clone(),
             upload_channel.upload_id.clone(),
@@ -557,7 +557,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         }
     }
 
-    async fn finalize_upload(
+    async fn finalize_s3_upload(
         &self,
         access_key: String,
         upload_id: String,
@@ -637,7 +637,7 @@ trait PublicUploadInternal<R: AsyncRead, S>: StreamUploadInternal<S> {
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError>;
 
-    async fn finalize_upload(
+    async fn finalize_s3_upload(
         &self,
         access_key: String,
         upload_id: String,
@@ -652,4 +652,104 @@ trait PublicUploadInternal<R: AsyncRead, S>: StreamUploadInternal<S> {
 }
 
 #[async_trait]
-trait PublicUploadInternalNfs<S>: StreamUploadInternal<S> {}
+trait PublicUploadInternalNfs<R: AsyncRead, S>: StreamUploadInternal<S> + PublicUploadInternal<R, S>{
+    async fn upload_to_nfs_unencrypted(
+        &self,
+        access_key: String,
+        share: &PublicUploadShare,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<FileName, DracoonClientError>;
+    async fn upload_to_nfs_encrypted(
+        &self,
+        access_key: String,
+        share: &PublicUploadShare,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<FileName, DracoonClientError>;
+    async fn finalize_nfs_upload(
+        &self,
+        access_key: String,
+        upload_id: String,
+        user_file_key_list: Option<UserFileKeyList>,
+    ) -> Result<(), DracoonClientError>;
+}
+
+#[async_trait]
+impl <R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadInternalNfs<R, S> for PublicEndpoint<S> {
+    async fn upload_to_nfs_unencrypted(
+        &self,
+        access_key: String,
+        share: &PublicUploadShare,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<FileName, DracoonClientError> {
+        todo!()
+    }
+    async fn upload_to_nfs_encrypted(
+        &self,
+        access_key: String,
+        share: &PublicUploadShare,
+        upload_options: UploadOptions,
+        reader: BufReader<R>,
+        mut callback: Option<UploadProgressCallback>,
+        chunk_size: Option<usize>,
+    ) -> Result<FileName, DracoonClientError> {
+        todo!()
+    }
+    async fn finalize_nfs_upload(
+        &self,
+        access_key: String,
+        upload_id: String,
+        user_file_key_list: Option<UserFileKeyList>,
+    ) -> Result<(), DracoonClientError> {
+        let url_part = format!(
+            "{DRACOON_API_PREFIX}/{PUBLIC_BASE}/{PUBLIC_SHARES_BASE}/{PUBLIC_UPLOAD_SHARES}/{}/{}",
+            access_key, upload_id
+        );
+
+        let url = self.client().build_api_url(&url_part);
+
+        let response = match user_file_key_list {
+
+            Some(user_file_keys) => {
+                self
+                .client()
+                .http
+                .put(url)
+                .json(&user_file_keys)
+                .send()
+                .await?
+            },
+            None => {
+                self
+                .client()
+                .http
+                .put(url)
+                .send()
+                .await?
+            }
+        };
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(DracoonClientError::from_response(response).await?)
+        }
+
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+
+
+}

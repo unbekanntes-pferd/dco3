@@ -260,6 +260,11 @@ impl UserFileKey {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub struct UserFileKeyList {
+    pub items: Vec<UserFileKey>,
+}
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
 pub struct CompleteS3ShareUploadRequest {
