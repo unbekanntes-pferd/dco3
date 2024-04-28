@@ -438,7 +438,7 @@ impl From<String> for Box<dyn SortQuery> {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KeyValueEntry {
     pub key: String,
     pub value: String,
