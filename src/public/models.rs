@@ -139,7 +139,7 @@ pub struct PublicUploadShare {
 
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicUploadedFileData {
     pub name: String,
@@ -262,6 +262,14 @@ impl UserFileKey {
 #[derive(Debug, Serialize, Clone)]
 pub struct UserFileKeyList {
     pub items: Vec<UserFileKey>,
+}
+
+impl From<Vec<UserFileKey>> for UserFileKeyList {
+    fn from(items: Vec<UserFileKey>) -> Self {
+        Self {
+            items,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]

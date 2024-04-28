@@ -922,4 +922,94 @@ mod tests {
 
         assert_eq!(file_name, "test.txt");
     }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_upload_unencrypted_staging_nfs() {
+        let access_key = "wxbDzQ5zrEqENU108WuBF0Fn5RlBojqU";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://demo.server.dracoon.systems")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_upload_share = client
+            .public
+            .get_public_upload_share(access_key)
+            .await
+            .unwrap();
+
+        let mock_bytes = b"Blububububbububu";
+
+        let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
+
+        let file_meta = FileMeta::builder()
+            .with_name("test.txt".to_string())
+            .with_size(16)
+            .build();
+
+        let upload_opts = UploadOptions::builder(file_meta).build();
+
+        let file_name = client
+            .public
+            .upload(
+                access_key,
+                public_upload_share,
+                upload_opts,
+                reader,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(file_name, "test.txt");
+    }
+
+    #[tokio::test]
+    #[ignore = "not needed in CI (only for manual testing)"]
+    async fn test_upload_encrypted_staging_nfs() {
+        let access_key = "lnd2waeRTgAIMYM70kuBN4NYE8vfqFhu";
+
+        let client = Dracoon::builder()
+            .with_base_url("https://demo.server.dracoon.systems")
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        let public_upload_share = client
+            .public
+            .get_public_upload_share(access_key)
+            .await
+            .unwrap();
+
+        let mock_bytes = b"Blububububbububu";
+
+        let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
+
+        let file_meta = FileMeta::builder()
+            .with_name("test.txt".to_string())
+            .with_size(16)
+            .build();
+
+        let upload_opts = UploadOptions::builder(file_meta).build();
+
+        let file_name = client
+            .public
+            .upload(
+                access_key,
+                public_upload_share,
+                upload_opts,
+                reader,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(file_name, "test.txt");
+    }
 }
