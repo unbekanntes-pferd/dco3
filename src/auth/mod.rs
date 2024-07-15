@@ -240,12 +240,8 @@ impl DracoonClientBuilder {
         self
     }
 
-    /// Builds the [DracoonClient] struct for the provisioning API
-    pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
-        let Some(provisioning_token) = self.provisioning_token else {
-            return Err(DracoonClientError::MissingArgument);
-        };
-
+    /// Builds reqwest clients with configured middleware
+    fn build_clients(&self) -> Result<(ClientWithMiddleware, Client), DracoonClientError> {
         let max_retries = self
             .max_retries
             .unwrap_or(MAX_RETRIES)
@@ -267,7 +263,7 @@ impl DracoonClientBuilder {
             )
             .build_with_max_retries(max_retries);
 
-        let user_agent = match self.user_agent {
+        let user_agent = match &self.user_agent {
             Some(user_agent) => format!("{}|{}", user_agent, APP_USER_AGENT),
             None => APP_USER_AGENT.to_string(),
         };
@@ -276,8 +272,19 @@ impl DracoonClientBuilder {
         let upload_http = http.clone();
 
         let http = ClientBuilder::new(http)
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+            .with(RetryTransientMiddleware::new_with_policy_and_strategy(
+                retry_policy,
+                DracoonCustomRetryStrategy,
+            ))
             .build();
+
+        Ok((http, upload_http))
+    }
+    /// Builds the [DracoonClient] struct for the provisioning API
+    pub fn build_provisioning(self) -> Result<DracoonClient<Provisioning>, DracoonClientError> {
+        let Some(ref provisioning_token) = self.provisioning_token else {
+            return Err(DracoonClientError::MissingArgument);
+        };
 
         let Some(base_url) = self.base_url.clone() else {
             error!("Missing base url");
@@ -285,6 +292,8 @@ impl DracoonClientBuilder {
         };
 
         let base_url = Url::parse(&base_url)?;
+
+        let (http, upload_http) = self.build_clients()?;
 
         Ok(DracoonClient {
             base_url,
@@ -298,49 +307,13 @@ impl DracoonClientBuilder {
             additional_connections: Container::new(),
             token_rotation: None,
             curr_connection: Container::new(),
-            provisioning_token: Some(provisioning_token),
+            provisioning_token: Some(provisioning_token.to_string()),
         })
     }
 
     /// Builds the [DracoonClient] struct - returns an error if any of the required fields are missing
     pub fn build(self) -> Result<DracoonClient<Disconnected>, DracoonClientError> {
-        let max_retries = self
-            .max_retries
-            .unwrap_or(MAX_RETRIES)
-            .clamp(1, MAX_RETRIES);
-        let min_retry_delay = self
-            .min_retry_delay
-            .unwrap_or(MIN_RETRY_DELAY)
-            .clamp(300, MIN_RETRY_DELAY);
-        let max_retry_delay = self
-            .max_retry_delay
-            .unwrap_or(MAX_RETRY_DELAY)
-            .clamp(min_retry_delay, MAX_RETRY_DELAY);
-
-        let token_rotation = self
-            .token_rotation
-            .unwrap_or(MIN_TOKEN_COUNT)
-            .clamp(MIN_TOKEN_COUNT, MAX_TOKEN_COUNT);
-
-        let retry_policy: ExponentialBackoff = ExponentialBackoff::builder()
-            .jitter(Jitter::Bounded)
-            .retry_bounds(
-                Duration::from_millis(min_retry_delay),
-                Duration::from_millis(max_retry_delay),
-            )
-            .build_with_max_retries(max_retries);
-
-        let user_agent = match self.user_agent {
-            Some(user_agent) => format!("{}|{}", user_agent, APP_USER_AGENT),
-            None => APP_USER_AGENT.to_string(),
-        };
-
-        let http = Client::builder().user_agent(user_agent).build()?;
-        let upload_http = http.clone();
-
-        let http = ClientBuilder::new(http)
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-            .build();
+        let (http, upload_http) = self.build_clients()?;
 
         let Some(base_url) = self.base_url.clone() else {
             error!("Missing base url");
@@ -366,6 +339,11 @@ impl DracoonClientBuilder {
                 self.base_url.expect("missing base url already checked")
             ))?,
         };
+
+        let token_rotation = self
+            .token_rotation
+            .unwrap_or(MIN_TOKEN_COUNT)
+            .clamp(MIN_TOKEN_COUNT, MAX_TOKEN_COUNT);
 
         let token_rotation = if token_rotation > 1 {
             Some(token_rotation)
@@ -1297,7 +1275,7 @@ mod tests {
             .with_status(429)
             .with_header("content-type", "application/json")
             .with_body("Internal Server Error")
-            .expect_at_least(2)
+            .expect(2)
             .create();
 
         let dracoon = get_test_client(&base_url);
@@ -1318,7 +1296,7 @@ mod tests {
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(include_str!("./tests/auth_ok_expired.json"))
-            .expect_at_least(2)
+            .expect(2)
             .create();
 
         let dracoon = get_test_client(&base_url);
