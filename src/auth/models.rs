@@ -1,3 +1,4 @@
+use reqwest_retry::{default_on_request_failure, Retryable, RetryableStrategy};
 use std::fmt::{Display, Formatter};
 use url::ParseError;
 
@@ -304,5 +305,49 @@ impl From<ParseError> for DracoonClientError {
     /// transforms a URL parse error into a DRACOON client error
     fn from(_v: ParseError) -> Self {
         Self::InvalidUrl("parsing url failed (invalid)".to_string())
+    }
+}
+
+pub(crate) struct DracoonCustomRetryStrategy;
+
+impl RetryableStrategy for DracoonCustomRetryStrategy {
+    fn handle(
+        &self,
+        res: &Result<reqwest::Response, reqwest_middleware::Error>,
+    ) -> Option<Retryable> {
+        match res {
+            Ok(success) => default_on_request_success(success),
+            Err(error) => default_on_request_failure(error),
+        }
+    }
+}
+
+// this overwrites the default retry strategy to handle 401 invalid JWT token errors that need to be retried
+// it is not possible to access the response body due to async / sync code limitations
+// therefore all 401 requests are retried
+// in any case, token validity is checked before a request
+fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> {
+    let status = success.status();
+    if status.is_server_error() {
+        Some(Retryable::Transient)
+    } else if status.is_client_error()
+        && status != StatusCode::REQUEST_TIMEOUT
+        && status != StatusCode::TOO_MANY_REQUESTS
+        && status != StatusCode::UNAUTHORIZED
+    {
+        Some(Retryable::Fatal)
+    } else if status.is_success() {
+        None
+    } else if status == StatusCode::REQUEST_TIMEOUT
+        || status == StatusCode::TOO_MANY_REQUESTS
+        || status == StatusCode::UNAUTHORIZED
+    {
+        if status == StatusCode::UNAUTHORIZED && success.url().path().starts_with("/oauth") {
+            Some(Retryable::Fatal)
+        } else {
+            Some(Retryable::Transient)
+        }
+    } else {
+        Some(Retryable::Fatal)
     }
 }

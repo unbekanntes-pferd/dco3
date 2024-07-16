@@ -50,6 +50,7 @@ pub mod dracoon {
             .with_client_id("client_id")
             .with_client_secret("client_secret")
             .with_user_agent("test_client")
+            .with_max_retries(1)
             .build()
             .unwrap()
             .connect(OAuth2Flow::authorization_code("auth_code"))
@@ -175,5 +176,24 @@ pub mod dracoon {
         assert_eq!(system_info.s3_hosts.len(), 1);
         assert!(system_info.s3_enforce_direct_upload);
         assert!(system_info.use_s3_storage);
+    }
+
+    #[tokio::test]
+    async fn test_retry_policy_on_401() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let system_info_mock = mock_server
+            .mock("GET", "/api/v4/public/system/info")
+            .with_status(401)
+            .expect(2)
+            .with_body(r#"{"code":401,"message":"Unauthorized"}"#)
+            .with_header("content-type", "application/json")
+            .create();
+
+        let system_info = client.get_system_info().await;
+
+        assert!(system_info.is_err());
+
+        system_info_mock.assert();
     }
 }

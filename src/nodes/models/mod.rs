@@ -12,6 +12,7 @@ pub use sorts::*;
 use tracing::debug;
 use tracing::error;
 
+use core::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -383,8 +384,8 @@ impl NodePermissions {
     }
 }
 
-impl ToString for NodePermissions {
-    fn to_string(&self) -> String {
+impl Display for NodePermissions {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mapping = [
             (self.manage, 'm'),
             (self.read, 'r'),
@@ -409,7 +410,9 @@ impl ToString for NodePermissions {
             }
         }
 
-        perms
+        formatter.write_str(&perms)?;
+
+        Ok(())
     }
 }
 
