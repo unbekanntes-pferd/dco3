@@ -5,7 +5,7 @@ use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use retry_policies::Jitter;
-use std::{marker::PhantomData, time::Duration, u64::MAX};
+use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
 use base64::{
@@ -98,7 +98,7 @@ impl Connection {
 
         // this handles OAuth2Flow::Simple (expires_in is not known)
         // the access token is valid or fails with 401
-        if self.expires_in == MAX {
+        if self.expires_in == u64::MAX {
             return false;
         }
 
@@ -119,7 +119,7 @@ impl Connection {
         Self {
             access_token,
             refresh_token: String::new(),
-            expires_in: MAX,
+            expires_in: u64::MAX,
             connected_at: Utc::now(),
         }
     }
