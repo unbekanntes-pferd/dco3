@@ -12,7 +12,7 @@ use super::{
 use crate::{
     auth::{errors::DracoonClientError, Connected, GetClient},
     constants::{
-        CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS,
         FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY,
         UPLOADS_BASE,
     },
@@ -109,6 +109,14 @@ trait UploadInternal<R: AsyncRead> {
         &self,
         keys_batch_req: UserFileKeySetBatchRequest,
     ) -> Result<(), DracoonClientError>;
+
+    async fn upload_chunk(
+        &self,
+        upload_channel: &CreateFileUploadResponse,
+        chunk: bytes::Bytes,
+        url_part: u32,
+        callback: Option<CloneableUploadProgressCallback>,
+    ) -> Result<S3FileUploadPart, DracoonClientError>;
 }
 
 #[async_trait]
@@ -368,7 +376,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     ) -> Result<Node, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req = CreateFileUploadRequest::from_upload_options(
@@ -406,32 +414,16 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream = Self::create_stream(chunk, cb);
-
-                        let url_req = GeneratePresignedUrlsRequest::new(
-                            n.try_into().expect("size not larger than 32 MB"),
-                            url_part,
-                            url_part,
-                        );
-                        let url =
-                            <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls::<
-                                '_,
-                                '_,
-                            >(
-                                self, upload_channel.upload_id.clone(), url_req
-                            )
-                            .await?;
-                        let url = url.urls.first().expect("Creating S3 url failed");
-
-                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
+                        let s3_part = <Dracoon<Connected> as UploadInternal<R>>::upload_chunk(
                             self,
-                            Box::pin(stream),
-                            url,
-                            n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                            &upload_channel,
+                            chunk,
+                            url_part,
+                            cb,
                         )
                         .await?;
 
-                        s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
+                        s3_parts.push(s3_part);
                         url_part += 1;
                     }
                     Err(err) => {
@@ -447,7 +439,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             0;
             last_chunk_size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let cb = cloneable_callback.clone();
         match reader.read_exact(&mut buffer).await {
@@ -455,39 +447,16 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
 
-                let stream = Self::create_stream(chunk, cb);
-
-                let url_req = GeneratePresignedUrlsRequest::new(
-                    n.try_into().expect("size not larger than 32 MB"),
+                let s3_part = <Dracoon<Connected> as UploadInternal<R>>::upload_chunk(
+                    self,
+                    &upload_channel,
+                    chunk,
                     url_part,
-                    url_part,
-                );
-                let url =
-                    <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls::<'_, '_>(
-                        self,
-                        upload_channel.upload_id.clone(),
-                        url_req,
-                    )
-                    .await
-                    .map_err(|err| {
-                        error!("Error creating S3 upload urls: {}", err);
-                        err
-                    })?;
+                    cb,
+                )
+                .await?;
 
-                let url = url.urls.first().expect("Creating S3 url failed");
-
-                let curr_pos: u64 = (url_part - 1) as u64 * (CHUNK_SIZE as u64);
-
-                let e_tag =
-                    <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
-                        self,
-                        Box::pin(stream),
-                        url,
-                        n.try_into().map_err(|_| DracoonClientError::IoError)?,
-                    )
-                    .await?;
-
-                s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
+                s3_parts.push(s3_part);
             }
             Err(err) => {
                 error!("Error reading file: {}", err);
@@ -560,7 +529,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     ) -> Result<Node, DracoonClientError> {
         let keypair = self.get_keypair(None).await?;
 
-        let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -568,7 +537,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 .file_meta
                 .size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let mut read_buff = vec![
             0u8;
@@ -576,7 +545,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 .file_meta
                 .size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
@@ -640,42 +609,16 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         buffer.truncate(chunk_len);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream = Self::create_stream(chunk, cb);
-
-                        let url_req = GeneratePresignedUrlsRequest::new(
-                            chunk_len.try_into().expect("size not larger than 32 MB"),
-                            url_part,
-                            url_part,
-                        );
-                        let url =
-                            <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls::<
-                                '_,
-                                '_,
-                            >(
-                                self, upload_channel.upload_id.clone(), url_req
-                            )
-                            .await
-                            .map_err(|err| {
-                                error!("Error creating S3 upload urls: {}", err);
-                                err
-                            })?;
-                        let url = url.urls.first().expect("Creating S3 url failed");
-
-                        let curr_pos: u64 = (url_part - 1) as u64 * (chunk_size as u64);
-
-                        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
+                        let s3_part = <Dracoon<Connected> as UploadInternal<R>>::upload_chunk(
                             self,
-                            Box::pin(stream),
-                            url,
-                            chunk_len.try_into().map_err(|_| DracoonClientError::IoError)?,
+                            &upload_channel,
+                            chunk,
+                            url_part,
+                            cb,
                         )
-                        .await
-                        .map_err(|err| {
-                            error!("Error uploading stream to S3: {}", err);
-                            err
-                        })?;
+                        .await?;
 
-                        s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
+                        s3_parts.push(s3_part);
                         url_part += 1;
                     }
                     Err(err) => return Err(DracoonClientError::IoError),
@@ -688,52 +631,24 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             0;
             last_chunk_size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let cb = cloneable_callback.clone();
         match crypto_reader.read_exact(&mut buffer).await {
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream = Self::create_stream(chunk, cb);
 
-                let url_req = GeneratePresignedUrlsRequest::new(
-                    n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                let s3_part = <Dracoon<Connected> as UploadInternal<R>>::upload_chunk(
+                    self,
+                    &upload_channel,
+                    chunk,
                     url_part,
-                    url_part,
-                );
-                let url =
-                    <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls::<'_, '_>(
-                        self,
-                        upload_channel.upload_id.clone(),
-                        url_req,
-                    )
-                    .await
-                    .map_err(|err| {
-                        error!("Error creating S3 upload urls: {}", err);
-                        err
-                    })?;
+                    cb,
+                )
+                .await?;
 
-                let url = url.urls.first().expect("Creating S3 url failed");
-
-                // truncation is safe because chunk_size is 32 MB
-                #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((url_part - 1) * (CHUNK_SIZE as u32)) as u64;
-
-                let e_tag =
-                    <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
-                        self,
-                        Box::pin(stream),
-                        url,
-                        n.try_into().map_err(|_| DracoonClientError::IoError)?,
-                    )
-                    .await
-                    .map_err(|err| {
-                        error!("Error uploading stream to S3: {}", err);
-                        err
-                    })?;
-
-                s3_parts.push(S3FileUploadPart::new(url_part, e_tag));
+                s3_parts.push(s3_part);
             }
 
             Err(err) => {
@@ -899,6 +814,43 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
 
         Ok(())
     }
+
+    async fn upload_chunk(
+        &self,
+        upload_channel: &CreateFileUploadResponse,
+        chunk: bytes::Bytes,
+        url_part: u32,
+        callback: Option<CloneableUploadProgressCallback>,
+    ) -> Result<S3FileUploadPart, DracoonClientError> {
+
+        let chunk_len: u64 = chunk.len().try_into().map_err(|_| DracoonClientError::IoError)?;
+
+        let stream = Self::create_stream(chunk, callback);
+        let url_req = GeneratePresignedUrlsRequest::new(
+            chunk_len,
+            url_part,
+            url_part,
+        );
+
+        let url = <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls(
+            self,
+            upload_channel.upload_id.clone(),
+            url_req,
+        )
+        .await?;
+
+        let url = url.urls.first().expect("Creating S3 url failed");
+
+        let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
+            self,
+            Box::pin(stream),
+            url,
+            chunk_len,
+        )
+        .await?;
+
+        Ok(S3FileUploadPart::new(url_part, e_tag))
+    }
 }
 
 /// helper to calculate the number of S3 urls and the size of the last chunk
@@ -941,7 +893,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
     ) -> Result<Node, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req =
@@ -1006,7 +958,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             0;
             last_chunk_size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let cb = cloneable_callback.clone();
         match reader.read_exact(&mut buffer).await {
@@ -1017,7 +969,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
 
                 let url = upload_channel.upload_url.clone();
 
-                let curr_pos: u64 = (chunk_part - 1) as u64 * (CHUNK_SIZE as u64);
+                let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_CHUNK_SIZE as u64);
 
                 self.upload_stream_to_nfs(
                     Box::pin(stream),
@@ -1063,7 +1015,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
     ) -> Result<Node, DracoonClientError> {
         let keypair = self.get_keypair(None).await?;
 
-        let chunk_size = chunk_size.unwrap_or(CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -1071,7 +1023,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                 .file_meta
                 .size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let mut read_buff = vec![
             0u8;
@@ -1079,7 +1031,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                 .file_meta
                 .size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let mut crypter = DracoonCrypto::encrypter(&mut crypto_buff)?;
 
@@ -1169,7 +1121,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             0;
             last_chunk_size
                 .try_into()
-                .expect("size not larger than 32 MB")
+                .map_err(|_| DracoonClientError::IoError)?
         ];
         let cb = cloneable_callback.clone();
         match crypto_reader.read_exact(&mut buffer).await {
@@ -1182,7 +1134,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
 
                 // truncation is safe because chunk_size is 32 MB
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((chunk_part - 1) * (CHUNK_SIZE as u32)) as u64;
+                let curr_pos: u64 = ((chunk_part - 1) * (DEFAULT_CHUNK_SIZE as u32)) as u64;
 
                 self.upload_stream_to_nfs(
                     Box::pin(stream),
