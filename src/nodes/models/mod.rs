@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports)]
-
 pub mod filters;
 pub mod sorts;
 
@@ -12,7 +10,6 @@ pub use sorts::*;
 use tracing::debug;
 use tracing::error;
 
-use core::fmt;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt::Formatter;
@@ -85,45 +82,35 @@ impl CloneableUploadProgressCallback {
 
 /// file meta information (name, size, timestamp creation, timestamp modification)
 #[derive(Debug, Clone)]
-pub struct FileMeta(
-    pub String,
-    pub u64,
-    pub Option<DateTime<Utc>>,
-    pub Option<DateTime<Utc>>,
-);
+pub struct FileMeta {
+    pub name: String,
+    pub size: u64,
+    pub timestamp_creation: Option<DateTime<Utc>>,
+    pub timestamp_modification: Option<DateTime<Utc>>,
+}
 
 #[derive(Default)]
 pub struct FileMetaBuilder {
-    name: Option<String>,
-    size: Option<u64>,
+    name: String,
+    size: u64,
     timestamp_creation: Option<DateTime<Utc>>,
     timestamp_modification: Option<DateTime<Utc>>,
 }
 
 impl FileMeta {
-    pub fn builder() -> FileMetaBuilder {
-        FileMetaBuilder::new()
+    pub fn builder(name: impl Into<String>, size: u64) -> FileMetaBuilder {
+        FileMetaBuilder::new(name, size)
     }
 }
 
 impl FileMetaBuilder {
-    pub fn new() -> Self {
+    pub fn new(name: impl Into<String>, size: u64) -> Self {
         Self {
-            name: None,
-            size: None,
+            name: name.into(),
+            size,
             timestamp_creation: None,
             timestamp_modification: None,
         }
-    }
-
-    pub fn with_name(mut self, name: String) -> Self {
-        self.name = Some(name);
-        self
-    }
-
-    pub fn with_size(mut self, size: u64) -> Self {
-        self.size = Some(size);
-        self
     }
 
     pub fn with_timestamp_creation(mut self, timestamp_creation: DateTime<Utc>) -> Self {
@@ -137,12 +124,12 @@ impl FileMetaBuilder {
     }
 
     pub fn build(self) -> FileMeta {
-        FileMeta(
-            self.name.unwrap(),
-            self.size.unwrap(),
-            self.timestamp_creation,
-            self.timestamp_modification,
-        )
+        FileMeta {
+            name: self.name,
+            size: self.size,
+            timestamp_creation: self.timestamp_creation,
+            timestamp_modification: self.timestamp_modification,
+        }
     }
 }
 
@@ -586,6 +573,39 @@ impl CreateFileUploadRequest {
             timestamp_modification: None,
         }
     }
+
+    pub fn from_upload_options(
+        parent_id: u64,
+        upload_options: &UploadOptions,
+        is_s3_upload: Option<bool>,
+    ) -> Self {
+        let req = Self::builder(parent_id, upload_options.file_meta.name.clone())
+            .with_size(upload_options.file_meta.size)
+            .with_classification(upload_options.classification.unwrap_or(1))
+            .with_expiration(
+                upload_options
+                    .expiration
+                    .clone()
+                    .unwrap_or_default()
+                    .clone(),
+            );
+        let req = if let Some(timestamp_creation) = upload_options.file_meta.timestamp_creation {
+            req.with_timestamp_creation(timestamp_creation)
+        } else {
+            req
+        };
+
+        let mut req =
+            if let Some(timestamp_modification) = upload_options.file_meta.timestamp_modification {
+                req.with_timestamp_modification(timestamp_modification)
+            } else {
+                req
+            };
+
+        req.direct_s3_upload = is_s3_upload;
+
+        req.build()
+    }
 }
 
 pub struct CreateFileUploadRequestBuilder {
@@ -792,8 +812,9 @@ impl CompleteUploadRequestBuilder {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub enum ResolutionStrategy {
+    #[default]
     #[serde(rename = "autorename")]
     AutoRename,
     #[serde(rename = "overwrite")]

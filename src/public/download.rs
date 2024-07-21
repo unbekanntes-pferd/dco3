@@ -9,7 +9,8 @@ use tracing::error;
 
 use crate::{
     constants::{
-        CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES, PUBLIC_SHARES_BASE,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES,
+        PUBLIC_SHARES_BASE,
     },
     nodes::DownloadProgressCallback,
     utils::{build_s3_error, FromResponse},
@@ -158,7 +159,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         while downloaded_bytes < size {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, size - 1);
+            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, size - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -231,7 +232,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         while downloaded_bytes < size {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, size - 1);
+            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, size - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk

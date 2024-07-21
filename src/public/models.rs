@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{DracoonClient, DracoonErrorResponse, GetClient},
-    nodes::{S3FileUploadPart, S3UploadStatus, UserUserPublicKey},
+    nodes::{S3FileUploadPart, S3UploadStatus, UploadOptions, UserUserPublicKey},
 };
 
 #[derive(Clone)]
@@ -173,14 +173,42 @@ impl CreateShareUploadChannelRequest {
     pub fn builder(name: impl Into<String>) -> CreateShareUploadChannelRequestBuilder {
         CreateShareUploadChannelRequestBuilder::new(name)
     }
+
+    pub fn from_upload_options(
+        upload_options: &UploadOptions,
+        is_s3_upload: Option<bool>,
+        share_password: Option<String>,
+    ) -> Self {
+        let req = Self::builder(upload_options.file_meta.name.clone())
+            .with_size(upload_options.file_meta.size);
+        let req = if let Some(timestamp_creation) = upload_options.file_meta.timestamp_creation {
+            req.with_timestamp_creation(timestamp_creation)
+        } else {
+            req
+        };
+
+        let mut req =
+            if let Some(timestamp_modification) = upload_options.file_meta.timestamp_modification {
+                req.with_timestamp_modification(timestamp_modification)
+            } else {
+                req
+            };
+
+        req.direct_s3_upload = is_s3_upload;
+
+        if let Some(share_password) = share_password {
+            req.password = Some(share_password);
+        }
+
+        req.build()
+    }
 }
 
-#[allow(non_snake_case)]
 pub struct CreateShareUploadChannelRequestBuilder {
     name: String,
     size: Option<u64>,
     password: Option<String>,
-    direct_S3_upload: Option<bool>,
+    direct_s3_upload: Option<bool>,
     timestamp_creation: Option<String>,
     timestamp_modification: Option<String>,
 }
@@ -191,7 +219,7 @@ impl CreateShareUploadChannelRequestBuilder {
             name: name.into(),
             size: None,
             password: None,
-            direct_S3_upload: None,
+            direct_s3_upload: None,
             timestamp_creation: None,
             timestamp_modification: None,
         }
@@ -208,7 +236,7 @@ impl CreateShareUploadChannelRequestBuilder {
     }
 
     pub fn with_direct_s3_upload(mut self, is_s3_upload: bool) -> Self {
-        self.direct_S3_upload = Some(is_s3_upload);
+        self.direct_s3_upload = Some(is_s3_upload);
         self
     }
 
@@ -227,7 +255,7 @@ impl CreateShareUploadChannelRequestBuilder {
             name: self.name,
             size: self.size,
             password: self.password,
-            direct_S3_upload: self.direct_S3_upload,
+            direct_S3_upload: self.direct_s3_upload,
             timestamp_creation: self.timestamp_creation,
             timestamp_modification: self.timestamp_modification,
         }

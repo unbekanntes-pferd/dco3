@@ -5,7 +5,8 @@ use super::{
 use crate::{
     auth::{errors::DracoonClientError, Connected},
     constants::{
-        CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE, NODES_DOWNLOAD_URL,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE,
+        NODES_DOWNLOAD_URL,
     },
     utils::{build_s3_error, FromResponse},
     Dracoon,
@@ -149,7 +150,7 @@ impl DownloadInternal for Dracoon<Connected> {
         while downloaded_bytes < content_length {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, content_length - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -245,7 +246,7 @@ impl DownloadInternal for Dracoon<Connected> {
         while downloaded_bytes < content_length {
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, content_length - 1);
             let range = format!("bytes={start}-{end}");
 
             // get chunk
