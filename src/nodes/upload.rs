@@ -12,9 +12,7 @@ use super::{
 use crate::{
     auth::{errors::DracoonClientError, Connected, GetClient},
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE,
-        FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE,
-        POLLING_START_DELAY, UPLOADS_BASE,
+        DEFAULT_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY, UPLOADS_BASE
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, FromResponse},
@@ -232,7 +230,7 @@ pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
             for byte in chunk.iter() {
                 buffer.push(*byte);
                 bytes_read += 1;
-                if buffer.len() == 1024 || bytes_read == chunk.len() {
+                if buffer.len() == DEFAULT_UPLOAD_GRANULARITY || bytes_read == chunk.len() {
                     if let Some(callback) = callback.clone() {
                         callback.call(buffer.len() as u64, chunk.len() as u64);
                     }
