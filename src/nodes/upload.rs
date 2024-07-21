@@ -212,6 +212,29 @@ pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
         }
         Ok(())
     }
+
+    fn create_stream(
+        chunk: bytes::Bytes,
+        callback: Option<CloneableUploadProgressCallback>,
+    ) -> impl Stream<Item = Result<bytes::Bytes, std::io::Error>> {
+        async_stream::stream! {
+            let mut buffer = Vec::new();
+            let mut bytes_read = 0;
+
+            for byte in chunk.iter() {
+                buffer.push(*byte);
+                bytes_read += 1;
+                if buffer.len() == 1024 || bytes_read == chunk.len() {
+                    if let Some(callback) = callback.clone() {
+                        callback.call(buffer.len() as u64, chunk.len() as u64);
+                    }
+                    yield Ok(bytes::Bytes::from(buffer.clone()));
+                    buffer.clear();
+                }
+            }
+        }
+    
+    }
 }
 
 impl StreamUploadInternal<Connected> for Dracoon<Connected> {}
@@ -383,25 +406,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                        let stream = Self::create_stream(chunk, cb);
 
                         let url_req = GeneratePresignedUrlsRequest::new(
                             n.try_into().expect("size not larger than 32 MB"),
@@ -450,26 +455,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
 
-                let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                let stream = Self::create_stream(chunk, cb);
 
                 let url_req = GeneratePresignedUrlsRequest::new(
                     n.try_into().expect("size not larger than 32 MB"),
@@ -654,25 +640,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                         buffer.truncate(chunk_len);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                        let stream = Self::create_stream(chunk, cb);
 
                         let url_req = GeneratePresignedUrlsRequest::new(
                             chunk_len.try_into().expect("size not larger than 32 MB"),
@@ -727,26 +695,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream: async_stream::__private::AsyncStream<
-                    Result<bytes::Bytes, std::io::Error>,
-                    _,
-                > = async_stream::stream! {
-                    let mut buffer = Vec::new();
-                    let mut bytes_read = 0;
-
-                    for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                    if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size);
-                                }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                        }
-                    }
-
-                };
+                let stream = Self::create_stream(chunk, cb);
 
                 let url_req = GeneratePresignedUrlsRequest::new(
                     n.try_into().map_err(|_| DracoonClientError::IoError)?,
@@ -1025,26 +974,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-
-                        };
+                        let stream = Self::create_stream(chunk, cb);
 
                         let url = upload_channel.upload_url.clone();
 
@@ -1083,26 +1013,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream: async_stream::__private::AsyncStream<
-                    Result<bytes::Bytes, std::io::Error>,
-                    _,
-                > = async_stream::stream! {
-                    let mut buffer = Vec::new();
-                    let mut bytes_read = 0;
-
-                    for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                    if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size);
-                                }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                        }
-                    }
-
-                };
+                let stream = Self::create_stream(chunk, cb);
 
                 let url = upload_channel.upload_url.clone();
 
@@ -1227,25 +1138,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                         buffer.truncate(chunk_len);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                        let stream = Self::create_stream(chunk, cb);
 
                         let url = upload_channel.upload_url.clone();
 
@@ -1283,26 +1176,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream: async_stream::__private::AsyncStream<
-                    Result<bytes::Bytes, std::io::Error>,
-                    _,
-                > = async_stream::stream! {
-                    let mut buffer = Vec::new();
-                    let mut bytes_read = 0;
-
-                    for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                    if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size);
-                                }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                        }
-                    }
-
-                };
+                let stream = Self::create_stream(chunk, cb);
 
                 let url = upload_channel.upload_url.clone();
 
@@ -1622,8 +1496,8 @@ mod tests {
 
         let chunk = bytes::Bytes::from(mock_bytes.to_vec());
 
-        let stream: async_stream::__private::AsyncStream<Result<bytes::Bytes, std::io::Error>, _> = async_stream::stream! {
-            yield Ok(chunk);
+        let stream = async_stream::stream! {
+            yield Ok::<_, std::io::Error>(chunk);
         };
 
         let upload_mock = mock_server
