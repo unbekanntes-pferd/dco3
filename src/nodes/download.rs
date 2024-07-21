@@ -5,7 +5,8 @@ use super::{
 use crate::{
     auth::{errors::DracoonClientError, Connected},
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE, NODES_DOWNLOAD_URL,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE,
+        NODES_DOWNLOAD_URL,
     },
     utils::{build_s3_error, FromResponse},
     Dracoon,

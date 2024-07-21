@@ -9,7 +9,8 @@ use tracing::error;
 
 use crate::{
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES, PUBLIC_SHARES_BASE,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES,
+        PUBLIC_SHARES_BASE,
     },
     nodes::DownloadProgressCallback,
     utils::{build_s3_error, FromResponse},

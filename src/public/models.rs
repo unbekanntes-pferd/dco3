@@ -177,12 +177,10 @@ impl CreateShareUploadChannelRequest {
     pub fn from_upload_options(
         upload_options: &UploadOptions,
         is_s3_upload: Option<bool>,
-        share_password: Option<String>,   
+        share_password: Option<String>,
     ) -> Self {
         let req = Self::builder(upload_options.file_meta.name.clone())
-            .with_size(upload_options.file_meta.size)
-            
-;
+            .with_size(upload_options.file_meta.size);
         let req = if let Some(timestamp_creation) = upload_options.file_meta.timestamp_creation {
             req.with_timestamp_creation(timestamp_creation)
         } else {
@@ -204,9 +202,7 @@ impl CreateShareUploadChannelRequest {
 
         req.build()
     }
-
 }
-
 
 pub struct CreateShareUploadChannelRequestBuilder {
     name: String,

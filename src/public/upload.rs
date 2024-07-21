@@ -5,8 +5,8 @@ use tracing::error;
 
 use crate::{
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS, POLLING_START_DELAY,
-        PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS,
+        POLLING_START_DELAY, PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
     },
     nodes::{
         upload::{calculate_s3_url_count, StreamUploadInternal},

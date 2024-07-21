@@ -12,9 +12,9 @@ use super::{
 use crate::{
     auth::{errors::DracoonClientError, Connected, GetClient},
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS,
-        FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY,
-        UPLOADS_BASE,
+        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, FILES_S3_COMPLETE,
+        FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE,
+        POLLING_START_DELAY, UPLOADS_BASE,
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, FromResponse},
@@ -241,7 +241,6 @@ pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
                 }
             }
         }
-    
     }
 }
 
@@ -822,15 +821,13 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         url_part: u32,
         callback: Option<CloneableUploadProgressCallback>,
     ) -> Result<S3FileUploadPart, DracoonClientError> {
-
-        let chunk_len: u64 = chunk.len().try_into().map_err(|_| DracoonClientError::IoError)?;
+        let chunk_len: u64 = chunk
+            .len()
+            .try_into()
+            .map_err(|_| DracoonClientError::IoError)?;
 
         let stream = Self::create_stream(chunk, callback);
-        let url_req = GeneratePresignedUrlsRequest::new(
-            chunk_len,
-            url_part,
-            url_part,
-        );
+        let url_req = GeneratePresignedUrlsRequest::new(chunk_len, url_part, url_part);
 
         let url = <Dracoon<Connected> as UploadInternal<R>>::create_s3_upload_urls(
             self,
@@ -2209,7 +2206,6 @@ mod tests {
             let current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
 
             cloned_processed.fetch_add(processed, std::sync::atomic::Ordering::Release);
-
         };
 
         let callback_boxed = Box::new(callback);
