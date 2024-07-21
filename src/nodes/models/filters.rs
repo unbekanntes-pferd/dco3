@@ -1,7 +1,4 @@
-use crate::{
-    auth::errors::DracoonClientError,
-    models::{FilterOperator, FilterQuery},
-};
+use crate::models::{FilterOperator, FilterQuery};
 
 use super::NodeType;
 

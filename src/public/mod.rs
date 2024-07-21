@@ -855,10 +855,7 @@ mod tests {
 
         let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
 
-        let file_meta = FileMeta::builder()
-            .with_name("test.txt".to_string())
-            .with_size(16)
-            .build();
+        let file_meta = FileMeta::builder("test.txt", 16).build();
 
         let upload_opts = UploadOptions::builder(file_meta).build();
 
@@ -900,10 +897,7 @@ mod tests {
 
         let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
 
-        let file_meta = FileMeta::builder()
-            .with_name("test.txt".to_string())
-            .with_size(16)
-            .build();
+        let file_meta = FileMeta::builder("test.txt", 16).build();
 
         let upload_opts = UploadOptions::builder(file_meta).build();
 
@@ -945,10 +939,7 @@ mod tests {
 
         let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
 
-        let file_meta = FileMeta::builder()
-            .with_name("test.txt".to_string())
-            .with_size(16)
-            .build();
+        let file_meta = FileMeta::builder("test.txt", 16).build();
 
         let upload_opts = UploadOptions::builder(file_meta).build();
 
@@ -990,10 +981,7 @@ mod tests {
 
         let reader = tokio::io::BufReader::new(mock_bytes.as_slice());
 
-        let file_meta = FileMeta::builder()
-            .with_name("test.txt".to_string())
-            .with_size(16)
-            .build();
+        let file_meta = FileMeta::builder("test.txt", 16).build();
 
         let upload_opts = UploadOptions::builder(file_meta).build();
 
