@@ -168,7 +168,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -236,7 +236,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -435,7 +435,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -512,7 +512,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -807,7 +807,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -864,7 +864,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -1023,7 +1023,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -1079,7 +1079,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();

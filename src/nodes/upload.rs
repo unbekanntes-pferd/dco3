@@ -395,7 +395,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -463,7 +463,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
                                 
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -666,7 +666,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -739,7 +739,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -749,7 +749,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                 };
 
                 let url_req = GeneratePresignedUrlsRequest::new(
-                    n.try_into().expect("size not larger than 32 MB"),
+                    n.try_into().map_err(|_| DracoonClientError::IoError)?,
                     url_part,
                     url_part,
                 );
@@ -1037,7 +1037,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -1056,7 +1056,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                             Box::pin(stream),
                             &url,
                             upload_options.file_meta.size,
-                            n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                            n,
                             Some(curr_pos),
                         )
                         .await?;
@@ -1095,7 +1095,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -1112,7 +1112,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                     Box::pin(stream),
                     &url,
                     upload_options.file_meta.size,
-                    n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                    n,
                     Some(curr_pos),
                 )
                 .await?;
@@ -1239,7 +1239,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                             bytes_read += 1;
                             if buffer.len() == 1024 || bytes_read == chunk.len() {
                             if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size.clone());
+                                callback.call(buffer.len() as u64, fm.size);
                                         }
                                 yield Ok(bytes::Bytes::from(buffer.clone()));
                                 buffer.clear();
@@ -1255,7 +1255,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                             Box::pin(stream),
                             &url,
                             upload_options.file_meta.size,
-                            n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                            n,
                             Some(curr_pos),
                         )
                         .await
@@ -1295,7 +1295,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                     bytes_read += 1;
                     if buffer.len() == 1024 || bytes_read == chunk.len() {
                     if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size.clone());
+                        callback.call(buffer.len() as u64, fm.size);
                                 }
                         yield Ok(bytes::Bytes::from(buffer.clone()));
                         buffer.clear();
@@ -1314,7 +1314,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
                     Box::pin(stream),
                     &url,
                     upload_options.file_meta.size,
-                    n.try_into().map_err(|_| DracoonClientError::IoError)?,
+                    n,
                     Some(curr_pos),
                 )
                 .await

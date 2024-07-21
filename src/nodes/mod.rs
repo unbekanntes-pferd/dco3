@@ -715,9 +715,7 @@ pub trait Upload<R: AsyncRead> {
     ///      .unwrap();
     ///
     /// let file = tokio::fs::File::open("test.txt").await.unwrap();
-    /// let file_meta = FileMeta::builder()
-    /// .with_name("test.txt".into())
-    /// .with_size(123456)
+    /// let file_meta = FileMeta::builder("test.txt", 123456)
     /// .with_timestamp_modification("2020-01-01T00:00:00.000Z".parse().unwrap())
     /// .build();
     ///
@@ -738,9 +736,7 @@ pub trait Upload<R: AsyncRead> {
     ///
     /// // or with progress callback (boxed closure)
     /// let file = tokio::fs::File::open("test.txt").await.unwrap();
-    /// let file_meta = FileMeta::builder()
-    /// .with_name("test.txt".into())
-    /// .with_size(123456)
+    /// let file_meta = FileMeta::builder("test.txt", 123456)
     /// .with_timestamp_modification("2020-01-01T00:00:00.000Z".parse().unwrap())
     /// .build();
     /// let options = UploadOptions::builder(file_meta)
