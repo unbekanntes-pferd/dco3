@@ -365,16 +365,20 @@ impl UpdateUserRequestBuilder {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAuthDataUpdateRequest {
-    auth_method: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    method: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     login: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     ad_config_id: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     oid_config_id: Option<u64>,
 }
 
 impl UserAuthDataUpdateRequest {
     pub fn auth_method(auth_method: AuthMethod) -> Self {
         Self {
-            auth_method: Some(auth_method.into()),
+            method: Some(auth_method.into()),
             login: None,
             ad_config_id: None,
             oid_config_id: None,
@@ -383,7 +387,7 @@ impl UserAuthDataUpdateRequest {
 
     pub fn login(login: impl Into<String>) -> Self {
         Self {
-            auth_method: None,
+            method: None,
             login: Some(login.into()),
             ad_config_id: None,
             oid_config_id: None,
@@ -392,7 +396,7 @@ impl UserAuthDataUpdateRequest {
 
     pub fn ad_config_id(ad_config_id: u64) -> Self {
         Self {
-            auth_method: None,
+            method: None,
             login: None,
             ad_config_id: Some(ad_config_id),
             oid_config_id: None,
@@ -401,7 +405,7 @@ impl UserAuthDataUpdateRequest {
 
     pub fn oid_config_id(oid_config_id: u64) -> Self {
         Self {
-            auth_method: None,
+            method: None,
             login: None,
             ad_config_id: None,
             oid_config_id: Some(oid_config_id),
@@ -410,12 +414,12 @@ impl UserAuthDataUpdateRequest {
 
     pub fn new(
         login: Option<String>,
-        auth_method: Option<AuthMethod>,
+        method: Option<AuthMethod>,
         ad_config_id: Option<u64>,
         oid_config_id: Option<u64>,
     ) -> Self {
         Self {
-            auth_method: None,
+            method: None,
             login,
             ad_config_id: None,
             oid_config_id: None,
