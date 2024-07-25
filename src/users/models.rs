@@ -377,11 +377,25 @@ pub struct UserAuthDataUpdateRequest {
 
 impl UserAuthDataUpdateRequest {
     pub fn auth_method(auth_method: AuthMethod) -> Self {
+        let method: String = auth_method.clone().into();
+
+        let (ad_config_id, oid_config_id, login) = match auth_method {
+            AuthMethod::Basic => (None, None, None),
+            AuthMethod::ActiveDirectory {
+                ad_config_id,
+                login,
+            } => (Some(ad_config_id), None, Some(login)),
+            AuthMethod::OpenIdConnect {
+                oid_config_id,
+                login,
+            } => (None, Some(oid_config_id), Some(login)),
+        };
+
         Self {
-            method: Some(auth_method.into()),
-            login: None,
-            ad_config_id: None,
-            oid_config_id: None,
+            method: Some(method),
+            login,
+            ad_config_id,
+            oid_config_id,
         }
     }
 
