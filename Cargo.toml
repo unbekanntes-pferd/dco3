@@ -1,6 +1,6 @@
 [package]
 name = "dco3"
-version = "0.12.2"
+version = "0.13.0"
 edition = "2021"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3"

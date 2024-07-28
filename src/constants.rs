@@ -63,6 +63,7 @@ pub const MISSING_KEYS_BATCH: usize = 50;
 pub const USER_BASE: &str = "user";
 pub const USER_ACCOUNT: &str = "account";
 pub const USER_ACCOUNT_KEYPAIR: &str = "keypair";
+pub const USER_ACCOUNT_CUSTOMER: &str = "customer";
 
 // GROUPS
 pub const GROUPS_BASE: &str = "groups";

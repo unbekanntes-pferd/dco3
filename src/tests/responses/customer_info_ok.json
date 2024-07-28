@@ -1,0 +1,12 @@
+{
+    "id": 1,
+    "name": "string",
+    "isProviderCustomer": true,
+    "spaceLimit": 100,
+    "spaceUsed": 10,
+    "accountsLimit": 100,
+    "accountsUsed": 10,
+    "cntInternalUser": 9,
+    "cntGuestUser": 1,
+    "customerEncryptionEnabled": true
+  }

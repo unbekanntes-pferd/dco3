@@ -131,4 +131,33 @@ mod tests {
 
         assert_user_account(&user_account);
     }
+
+    #[tokio::test]
+    async fn test_get_customer_info() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let customer_res = include_str!("../tests/responses/customer_info_ok.json");
+
+        let customer_mock = mock_server
+            .mock("GET", "/api/v4/user/account/customer")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(customer_res)
+            .create();
+
+        let customer = client.user.get_customer_info().await.unwrap();
+
+        customer_mock.assert();
+
+        assert_eq!(customer.name, "string");
+        assert_eq!(customer.id, 1);
+        assert_eq!(customer.is_provider_customer, true);
+        assert_eq!(customer.accounts_limit, 100);
+        assert_eq!(customer.space_limit, 100);
+        assert_eq!(customer.space_used, 10);
+        assert_eq!(customer.accounts_used, 10);
+        assert_eq!(customer.cnt_guest_user, 1);
+        assert_eq!(customer.cnt_internal_user, 9);
+        assert_eq!(customer.customer_encryption_enabled, true);
+    }
 }

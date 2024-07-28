@@ -455,6 +455,7 @@ pub use self::{
     public::{Public, PublicDownload, PublicUpload},
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
+    system::AuthenticationMethods,
     user::{User, UserAccountKeyPairs},
     users::Users,
 };

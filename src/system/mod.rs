@@ -4,6 +4,8 @@ use crate::auth::DracoonClient;
 
 use self::auth::SystemAuthEndpoint;
 
+pub use self::auth::AuthenticationMethods;
+
 mod auth;
 
 #[derive(Clone)]

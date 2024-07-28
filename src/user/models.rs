@@ -196,3 +196,18 @@ impl FromResponse for UserKeyPairContainer {
         parse_body::<Self, DracoonErrorResponse>(response).await
     }
 }
+
+#[derive(Debug, Deserialize, Clone, FromResponse)]
+#[serde(rename_all = "camelCase")]
+pub struct CustomerData {
+    pub id: u64,
+    pub name: String,
+    pub is_provider_customer: bool,
+    pub space_limit: u64,
+    pub space_used: u64,
+    pub accounts_limit: u64,
+    pub accounts_used: u64,
+    pub cnt_internal_user: u64,
+    pub cnt_guest_user: u64,
+    pub customer_encryption_enabled: bool,
+}

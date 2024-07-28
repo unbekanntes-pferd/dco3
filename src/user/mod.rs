@@ -59,6 +59,23 @@ pub trait User {
         &self,
         update: UpdateUserAccountRequest,
     ) -> Result<UserAccount, DracoonClientError>;
+
+    /// Get the customer data.
+    /// ```no_run
+    /// # use dco3::{Dracoon, auth::OAuth2Flow, User};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client_secret")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    /// let customer = dracoon.user.get_customer_info().await.unwrap();
+    async fn get_customer_info(&self) -> Result<CustomerData, DracoonClientError>;
 }
 
 #[async_trait]
