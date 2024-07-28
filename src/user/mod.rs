@@ -75,6 +75,7 @@ pub trait User {
     /// #  .await
     /// #  .unwrap();
     /// let customer = dracoon.user.get_customer_info().await.unwrap();
+    /// # }
     async fn get_customer_info(&self) -> Result<CustomerData, DracoonClientError>;
 }
 
