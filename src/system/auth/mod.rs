@@ -6,7 +6,7 @@ use crate::{auth::Connected, DracoonClientError};
 
 use crate::constants::{
     DRACOON_API_PREFIX, SYSTEM_AUTH_ADS, SYSTEM_AUTH_BASE, SYSTEM_AUTH_OPENID,
-    SYSTEM_AUTH_OPENID_IDPS, SYSTEM_BASE,
+    SYSTEM_AUTH_OPENID_IDPS, SYSTEM_BASE, SYSTEM_CONFIG_BASE
 };
 
 mod models;
@@ -30,7 +30,7 @@ impl AuthenticationMethods for SystemAuthEndpoint<Connected> {
         &self,
     ) -> Result<ActiveDirectoryConfigList, DracoonClientError> {
         let url_part =
-            format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_ADS}");
+            format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_CONFIG_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_ADS}");
         let api_url = self.client().build_api_url(&url_part);
 
         let response = self
@@ -51,7 +51,7 @@ impl AuthenticationMethods for SystemAuthEndpoint<Connected> {
     async fn get_openid_idp_configurations(
         &self,
     ) -> Result<Vec<OpenIdIdpConfig>, DracoonClientError> {
-        let url_part = format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_OPENID}/{SYSTEM_AUTH_OPENID_IDPS}");
+        let url_part = format!("{DRACOON_API_PREFIX}/{SYSTEM_BASE}/{SYSTEM_CONFIG_BASE}/{SYSTEM_AUTH_BASE}/{SYSTEM_AUTH_OPENID}/{SYSTEM_AUTH_OPENID_IDPS}");
         let api_url = self.client().build_api_url(&url_part);
 
         let response = self
@@ -82,7 +82,7 @@ mod tests {
             include_str!("../../tests/responses/system/auth/active_directory_list_ok.json");
 
         let ad_config_mock = mock_server
-            .mock("GET", "/api/v4/system/auth/ads")
+            .mock("GET", "/api/v4/system/config/auth/ads")
             .with_status(200)
             .with_body(response)
             .with_header("content-type", "application/json")
@@ -120,7 +120,7 @@ mod tests {
         let response = include_str!("../../tests/responses/system/auth/openid_config_list_ok.json");
 
         let openid_config_mock = mock_server
-            .mock("GET", "/api/v4/system/auth/openid/idps")
+            .mock("GET", "/api/v4/system/config/auth/openid/idps")
             .with_status(200)
             .with_body(response)
             .with_header("content-type", "application/json")

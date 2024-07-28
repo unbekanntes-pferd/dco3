@@ -87,6 +87,7 @@ pub const SETTINGS_KEYPAIR: &str = "keypair";
 
 // SYSTEM
 pub const SYSTEM_BASE: &str = "system";
+pub const SYSTEM_CONFIG_BASE: &str = "config";
 pub const SYSTEM_AUTH_BASE: &str = "auth";
 pub const SYSTEM_AUTH_OPENID: &str = "openid";
 pub const SYSTEM_AUTH_OPENID_IDPS: &str = "idps";
