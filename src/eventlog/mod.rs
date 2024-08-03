@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-pub use models::{EventlogEndpoint, EventlogParams, LogEventList, LogOperationList, EventStatus, EventlogSortBy};
+pub use models::{
+    EventStatus, EventlogEndpoint, EventlogParams, EventlogSortBy, LogEventList, LogOperationList,
+};
 use reqwest::header;
 
 use crate::utils::FromResponse;
@@ -42,7 +44,6 @@ pub trait Eventlog {
     /// ```
     async fn get_events(&self, params: EventlogParams) -> Result<LogEventList, DracoonClientError>;
 
-
     /// Get a list of event operations.
     /// ```no_run
     /// # use dco3::{Dracoon, auth::OAuth2Flow, Eventlog};
@@ -78,8 +79,18 @@ impl Eventlog for EventlogEndpoint<Connected> {
                 .extend_pairs(params.user_id.map(|v| ("user_id", v.to_string())))
                 .extend_pairs(params.operation_type.map(|v| ("type", v.to_string())))
                 .extend_pairs(params.status.map(|v| ("status", (v as i64).to_string())))
-                .extend_pairs(params.date_start.map(|v| ("date_start", v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))))
-                .extend_pairs(params.date_end.map(|v| ("date_end", v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))))
+                .extend_pairs(params.date_start.map(|v| {
+                    (
+                        "date_start",
+                        v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    )
+                }))
+                .extend_pairs(params.date_end.map(|v| {
+                    (
+                        "date_end",
+                        v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    )
+                }))
                 .finish();
         };
 

@@ -7,7 +7,9 @@ use reqwest::Response;
 use serde::Deserialize;
 
 use crate::{
-    auth::{DracoonClient, DracoonErrorResponse}, utils::{parse_body, FromResponse}, DracoonClientError, RangedItems, SortOrder, SortQuery
+    auth::{DracoonClient, DracoonErrorResponse},
+    utils::{parse_body, FromResponse},
+    DracoonClientError, RangedItems, SortOrder, SortQuery,
 };
 
 #[derive(Clone)]
@@ -150,7 +152,6 @@ pub struct EventlogParamsBuilder {
 
 impl EventlogParamsBuilder {
     pub fn new() -> Self {
-   
         Self::default()
     }
 
@@ -164,37 +165,37 @@ impl EventlogParamsBuilder {
         self
     }
 
-    pub fn with_sort(mut self, sort: impl Into<Box<dyn SortQuery>>) -> Self  {
+    pub fn with_sort(mut self, sort: impl Into<Box<dyn SortQuery>>) -> Self {
         self.sort = Some(sort.into());
         self
     }
 
-    pub fn with_date_start(mut self, date_start: DateTime<Utc>) -> Self  {
+    pub fn with_date_start(mut self, date_start: DateTime<Utc>) -> Self {
         self.date_start = Some(date_start);
         self
     }
 
-    pub fn with_date_end(mut self, date_end: DateTime<Utc>) -> Self  {
+    pub fn with_date_end(mut self, date_end: DateTime<Utc>) -> Self {
         self.date_end = Some(date_end);
         self
     }
 
-    pub fn with_user_id(mut self, user_id: i64) -> Self  {
+    pub fn with_user_id(mut self, user_id: i64) -> Self {
         self.user_id = Some(user_id);
         self
     }
 
-    pub fn with_operation_type(mut self, operation_type: i64) -> Self  {
+    pub fn with_operation_type(mut self, operation_type: i64) -> Self {
         self.operation_type = Some(operation_type);
         self
     }
 
-    pub fn with_status(mut self, status: EventStatus) -> Self  {
+    pub fn with_status(mut self, status: EventStatus) -> Self {
         self.status = Some(status);
         self
     }
 
-    pub fn with_user_client(mut self, user_client: String) -> Self  {
+    pub fn with_user_client(mut self, user_client: String) -> Self {
         self.user_client = Some(user_client);
         self
     }
@@ -216,7 +217,7 @@ impl EventlogParamsBuilder {
 
 #[derive(Debug)]
 pub enum EventlogSortBy {
-    Time(SortOrder)
+    Time(SortOrder),
 }
 
 impl SortQuery for EventlogSortBy {

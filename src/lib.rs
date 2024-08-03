@@ -450,8 +450,8 @@ use self::{
 pub use self::{
     auth::errors::DracoonClientError,
     auth::OAuth2Flow,
-    eventlog::Eventlog,
     config::Config,
+    eventlog::Eventlog,
     groups::Groups,
     models::*,
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
