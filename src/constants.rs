@@ -59,6 +59,11 @@ pub const POLLING_START_DELAY: u64 = 300;
 // defines how many keys (users) distributed per file on upload
 pub const MISSING_KEYS_BATCH: usize = 50;
 
+// EVENTLOG
+pub const EVENTLOG_BASE: &str = "eventlog";
+pub const EVENTLOG_EVENTS: &str = "events";
+pub const EVENTLOG_OPERATIONS: &str = "operations";
+
 // USER
 pub const USER_BASE: &str = "user";
 pub const USER_ACCOUNT: &str = "account";

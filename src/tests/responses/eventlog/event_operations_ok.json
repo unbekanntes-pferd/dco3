@@ -1,0 +1,9 @@
+{
+    "operationList": [
+      {
+        "id": 1,
+        "name": "string",
+        "isDeprecated": false
+      }
+    ]
+  }
