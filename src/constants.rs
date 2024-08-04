@@ -63,6 +63,9 @@ pub const MISSING_KEYS_BATCH: usize = 50;
 pub const EVENTLOG_BASE: &str = "eventlog";
 pub const EVENTLOG_EVENTS: &str = "events";
 pub const EVENTLOG_OPERATIONS: &str = "operations";
+pub const AUDITS_BASE: &str = "audits";
+pub const AUDITS_NODES: &str = "nodes";
+pub const AUDIT_NODE_INFO: &str = "node_info";
 
 // USER
 pub const USER_BASE: &str = "user";

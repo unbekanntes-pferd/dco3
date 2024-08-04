@@ -117,6 +117,13 @@ impl ListAllParams {
             None => String::new(),
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.offset.is_none()
+            && self.limit.is_none()
+            && self.filter.is_none()
+            && self.sort.is_none()
+    }
 }
 
 pub struct ListAllParamsBuilder {

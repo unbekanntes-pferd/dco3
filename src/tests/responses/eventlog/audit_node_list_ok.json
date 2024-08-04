@@ -1,0 +1,54 @@
+[
+    {
+      "nodeId": 1,
+      "nodeName": "string",
+      "nodeParentPath": "string",
+      "nodeCntChildren": 1,
+      "auditUserPermissionList": [
+        {
+          "userId": 2,
+          "userLogin": "string",
+          "userFirstName": "string",
+          "userLastName": "string",
+          "permissions": {
+            "manage": true,
+            "read": true,
+            "create": true,
+            "change": true,
+            "delete": true,
+            "manageDownloadShare": true,
+            "manageUploadShare": true,
+            "readRecycleBin": true,
+            "restoreRecycleBin": true,
+            "deleteRecycleBin": true
+          }
+        }
+      ],
+      "nodeParentId": 1,
+      "nodeSize": 1000,
+      "nodeRecycleBinRetentionPeriod": 999,
+      "nodeQuota": 999,
+      "nodeIsEncrypted": true,
+      "nodeHasActivitiesLog": true,
+      "nodeCreatedAt": "2021-01-01T00:00:00.000Z",
+      "nodeCreatedBy": {
+        "id": 2,
+        "userType": "internal",
+        "avatarUuid": "string",
+        "userName": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "email": "string"
+      },
+      "nodeUpdatedAt": "2021-01-01T00:00:00.000Z",
+      "nodeUpdatedBy": {
+        "id": 2,
+        "userType": "internal",
+        "avatarUuid": "string",
+        "userName": "string",
+        "firstName": "string",
+        "lastName": "string",
+        "email": "string"
+      }
+    }
+  ]

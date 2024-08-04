@@ -1,15 +1,20 @@
 use async_trait::async_trait;
 pub use models::{
-    EventStatus, EventlogEndpoint, EventlogParams, EventlogSortBy, LogEventList, LogOperationList,
+    AuditNodeList, AuditNodeResponse, AuditUserPermission, EventStatus, EventlogEndpoint,
+    EventlogParams, EventlogSortBy, LogEventList, LogOperationList,
 };
 use reqwest::header;
 
 use crate::utils::FromResponse;
+use crate::ListAllParams;
 use crate::{auth::Connected, DracoonClientError};
 
 mod models;
 
-use crate::constants::{DRACOON_API_PREFIX, EVENTLOG_BASE, EVENTLOG_EVENTS, EVENTLOG_OPERATIONS};
+use crate::constants::{
+    AUDITS_BASE, AUDITS_NODES, DRACOON_API_PREFIX, EVENTLOG_BASE, EVENTLOG_EVENTS,
+    EVENTLOG_OPERATIONS,
+};
 
 #[async_trait]
 pub trait Eventlog {
@@ -62,6 +67,12 @@ pub trait Eventlog {
     /// # }
     /// ```
     async fn get_event_operations(&self) -> Result<LogOperationList, DracoonClientError>;
+
+    #[deprecated = "DRACOON Cloud no longer supports sync permissions - use a permissions report instead"]
+    async fn get_node_permissions(
+        &self,
+        params: ListAllParams,
+    ) -> Result<AuditNodeList, DracoonClientError>;
 }
 
 #[async_trait]
@@ -128,20 +139,56 @@ impl Eventlog for EventlogEndpoint<Connected> {
 
         LogOperationList::from_response(response).await
     }
+
+    async fn get_node_permissions(
+        &self,
+        params: ListAllParams,
+    ) -> Result<AuditNodeList, DracoonClientError> {
+        let url_part = format!("{DRACOON_API_PREFIX}/{EVENTLOG_BASE}/{AUDITS_BASE}/{AUDITS_NODES}");
+        let mut api_url = self.client().build_api_url(&url_part);
+
+        if !params.is_empty() {
+            let sort = params.sort_to_string();
+            let filter = params.filter_to_string();
+            api_url
+                .query_pairs_mut()
+                .extend_pairs(params.limit.map(|v| ("limit", v.to_string())))
+                .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
+                .extend_pairs(params.sort.map(|v| ("sort", sort)))
+                .extend_pairs(params.filter.map(|v| ("filter", filter)))
+                .finish();
+        };
+
+        let response = self
+            .client()
+            .http
+            .get(api_url)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
+            .header(header::CONTENT_TYPE, "application/json")
+            .send()
+            .await?;
+
+        AuditNodeList::from_response(response).await
+    }
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use chrono::DateTime;
     use mockito::Matcher;
 
     use crate::{
         eventlog::{
-            models::{EventStatus, EventlogSortBy},
+            models::{AuditNodesFilter, AuditNodesSortBy, EventStatus, EventlogSortBy},
             Eventlog, EventlogParams,
         },
+        nodes::UserType,
         tests::dracoon::get_connected_client,
-        SortOrder,
+        ListAllParams, SortOrder,
     };
 
     #[tokio::test]
@@ -444,5 +491,227 @@ mod tests {
         assert_eq!(operation.id, 1);
         assert_eq!(operation.name, "string");
         assert!(!operation.is_deprecated);
+    }
+
+    #[tokio::test]
+    async fn test_get_node_permissions() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let response = include_str!("../tests/responses/eventlog/audit_node_list_ok.json");
+
+        let node_permissions_mock = mock_server
+            .mock("GET", "/api/v4/eventlog/audits/nodes?offset=0")
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let node_permissions = client
+            .eventlog
+            .get_node_permissions(Default::default())
+            .await
+            .unwrap();
+
+        node_permissions_mock.assert();
+
+        assert_eq!(node_permissions.len(), 1);
+
+        let node = node_permissions.first().unwrap();
+
+        assert_eq!(node.node_id, 1);
+        assert_eq!(node.node_name, "string");
+        assert_eq!(node.node_parent_path, "string");
+        assert_eq!(node.node_cnt_children, 1);
+        assert_eq!(node.audit_user_permission_list.len(), 1);
+
+        let perms = node.audit_user_permission_list.first().unwrap();
+
+        assert_eq!(perms.user_id, 2);
+        assert_eq!(perms.user_login, "string");
+        assert_eq!(perms.user_first_name, "string");
+        assert_eq!(perms.user_last_name, "string");
+        assert!(perms.permissions.manage);
+        assert!(perms.permissions.read);
+        assert!(perms.permissions.create);
+        assert!(perms.permissions.delete);
+        assert!(perms.permissions.manage_download_share);
+        assert!(perms.permissions.manage_upload_share);
+        assert!(perms.permissions.read_recycle_bin);
+        assert!(perms.permissions.restore_recycle_bin);
+        assert!(perms.permissions.delete_recycle_bin);
+        assert_eq!(node.node_parent_id, Some(1));
+        assert_eq!(node.node_size, Some(1000));
+        assert_eq!(node.node_recycle_bin_retention_period, Some(999));
+        assert_eq!(node.node_is_encrypted, Some(true));
+        assert_eq!(
+            node.node_created_at.unwrap(),
+            DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
+                .unwrap()
+                .to_utc()
+        );
+        assert_eq!(
+            node.node_updated_at.unwrap(),
+            DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
+                .unwrap()
+                .to_utc()
+        );
+        assert_eq!(node.node_created_by.as_ref().unwrap().id, 2);
+        assert_eq!(node.node_updated_by.as_ref().unwrap().id, 2);
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().first_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().last_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().user_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().email,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().avatar_uuid,
+            "string".to_string()
+        );
+        assert_eq!(
+            node.node_created_by.as_ref().unwrap().user_type,
+            UserType::Internal
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().first_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().last_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().user_name,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().email,
+            Some("string".to_string())
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().avatar_uuid,
+            "string".to_string()
+        );
+        assert_eq!(
+            node.node_updated_by.as_ref().unwrap().user_type,
+            UserType::Internal
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_node_permissions_with_offset() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let response = include_str!("../tests/responses/eventlog/audit_node_list_ok.json");
+
+        let node_permissions_mock = mock_server
+            .mock("GET", "/api/v4/eventlog/audits/nodes?offset=1")
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let params = ListAllParams::builder().with_offset(1).build();
+
+        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+
+        node_permissions_mock.assert();
+
+        assert_eq!(node_permissions.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_get_node_permissions_with_limit() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let response = include_str!("../tests/responses/eventlog/audit_node_list_ok.json");
+
+        let node_permissions_mock = mock_server
+            .mock("GET", "/api/v4/eventlog/audits/nodes?limit=1&offset=0")
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let params = ListAllParams::builder().with_limit(1).build();
+
+        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+
+        node_permissions_mock.assert();
+
+        assert_eq!(node_permissions.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_get_node_permissions_with_sort() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let response = include_str!("../tests/responses/eventlog/audit_node_list_ok.json");
+
+        let node_permissions_mock = mock_server
+            .mock(
+                "GET",
+                "/api/v4/eventlog/audits/nodes?offset=0&sort=nodeId%3Aasc",
+            )
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let params = ListAllParams::builder()
+            .with_sort(AuditNodesSortBy::node_id(SortOrder::Asc))
+            .build();
+
+        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+
+        node_permissions_mock.assert();
+
+        assert_eq!(node_permissions.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_get_node_permissions_with_filter() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let response = include_str!("../tests/responses/eventlog/audit_node_list_ok.json");
+
+        let node_permissions_mock = mock_server
+            .mock(
+                "GET",
+                "/api/v4/eventlog/audits/nodes?offset=0&filter=nodeId%3Aeq%3A1",
+            )
+            .with_status(200)
+            .with_body(response)
+            .with_header("content-type", "application/json")
+            .expect(1)
+            .create_async()
+            .await;
+
+        let params = ListAllParams::builder()
+            .with_filter(AuditNodesFilter::node_id_equals(1))
+            .build();
+
+        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+
+        node_permissions_mock.assert();
+
+        assert_eq!(node_permissions.len(), 1);
     }
 }

@@ -32,6 +32,16 @@ pub mod dracoon {
         assert_eq!(user_account.auth_data.method, "basic");
     }
 
+    pub async fn init_tracing() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::from_default_env()
+                    .add_directive(tracing::Level::ERROR.into())
+                    .add_directive(tracing::Level::DEBUG.into()),
+            )
+            .try_init();
+    }
+
     pub async fn get_connected_client() -> (Dracoon<Connected>, mockito::ServerGuard) {
         let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();

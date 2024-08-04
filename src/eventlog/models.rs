@@ -8,8 +8,9 @@ use serde::Deserialize;
 
 use crate::{
     auth::{DracoonClient, DracoonErrorResponse},
+    nodes::{NodePermissions, UserInfo},
     utils::{parse_body, FromResponse},
-    DracoonClientError, RangedItems, SortOrder, SortQuery,
+    DracoonClientError, FilterOperator, FilterQuery, RangedItems, SortOrder, SortQuery,
 };
 
 #[derive(Clone)]
@@ -31,7 +32,7 @@ impl<S> EventlogEndpoint<S> {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(try_from = "i64")]
 pub enum EventStatus {
     Success = 0,
@@ -56,7 +57,7 @@ impl TryFrom<i64> for EventStatus {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEvent {
     pub id: i64,
@@ -92,7 +93,7 @@ impl FromResponse for LogEventList {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LogOperation {
     pub id: i64,
@@ -215,7 +216,7 @@ impl EventlogParamsBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EventlogSortBy {
     Time(SortOrder),
 }
@@ -234,5 +235,194 @@ impl SortQuery for EventlogSortBy {
 impl From<EventlogSortBy> for Box<dyn SortQuery> {
     fn from(sort_by: EventlogSortBy) -> Self {
         Box::new(sort_by)
+    }
+}
+
+#[derive(Deserialize, FromResponse, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditUserPermission {
+    pub user_id: i64,
+    pub user_login: String,
+    pub user_first_name: String,
+    pub user_last_name: String,
+    pub permissions: NodePermissions,
+}
+
+#[derive(Deserialize, FromResponse, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditNodeResponse {
+    pub node_id: i64,
+    pub node_name: String,
+    pub node_parent_path: String,
+    pub node_cnt_children: u64,
+    pub audit_user_permission_list: Vec<AuditUserPermission>,
+    pub node_parent_id: Option<i64>,
+    pub node_size: Option<u64>,
+    pub node_recycle_bin_retention_period: Option<u64>,
+    pub node_quota: Option<u64>,
+    pub node_is_encrypted: Option<bool>,
+    pub node_has_activities_log: Option<bool>,
+    pub node_created_at: Option<DateTime<Utc>>,
+    pub node_updated_at: Option<DateTime<Utc>>,
+    pub node_created_by: Option<UserInfo>,
+    pub node_updated_by: Option<UserInfo>,
+}
+
+pub type AuditNodeList = Vec<AuditNodeResponse>;
+
+#[async_trait]
+impl FromResponse for AuditNodeList {
+    async fn from_response(response: Response) -> Result<Self, DracoonClientError> {
+        parse_body::<Self, DracoonErrorResponse>(response).await
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AuditNodesSortBy {
+    NodeId(SortOrder),
+    NodeName(SortOrder),
+    ParentId(SortOrder),
+    Size(SortOrder),
+    Quota(SortOrder),
+}
+
+impl SortQuery for AuditNodesSortBy {
+    fn to_sort_string(&self) -> String {
+        match self {
+            AuditNodesSortBy::NodeId(order) => {
+                let order: String = order.into();
+                format!("nodeId:{}", order)
+            }
+            AuditNodesSortBy::NodeName(order) => {
+                let order: String = order.into();
+                format!("nodeName:{}", order)
+            }
+            AuditNodesSortBy::ParentId(order) => {
+                let order: String = order.into();
+                format!("nodeParentId:{}", order)
+            }
+            AuditNodesSortBy::Size(order) => {
+                let order: String = order.into();
+                format!("nodeSize:{}", order)
+            }
+            AuditNodesSortBy::Quota(order) => {
+                let order: String = order.into();
+                format!("nodeQuota:{}", order)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum AuditNodesFilter {
+    NodeId(u64, FilterOperator),
+    NodeName(String, FilterOperator),
+    NodeParentId(u64, FilterOperator),
+    UserId(u64, FilterOperator),
+    UserName(String, FilterOperator),
+    PermissionsManage(bool),
+    NodeIsEncrypted(bool),
+}
+
+impl FilterQuery for AuditNodesFilter {
+    fn to_filter_string(&self) -> String {
+        match self {
+            AuditNodesFilter::NodeId(val, op) => {
+                let op: String = op.into();
+                format!("nodeId:{}:{}", op, val)
+            }
+            AuditNodesFilter::NodeName(val, op) => {
+                let op: String = op.into();
+                format!("nodeName:{}:{}", op, val)
+            }
+            AuditNodesFilter::NodeParentId(val, op) => {
+                let op: String = op.into();
+                format!("nodeParentId:{}:{}", op, val)
+            }
+            AuditNodesFilter::UserId(val, op) => {
+                let op: String = op.into();
+                format!("userId:{}:{}", op, val)
+            }
+            AuditNodesFilter::UserName(val, op) => {
+                let op: String = op.into();
+                format!("userName:{}:{}", op, val)
+            }
+            AuditNodesFilter::PermissionsManage(val) => format!("permissionsManage:eq:{}", val),
+            AuditNodesFilter::NodeIsEncrypted(val) => format!("nodeIsEncrypted:eq:{}", val),
+        }
+    }
+}
+
+impl AuditNodesFilter {
+    pub fn node_id_equals(val: u64) -> Self {
+        Self::NodeId(val, FilterOperator::Eq)
+    }
+
+    pub fn node_name_contains(val: impl Into<String>) -> Self {
+        Self::NodeName(val.into(), FilterOperator::Cn)
+    }
+
+    pub fn node_name_equals(val: impl Into<String>) -> Self {
+        Self::NodeName(val.into(), FilterOperator::Eq)
+    }
+
+    pub fn user_id_equals(val: u64) -> Self {
+        Self::UserId(val, FilterOperator::Eq)
+    }
+
+    pub fn user_name_contains(val: impl Into<String>) -> Self {
+        Self::UserName(val.into(), FilterOperator::Cn)
+    }
+
+    pub fn user_name_equals(val: impl Into<String>) -> Self {
+        Self::UserName(val.into(), FilterOperator::Eq)
+    }
+
+    pub fn permissions_manage(val: bool) -> Self {
+        Self::PermissionsManage(val)
+    }
+
+    pub fn node_is_encrypted(val: bool) -> Self {
+        Self::NodeIsEncrypted(val)
+    }
+}
+
+impl AuditNodesSortBy {
+    pub fn node_id(order: SortOrder) -> Self {
+        Self::NodeId(order)
+    }
+
+    pub fn node_name(order: SortOrder) -> Self {
+        Self::NodeName(order)
+    }
+
+    pub fn node_parent_id(order: SortOrder) -> Self {
+        Self::ParentId(order)
+    }
+
+    pub fn node_size(order: SortOrder) -> Self {
+        Self::Size(order)
+    }
+
+    pub fn node_quota(order: SortOrder) -> Self {
+        Self::Quota(order)
+    }
+}
+
+impl EventlogSortBy {
+    pub fn time(order: SortOrder) -> Self {
+        Self::Time(order)
+    }
+}
+
+impl From<AuditNodesSortBy> for Box<dyn SortQuery> {
+    fn from(sort_by: AuditNodesSortBy) -> Self {
+        Box::new(sort_by)
+    }
+}
+
+impl From<AuditNodesFilter> for Box<dyn FilterQuery> {
+    fn from(filter: AuditNodesFilter) -> Self {
+        Box::new(filter)
     }
 }
