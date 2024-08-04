@@ -30,6 +30,8 @@
 //! * [MissingFileKeys] - for distributing missing keys using the user keypair
 //! * [RescueKeyPair] - for distributing missing keys using the rescue key
 //! * [Config] - for general configuration information
+//! * [AuthenticationMethods] - for authentication methods information
+//! * [Eventlog] - for eventlog information
 //! * [Public] - for public information
 //! * [PublicDownload] - for public download via share
 //! * [PublicUpload] - for public upload via file request
@@ -426,6 +428,7 @@ use std::{marker::PhantomData, sync::Arc};
 use auth::{GetClient, Provisioning};
 use config::ConfigEndpoint;
 use dco3_crypto::PlainUserKeyPairContainer;
+use eventlog::EventlogEndpoint;
 use groups::GroupsEndpoint;
 use nodes::NodesEndpoint;
 use provisioning::ProvisioningEndpoint;
@@ -448,6 +451,7 @@ pub use self::{
     auth::errors::DracoonClientError,
     auth::OAuth2Flow,
     config::Config,
+    eventlog::Eventlog,
     groups::Groups,
     models::*,
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
@@ -463,6 +467,7 @@ pub use self::{
 pub mod auth;
 pub mod config;
 pub mod constants;
+pub mod eventlog;
 pub mod groups;
 pub mod models;
 pub mod nodes;
@@ -486,6 +491,7 @@ pub struct Dracoon<State = Disconnected> {
     system_info: Container<SystemInfo>,
     encryption_secret: Option<String>,
     pub config: ConfigEndpoint<State>,
+    pub eventlog: EventlogEndpoint<State>,
     pub groups: GroupsEndpoint<State>,
     pub nodes: NodesEndpoint<State>,
     pub shares: SharesEndpoint<State>,
@@ -609,6 +615,7 @@ impl DracoonBuilder {
         let config_endpoint = ConfigEndpoint::new(Arc::clone(&dracoon));
         let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
+        let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -618,6 +625,7 @@ impl DracoonBuilder {
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
             config: config_endpoint,
+            eventlog: eventlog_endpoint,
             user: user_endpoint,
             nodes: nodes_endpoint,
             public: public_endpoint,
@@ -644,6 +652,7 @@ impl DracoonBuilder {
         let config_endpoint = ConfigEndpoint::new(Arc::clone(&dracoon));
         let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
+        let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -653,6 +662,7 @@ impl DracoonBuilder {
             system_info: Container::new(),
             encryption_secret: None,
             config: config_endpoint,
+            eventlog: eventlog_endpoint,
             user: user_endpoint,
             nodes: nodes_endpoint,
             public: public_endpoint,
@@ -688,6 +698,7 @@ impl Dracoon<Disconnected> {
         let config_endpoint = ConfigEndpoint::new(Arc::clone(&connected_client));
         let system_endpoint = SystemEndpoint::new(Arc::clone(&connected_client));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&connected_client));
+        let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&connected_client));
 
         let mut dracoon = Dracoon {
             client: connected_client,
@@ -697,6 +708,7 @@ impl Dracoon<Disconnected> {
             system_info: Container::new(),
             encryption_secret: self.encryption_secret,
             config: config_endpoint,
+            eventlog: eventlog_endpoint,
             user: user_endpoint,
             public: public_endpoint,
             provisioning: provisioning_endpoint,

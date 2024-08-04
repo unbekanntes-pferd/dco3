@@ -1,0 +1,33 @@
+{
+    "range": {
+      "offset": 0,
+      "limit": 500,
+      "total": 1
+    },
+    "items": [
+      {
+        "id": 1,
+        "time": "2023-01-01T00:00:00.000Z",
+        "userId": 2,
+        "message": "string",
+        "operationId": 3,
+        "operationName": "string",
+        "status": 2,
+        "userClient": "string",
+        "customerId": 4,
+        "userName": "string",
+        "userIp": "string",
+        "authParentSource": "string",
+        "authParentTarget": "string",
+        "objectId1": 5,
+        "objectType1": 5,
+        "objectName1": "string",
+        "objectId2": 6,
+        "objectType2": 5,
+        "objectName2": "string",
+        "attribute1": "string",
+        "attribute2": "string",
+        "attribute3": "string"
+      }
+    ]
+  }
