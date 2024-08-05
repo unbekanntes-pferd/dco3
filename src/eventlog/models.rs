@@ -32,7 +32,7 @@ impl<S> EventlogEndpoint<S> {
     }
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "i64")]
 pub enum EventStatus {
     Success = 0,

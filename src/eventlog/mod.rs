@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 pub use models::{
-    AuditNodeList, AuditNodeResponse, AuditUserPermission, EventStatus, EventlogEndpoint,
-    EventlogParams, EventlogSortBy, LogEventList, LogOperationList,
+    AuditNodeList, AuditNodeResponse, AuditNodesFilter, AuditNodesSortBy, AuditUserPermission,
+    EventStatus, EventlogEndpoint, EventlogParams, EventlogSortBy, LogEvent, LogEventList,
+    LogOperation, LogOperationList,
 };
 use reqwest::header;
 
