@@ -122,8 +122,7 @@ impl Eventlog for EventlogEndpoint<Connected> {
     }
 
     async fn get_event_operations(&self) -> Result<LogOperationList, DracoonClientError> {
-        let url_part =
-            format!("{DRACOON_API_PREFIX}/{EVENTLOG_BASE}/{EVENTLOG_OPERATIONS}");
+        let url_part = format!("{DRACOON_API_PREFIX}/{EVENTLOG_BASE}/{EVENTLOG_OPERATIONS}");
         let api_url = self.client().build_api_url(&url_part);
 
         let response = self
