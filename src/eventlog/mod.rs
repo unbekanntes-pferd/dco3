@@ -123,7 +123,7 @@ impl Eventlog for EventlogEndpoint<Connected> {
 
     async fn get_event_operations(&self) -> Result<LogOperationList, DracoonClientError> {
         let url_part =
-            format!("{DRACOON_API_PREFIX}/{EVENTLOG_BASE}/{EVENTLOG_EVENTS}/{EVENTLOG_OPERATIONS}");
+            format!("{DRACOON_API_PREFIX}/{EVENTLOG_BASE}/{EVENTLOG_OPERATIONS}");
         let api_url = self.client().build_api_url(&url_part);
 
         let response = self
@@ -474,7 +474,7 @@ mod tests {
         let response = include_str!("../tests/responses/eventlog/event_operations_ok.json");
 
         let operations_mock = mock_server
-            .mock("GET", "/api/v4/eventlog/events/operations")
+            .mock("GET", "/api/v4/eventlog/operations")
             .with_status(200)
             .with_body(response)
             .with_header("content-type", "application/json")
