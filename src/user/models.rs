@@ -207,7 +207,7 @@ pub struct CustomerData {
     pub space_used: u64,
     pub accounts_limit: u64,
     pub accounts_used: u64,
-    pub cnt_internal_user: u64,
-    pub cnt_guest_user: u64,
+    pub cnt_internal_user: Option<u64>,
+    pub cnt_guest_user: Option<u64>,
     pub customer_encryption_enabled: bool,
 }
