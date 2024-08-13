@@ -156,8 +156,8 @@ mod tests {
         assert_eq!(customer.space_limit, 100);
         assert_eq!(customer.space_used, 10);
         assert_eq!(customer.accounts_used, 10);
-        assert_eq!(customer.cnt_guest_user, 1);
-        assert_eq!(customer.cnt_internal_user, 9);
+        assert_eq!(customer.cnt_guest_user.unwrap(), 1);
+        assert_eq!(customer.cnt_internal_user.unwrap(), 9);
         assert_eq!(customer.customer_encryption_enabled, true);
     }
 }
