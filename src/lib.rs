@@ -746,46 +746,57 @@ impl<S: ConnectedClient> Dracoon<S> {
             .expect("Invalid base url")
     }
 
+    /// Returns endpoint for all config routes `/api/v4/config`
     pub fn config(&self) -> &ConfigEndpoint<S> {
         &self.endpoints.config
     }
 
+    /// Returns endpoint for all eventlog routes `/api/v4/eventlog`
     pub fn eventlog(&self) -> &EventlogEndpoint<S> {
         &self.endpoints.eventlog
     }
 
+    /// Returns endpoint for all groups routes `/api/v4/groups`
     pub fn groups(&self) -> &GroupsEndpoint<S> {
         &self.endpoints.groups
     }
 
+    /// Returns endpoint for all nodes routes `/api/v4/nodes`
     pub fn nodes(&self) -> &NodesEndpoint<S> {
         &self.endpoints.nodes
     }
 
+    /// Returns endpoint for all roles routes `/api/v4/roles`
     pub fn roles(&self) -> &RolesEndpoint<S> {
         &self.endpoints.roles
     }
 
+    /// Returns endpoint for all settings routes `/api/v4/settings`
     pub fn settings(&self) -> &SettingsEndpoint<S> {
         &self.endpoints.settings
     }
 
+    /// Returns endpoint for all shares routes `/api/v4/shares`
     pub fn shares(&self) -> &SharesEndpoint<S> {
         &self.endpoints.shares
     }
 
+    /// Returns endpoint for all system routes `/api/v4/system`
     pub fn system(&self) -> &SystemEndpoint<S> {
         &self.endpoints.system
     }
 
+    /// Returns endpoint for all provisioning routes `/api/v4/provisioning`
     pub fn provisioning(&self) -> &ProvisioningEndpoint<S> {
         &self.endpoints.provisioning
     }
 
+    /// Returns endpoint for all user routes `/api/v4/user`
     pub fn user(&self) -> &UserEndpoint<S> {
         &self.endpoints.user
     }
 
+    /// Returns endpoint for all users routes `/api/v4/users`
     pub fn users(&self) -> &UsersEndpoint<S> {
         &self.endpoints.users
     }
