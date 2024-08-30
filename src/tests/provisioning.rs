@@ -3,7 +3,7 @@ mod tests {
     use chrono::DateTime;
 
     use crate::{
-        auth::Provisioning,
+        client::Provisioning,
         provisioning::{Customer, FirstAdminUser, NewCustomerRequest, UpdateCustomerRequest},
         tests::users::tests::assert_user_item,
         CustomerProvisioning, Dracoon, ListAllParams,

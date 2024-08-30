@@ -426,7 +426,7 @@
 
 use std::{marker::PhantomData, sync::Arc};
 
-use auth::{GetClient, Provisioning};
+use client::{GetClient, Provisioning};
 use config::ConfigEndpoint;
 use dco3_crypto::PlainUserKeyPairContainer;
 use eventlog::EventlogEndpoint;
@@ -443,15 +443,15 @@ use user::UserEndpoint;
 use users::UsersEndpoint;
 
 use self::{
-    auth::{Connected, Disconnected},
-    auth::{DracoonClient, DracoonClientBuilder},
+    client::{Connected, Disconnected},
+    client::{DracoonClient, DracoonClientBuilder},
     user::models::UserAccount,
 };
 
 // re-export traits and base models
 pub use self::{
-    auth::errors::DracoonClientError,
-    auth::OAuth2Flow,
+    client::errors::DracoonClientError,
+    client::OAuth2Flow,
     config::Config,
     eventlog::Eventlog,
     groups::Groups,
@@ -467,7 +467,7 @@ pub use self::{
     users::Users,
 };
 
-pub mod auth;
+pub mod client;
 pub mod config;
 pub mod constants;
 pub mod eventlog;
@@ -788,4 +788,10 @@ impl<S: ConnectedClient> Dracoon<S> {
     pub fn users(&self) -> &UsersEndpoint<S> {
         &self.endpoints.users
     }
+}
+
+
+pub mod auth {
+    /// OAuth2 flow enum - used to pass the required flow to the client
+    pub use crate::client::OAuth2Flow;
 }

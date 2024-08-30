@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::{
-    auth::Connected,
+    client::Connected,
     constants::{DRACOON_API_PREFIX, ROLES_BASE, ROLES_GROUPS, ROLES_USERS},
     utils::FromResponse,
     DracoonClientError, ListAllParams,

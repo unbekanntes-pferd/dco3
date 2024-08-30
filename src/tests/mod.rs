@@ -47,7 +47,7 @@ pub mod dracoon {
         let mut mock_server = mockito::Server::new_async().await;
         let base_url = mock_server.url();
 
-        let auth_res = include_str!("../auth/tests/auth_ok.json");
+        let auth_res = include_str!("../client/tests/auth_ok.json");
 
         let auth_mock = mock_server
             .mock("POST", "/oauth/token")

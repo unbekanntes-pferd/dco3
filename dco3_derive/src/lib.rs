@@ -18,7 +18,7 @@ pub fn from_response_derive(input: TokenStream) -> TokenStream {
     #[async_trait::async_trait]
     impl crate::utils::FromResponse for #name {
         async fn from_response(response: reqwest::Response) -> Result<Self, crate::DracoonClientError> {
-            crate::utils::parse_body::<Self, crate::auth::DracoonErrorResponse>(response).await
+            crate::utils::parse_body::<Self, crate::client::DracoonErrorResponse>(response).await
         }
       }
     };

@@ -8,7 +8,7 @@ use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::{errors::DracoonClientError, models::DracoonErrorResponse},
+    client::{errors::DracoonClientError, models::DracoonErrorResponse},
     models::RangedItems,
     nodes::models::{NodePermissions, UserInfo},
     utils::{parse_body, FromResponse},

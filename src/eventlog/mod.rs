@@ -8,7 +8,7 @@ use reqwest::header;
 
 use crate::utils::FromResponse;
 use crate::ListAllParams;
-use crate::{auth::Connected, DracoonClientError};
+use crate::{client::Connected, DracoonClientError};
 
 mod models;
 

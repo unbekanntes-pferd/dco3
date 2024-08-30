@@ -5,7 +5,7 @@ use dco3_crypto::{
 use reqwest::header;
 
 use crate::{
-    auth::Connected,
+    client::Connected,
     constants::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,

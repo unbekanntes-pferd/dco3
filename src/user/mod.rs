@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use dco3_crypto::PlainUserKeyPairContainer;
 
 pub use self::models::*;
-use super::auth::errors::DracoonClientError;
+use super::client::errors::DracoonClientError;
 
 pub mod account;
 pub mod keypairs;

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::auth::DracoonClient;
+use crate::client::DracoonClient;
 
 #[derive(Clone)]
 pub struct SettingsEndpoint<S> {

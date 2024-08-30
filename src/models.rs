@@ -7,13 +7,13 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::{
-    auth::DracoonClient, config::ConfigEndpoint, eventlog::EventlogEndpoint,
+    client::DracoonClient, config::ConfigEndpoint, eventlog::EventlogEndpoint,
     groups::GroupsEndpoint, nodes::NodesEndpoint, provisioning::ProvisioningEndpoint,
     public::PublicEndpoint, roles::RolesEndpoint, settings::SettingsEndpoint,
     shares::SharesEndpoint, system::SystemEndpoint, user::UserEndpoint, users::UsersEndpoint,
 };
 
-use super::auth::errors::DracoonClientError;
+use super::client::errors::DracoonClientError;
 
 pub trait ConnectedClient {}
 

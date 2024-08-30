@@ -1,7 +1,7 @@
 //! This module implements a subset of the nodes DRACOON API.
 //! Documentation can be found here: <https://download.dracoon.com/api/swagger-ui/index.html?configUrl=/api/spec_v4/swagger-config#/nodes>
 pub use self::{models::*, rooms::models::*};
-use super::{auth::errors::DracoonClientError, models::ListAllParams};
+use super::{client::errors::DracoonClientError, models::ListAllParams};
 use async_trait::async_trait;
 use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 

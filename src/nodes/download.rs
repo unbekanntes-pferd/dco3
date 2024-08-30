@@ -3,7 +3,7 @@ use super::{
     Download,
 };
 use crate::{
-    auth::{errors::DracoonClientError, Connected},
+    client::{errors::DracoonClientError, Connected},
     constants::{
         DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE,
         NODES_DOWNLOAD_URL,

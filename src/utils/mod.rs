@@ -5,7 +5,7 @@ use serde_xml_rs::from_str;
 use tracing::error;
 
 use super::{
-    auth::{errors::DracoonClientError, models::StatusCodeState},
+    client::{errors::DracoonClientError, models::StatusCodeState},
     nodes::models::S3ErrorResponse,
 };
 

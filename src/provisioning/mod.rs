@@ -5,7 +5,7 @@ mod models;
 pub use self::models::*;
 
 use crate::{
-    auth::Provisioning,
+    client::Provisioning,
     constants::{
         DRACOON_API_PREFIX, PROVISIONING_BASE, PROVISIONING_CUSTOMERS,
         PROVISIONING_CUSTOMER_ATTRIBUTES, PROVISIONING_CUSTOMER_USERS, PROVISIONING_TOKEN_HEADER,

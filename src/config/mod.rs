@@ -9,7 +9,7 @@ use crate::constants::{
     CONFIG_PRODUCT_PACKAGES, CONFIG_PRODUCT_PACKAGES_CURRENT, CONFIG_S3_TAGS, DRACOON_API_PREFIX,
 };
 use crate::utils::FromResponse;
-use crate::{auth::Connected, DracoonClientError};
+use crate::{client::Connected, DracoonClientError};
 
 pub use self::models::*;
 

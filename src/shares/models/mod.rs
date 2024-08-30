@@ -6,7 +6,7 @@ use std::sync::Arc;
 pub use download::*;
 pub use upload::*;
 
-use crate::auth::DracoonClient;
+use crate::client::DracoonClient;
 
 #[derive(Clone)]
 pub struct SharesEndpoint<S> {
