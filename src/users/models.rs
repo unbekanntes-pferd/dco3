@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     auth::{DracoonClient, DracoonErrorResponse},
     models::{ObjectExpiration, RangedItems},
-    user::RoleList,
+    roles::RoleList,
     utils::{parse_body, FromResponse},
     DracoonClientError, FilterOperator, FilterQuery, SortOrder, SortQuery,
 };

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     auth::{errors::DracoonClientError, models::DracoonErrorResponse, DracoonClient},
+    roles::RoleList,
     utils::{parse_body, FromResponse},
 };
 
@@ -65,29 +66,6 @@ pub struct UserAuthData {
     pub must_change_password: Option<bool>,
     pub ad_config_id: Option<u64>,
     pub oid_config_id: Option<u64>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Right {
-    pub id: u64,
-    pub name: String,
-    pub description: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Role {
-    pub id: u64,
-    pub name: String,
-    pub description: String,
-    pub items: Option<Vec<Right>>,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct RoleList {
-    pub items: Vec<Role>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
