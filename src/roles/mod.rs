@@ -69,7 +69,7 @@ pub trait Roles {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let groups = dracoon.roles.assign_role_to_groups(vec![1, 2, 3], 1).await.unwrap();
+    /// let groups = dracoon.roles.assign_role_to_groups(1, vec![1, 2, 3].into()).await.unwrap();
     /// # }
     /// ```
     async fn assign_role_to_groups(
@@ -91,7 +91,7 @@ pub trait Roles {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let groups = dracoon.roles.revoke_role_from_groups(vec![1, 2, 3], 1).await.unwrap();
+    /// let groups = dracoon.roles.revoke_role_from_groups(1, vec![1, 2, 3].into()).await.unwrap();
     /// # }
     /// ```
     async fn revoke_role_from_groups(
@@ -140,7 +140,7 @@ pub trait Roles {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let users = dracoon.roles.assign_role_to_users(vec![1, 2, 3], 1).await.unwrap();
+    /// let users = dracoon.roles.assign_role_to_users(1, vec![1, 2, 3].into()).await.unwrap();
     /// # }
     /// ```
     async fn assign_role_to_users(
@@ -162,7 +162,7 @@ pub trait Roles {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let users = dracoon.roles.revoke_role_from_users(vec![1, 2, 3], 1).await.unwrap();
+    /// let users = dracoon.roles.revoke_role_from_users(1, vec![1, 2, 3].into()).await.unwrap();
     /// # }
     /// ```
     async fn revoke_role_from_users(
