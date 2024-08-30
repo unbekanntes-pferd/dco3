@@ -315,7 +315,7 @@ mod tests {
             .create();
 
         let url = client
-            .public
+            .public()
             .generate_download_url(
                 "123456".to_string(),
                 PublicDownloadTokenGenerateRequest::default(),
@@ -358,7 +358,7 @@ mod tests {
         let mut writer = tokio::io::BufWriter::new(buffer);
 
         client
-            .public
+            .public()
             .download_unencrypted(&download_url, &mut writer, 16, None)
             .await
             .unwrap();
@@ -417,7 +417,7 @@ mod tests {
         let mut writer = tokio::io::BufWriter::new(buffer);
 
         dracoon
-            .public
+            .public()
             .download_encrypted(
                 &download_url,
                 secret.to_string(),

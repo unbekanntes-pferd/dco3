@@ -43,7 +43,7 @@ pub mod tests {
             .with_body(roles_res)
             .create();
 
-        let roles = dracoon.roles.get_roles().await.unwrap();
+        let roles = dracoon.roles().get_roles().await.unwrap();
 
         roles_mock.assert();
 
@@ -78,11 +78,7 @@ pub mod tests {
             .with_body(groups_res)
             .create();
 
-        let groups = dracoon
-            .roles
-            .get_role_groups(1, None)
-            .await
-            .unwrap();
+        let groups = dracoon.roles().get_role_groups(1, None).await.unwrap();
 
         groups_mock.assert();
 
@@ -108,7 +104,7 @@ pub mod tests {
             .create();
 
         let groups = dracoon
-            .roles
+            .roles()
             .assign_role_to_groups(1, vec![1, 2, 3].into())
             .await
             .unwrap();
@@ -138,7 +134,7 @@ pub mod tests {
             .create();
 
         let groups = dracoon
-            .roles
+            .roles()
             .revoke_role_from_groups(1, vec![1, 2, 3].into())
             .await
             .unwrap();
@@ -166,11 +162,7 @@ pub mod tests {
             .with_body(users_res)
             .create();
 
-        let res = dracoon
-            .roles
-            .get_role_users(1, None)
-            .await
-            .unwrap();
+        let res = dracoon.roles().get_role_users(1, None).await.unwrap();
 
         users_mock.assert();
 
@@ -197,7 +189,7 @@ pub mod tests {
             .create();
 
         let res = dracoon
-            .roles
+            .roles()
             .assign_role_to_users(1, vec![1, 2, 3].into())
             .await
             .unwrap();
@@ -227,7 +219,7 @@ pub mod tests {
             .create();
 
         let res = dracoon
-            .roles
+            .roles()
             .revoke_role_from_users(1, vec![1, 2, 3].into())
             .await
             .unwrap();

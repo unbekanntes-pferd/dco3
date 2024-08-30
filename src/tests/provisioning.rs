@@ -80,7 +80,7 @@ mod tests {
             .with_body(customers_res)
             .create();
 
-        let customers = dracoon.provisioning.get_customers(None).await.unwrap();
+        let customers = dracoon.provisioning().get_customers(None).await.unwrap();
         assert_eq!(customers.range.total, 1);
         assert_eq!(customers.range.offset, 0);
         assert_eq!(customers.range.limit, 0);
@@ -107,7 +107,7 @@ mod tests {
         let params = ListAllParams::builder().with_limit(100).build();
 
         let customers = dracoon
-            .provisioning
+            .provisioning()
             .get_customers(Some(params))
             .await
             .unwrap();
@@ -137,7 +137,7 @@ mod tests {
         let params = ListAllParams::builder().with_offset(500).build();
 
         let customers = dracoon
-            .provisioning
+            .provisioning()
             .get_customers(Some(params))
             .await
             .unwrap();
@@ -170,7 +170,7 @@ mod tests {
         let params = ListAllParams::builder().build();
 
         let customers = dracoon
-            .provisioning
+            .provisioning()
             .get_customers(Some(params))
             .await
             .unwrap();
@@ -200,7 +200,7 @@ mod tests {
             .create();
 
         // TODO: add sort query
-        let customers = dracoon.provisioning.get_customers(None).await.unwrap();
+        let customers = dracoon.provisioning().get_customers(None).await.unwrap();
         assert_eq!(customers.range.total, 1);
         assert_eq!(customers.range.offset, 0);
         assert_eq!(customers.range.limit, 0);
@@ -232,7 +232,7 @@ mod tests {
             .build();
 
         let customer = dracoon
-            .provisioning
+            .provisioning()
             .create_customer(customer)
             .await
             .unwrap();
@@ -290,7 +290,7 @@ mod tests {
             .with_body(res)
             .create();
 
-        let customer = dracoon.provisioning.get_customer(1, None).await.unwrap();
+        let customer = dracoon.provisioning().get_customer(1, None).await.unwrap();
 
         assert_customer(&customer).await;
 
@@ -313,7 +313,7 @@ mod tests {
             .create();
 
         let customer = dracoon
-            .provisioning
+            .provisioning()
             .get_customer(1, Some(true))
             .await
             .unwrap();
@@ -340,7 +340,7 @@ mod tests {
             .build();
 
         let customer = dracoon
-            .provisioning
+            .provisioning()
             .update_customer(1, customer)
             .await
             .unwrap();
@@ -367,7 +367,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        let res = dracoon.provisioning.delete_customer(1).await;
+        let res = dracoon.provisioning().delete_customer(1).await;
         assert!(res.is_ok());
     }
 
@@ -384,7 +384,7 @@ mod tests {
             .create();
 
         let users = dracoon
-            .provisioning
+            .provisioning()
             .get_customer_users(1, None)
             .await
             .unwrap();
@@ -414,7 +414,7 @@ mod tests {
         let params = ListAllParams::builder().with_limit(100).build();
 
         let users = dracoon
-            .provisioning
+            .provisioning()
             .get_customer_users(1, Some(params))
             .await
             .unwrap();
@@ -441,7 +441,7 @@ mod tests {
         let params = ListAllParams::builder().with_offset(500).build();
 
         let users = dracoon
-            .provisioning
+            .provisioning()
             .get_customer_users(1, Some(params))
             .await
             .unwrap();

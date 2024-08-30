@@ -44,7 +44,7 @@ pub trait Eventlog {
     ///    .with_date_end(chrono::Utc::now())
     ///    .build();
     /// // pass EventlogParams::default() if you don't want to use any params
-    /// let event_list = dracoon.eventlog.get_events(params).await.unwrap();
+    /// let event_list = dracoon.eventlog().get_events(params).await.unwrap();
     ///
     /// # }
     /// ```
@@ -64,7 +64,7 @@ pub trait Eventlog {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let operations = dracoon.eventlog.get_event_operations().await.unwrap();
+    /// let operations = dracoon.eventlog().get_event_operations().await.unwrap();
     /// # }
     /// ```
     async fn get_event_operations(&self) -> Result<LogOperationList, DracoonClientError>;
@@ -206,7 +206,10 @@ mod tests {
             .create_async()
             .await;
 
-        let events = client.eventlog.get_events(EventlogParams::default()).await;
+        let events = client
+            .eventlog()
+            .get_events(EventlogParams::default())
+            .await;
 
         events_mock.assert();
 
@@ -235,7 +238,7 @@ mod tests {
 
         let params = EventlogParams::builder().with_offset(1).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -264,7 +267,7 @@ mod tests {
 
         let params = EventlogParams::builder().with_limit(1).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -295,7 +298,7 @@ mod tests {
             .with_sort(EventlogSortBy::Time(SortOrder::Desc))
             .build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -324,7 +327,7 @@ mod tests {
 
         let params = EventlogParams::builder().with_user_id(1).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -353,7 +356,7 @@ mod tests {
 
         let params = EventlogParams::builder().with_operation_type(1).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -384,7 +387,7 @@ mod tests {
             .with_status(EventStatus::Success)
             .build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -419,7 +422,7 @@ mod tests {
             .to_utc();
         let params = EventlogParams::builder().with_date_start(date).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -455,7 +458,7 @@ mod tests {
 
         let params = EventlogParams::builder().with_date_end(date).build();
 
-        let events = client.eventlog.get_events(params).await;
+        let events = client.eventlog().get_events(params).await;
 
         events_mock.assert();
 
@@ -481,7 +484,7 @@ mod tests {
             .create_async()
             .await;
 
-        let operations = client.eventlog.get_event_operations().await.unwrap();
+        let operations = client.eventlog().get_event_operations().await.unwrap();
         assert_eq!(operations.operation_list.len(), 1);
 
         operations_mock.assert();
@@ -509,7 +512,7 @@ mod tests {
             .await;
 
         let node_permissions = client
-            .eventlog
+            .eventlog()
             .get_node_permissions(Default::default())
             .await
             .unwrap();
@@ -626,7 +629,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_offset(1).build();
 
-        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+        let node_permissions = client
+            .eventlog()
+            .get_node_permissions(params)
+            .await
+            .unwrap();
 
         node_permissions_mock.assert();
 
@@ -650,7 +657,11 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(1).build();
 
-        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+        let node_permissions = client
+            .eventlog()
+            .get_node_permissions(params)
+            .await
+            .unwrap();
 
         node_permissions_mock.assert();
 
@@ -679,7 +690,11 @@ mod tests {
             .with_sort(AuditNodesSortBy::node_id(SortOrder::Asc))
             .build();
 
-        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+        let node_permissions = client
+            .eventlog()
+            .get_node_permissions(params)
+            .await
+            .unwrap();
 
         node_permissions_mock.assert();
 
@@ -708,7 +723,11 @@ mod tests {
             .with_filter(AuditNodesFilter::node_id_equals(1))
             .build();
 
-        let node_permissions = client.eventlog.get_node_permissions(params).await.unwrap();
+        let node_permissions = client
+            .eventlog()
+            .get_node_permissions(params)
+            .await
+            .unwrap();
 
         node_permissions_mock.assert();
 

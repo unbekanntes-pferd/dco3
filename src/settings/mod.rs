@@ -27,21 +27,21 @@ pub trait RescueKeyPair {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let mut missing_keys = dracoon.settings.distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
+    /// let mut missing_keys = dracoon.settings().distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
     ///
     /// while missing_keys > 100 {
     /// // loop until no more keys need distribution
-    /// missing_keys = dracoon.settings.distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
+    /// missing_keys = dracoon.settings().distribute_missing_keys("rescue_key_secret", None, None, None).await.unwrap();
     /// }
     ///
     /// // distribute missing keys for a specific room
-    /// let missing_room_keys = dracoon.settings.distribute_missing_keys("rescue_key_secret", Some(123), None, None).await.unwrap();
+    /// let missing_room_keys = dracoon.settings().distribute_missing_keys("rescue_key_secret", Some(123), None, None).await.unwrap();
     ///
     /// // distribute missing keys for a specific file
-    /// let missing_file_keys = dracoon.settings.distribute_missing_keys("rescue_key_secret", None, Some(123), None).await.unwrap();
+    /// let missing_file_keys = dracoon.settings().distribute_missing_keys("rescue_key_secret", None, Some(123), None).await.unwrap();
     ///
     /// // distribute missing keys for a specific user
-    /// let missing_user_keys = dracoon.settings.distribute_missing_keys("rescue_key_secret", None, None, Some(123)).await.unwrap();
+    /// let missing_user_keys = dracoon.settings().distribute_missing_keys("rescue_key_secret", None, None, Some(123)).await.unwrap();
     ///
     /// # }
     ///

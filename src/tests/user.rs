@@ -27,7 +27,7 @@ mod tests {
             .create();
 
         let keypair = client
-            .user
+            .user()
             .get_user_keypair("TopSecret1234!")
             .await
             .unwrap();
@@ -62,7 +62,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        let res = client.user.set_user_keypair("TopSecret1234!").await;
+        let res = client.user().set_user_keypair("TopSecret1234!").await;
 
         keypair_mock.assert();
 
@@ -79,7 +79,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        let res = client.user.delete_user_keypair().await;
+        let res = client.user().delete_user_keypair().await;
 
         keypair_mock.assert();
 
@@ -98,7 +98,7 @@ mod tests {
             .with_body(account_res)
             .create();
 
-        let user_account = client.user.get_user_account().await.unwrap();
+        let user_account = client.user().get_user_account().await.unwrap();
 
         user_account_mock.assert();
 
@@ -125,7 +125,7 @@ mod tests {
             .with_email("test@localhost")
             .build();
 
-        let user_account = client.user.update_user_account(update).await.unwrap();
+        let user_account = client.user().update_user_account(update).await.unwrap();
 
         user_account_mock.assert();
 
@@ -145,7 +145,7 @@ mod tests {
             .with_body(customer_res)
             .create();
 
-        let customer = client.user.get_customer_info().await.unwrap();
+        let customer = client.user().get_customer_info().await.unwrap();
 
         customer_mock.assert();
 

@@ -25,6 +25,7 @@ use crate::{
         MIN_RETRY_DELAY, MIN_TOKEN_COUNT, TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
     models::Container,
+    ConnectedClient,
 };
 
 use self::errors::DracoonClientError;
@@ -66,6 +67,9 @@ pub struct Disconnected;
 /// provisioning state of [DracoonClient]
 #[derive(Debug, Clone)]
 pub struct Provisioning;
+
+impl ConnectedClient for Connected {}
+impl ConnectedClient for Provisioning {}
 
 /// represents a connection to DRACOON (`OAuth2` tokens)
 #[derive(Debug, Clone)]

@@ -89,7 +89,7 @@ mod tests {
             .create();
 
         let ad_configs = client
-            .system
+            .system()
             .auth
             .get_active_directory_configurations()
             .await
@@ -127,7 +127,7 @@ mod tests {
             .create();
 
         let openid_configs = client
-            .system
+            .system()
             .auth
             .get_openid_idp_configurations()
             .await
