@@ -35,6 +35,7 @@
 //! * [Public] - for public information
 //! * [PublicDownload] - for public download via share
 //! * [PublicUpload] - for public upload via file request
+//! * [Roles] - for role operations
 //!
 //! ### Example
 //! ```no_run
@@ -458,6 +459,7 @@ pub use self::{
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
     public::{Public, PublicDownload, PublicUpload},
+    roles::Roles,
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
     system::AuthenticationMethods,
