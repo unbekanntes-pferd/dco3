@@ -1,0 +1,14 @@
+{
+  "range": {
+    "offset": 0,
+    "limit": 0,
+    "total": 1
+  },
+  "items": [
+    {
+      "id": 1,
+      "isMember": true,
+      "name": "group name"
+    }
+  ]
+}

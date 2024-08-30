@@ -1,6 +1,7 @@
 mod groups;
 pub mod nodes;
 mod provisioning;
+mod roles;
 mod rooms;
 mod shares;
 mod user;
