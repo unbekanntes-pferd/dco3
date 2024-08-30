@@ -811,6 +811,16 @@ impl<S: ConnectedClient> Dracoon<S> {
 }
 
 pub mod auth {
-    /// OAuth2 flow enum - used to pass the required flow to the client
-    pub use crate::client::OAuth2Flow;
+    /// re-export client models for auth
+    pub use crate::client::{Connected, OAuth2Flow, Disconnected, Provisioning};
+
+    pub mod models {
+        /// re-export client models for auth
+        pub use crate::client::models::{DracoonErrorResponse, DracoonAuthErrorResponse};
+    }
+}
+
+/// re-export client errors for auth
+pub mod errors {
+    pub use crate::client::errors::DracoonClientError;
 }
