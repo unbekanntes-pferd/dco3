@@ -1,0 +1,23 @@
+{
+  "range": {
+    "offset": 0,
+    "limit": 0,
+    "total": 1
+  },
+  "items": [
+    {
+      "userInfo": {
+        "id": 1,
+        "userType": "internal",
+        "avatarUuid": "avatar uuid",
+        "userName": "user name",
+        "firstName": "first name",
+        "lastName": "last name",
+        "email": "email"
+      },
+      "isMember": true,
+      "id": 1,
+      "displayName": "display name"
+    }
+  ]
+}

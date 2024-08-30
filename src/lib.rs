@@ -35,6 +35,7 @@
 //! * [Public] - for public information
 //! * [PublicDownload] - for public download via share
 //! * [PublicUpload] - for public upload via file request
+//! * [Roles] - for role operations
 //!
 //! ### Example
 //! ```no_run
@@ -434,6 +435,7 @@ use nodes::NodesEndpoint;
 use provisioning::ProvisioningEndpoint;
 use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
+use roles::RolesEndpoint;
 use settings::SettingsEndpoint;
 use shares::SharesEndpoint;
 use system::SystemEndpoint;
@@ -457,6 +459,7 @@ pub use self::{
     nodes::{Download, Folders, MissingFileKeys, Nodes, Rooms, Upload},
     provisioning::CustomerProvisioning,
     public::{Public, PublicDownload, PublicUpload},
+    roles::Roles,
     settings::RescueKeyPair,
     shares::{DownloadShares, UploadShares},
     system::AuthenticationMethods,
@@ -473,6 +476,7 @@ pub mod models;
 pub mod nodes;
 pub mod provisioning;
 pub mod public;
+pub mod roles;
 pub mod settings;
 pub mod shares;
 pub mod system;
@@ -501,6 +505,7 @@ pub struct Dracoon<State = Disconnected> {
     pub users: UsersEndpoint<State>,
     pub public: PublicEndpoint<State>,
     pub provisioning: ProvisioningEndpoint<State>,
+    pub roles: RolesEndpoint<State>,
 }
 
 impl<S: Send + Sync> GetClient<S> for Dracoon<S> {
@@ -616,6 +621,7 @@ impl DracoonBuilder {
         let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
         let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&dracoon));
+        let roles_endpoint = RolesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -635,6 +641,7 @@ impl DracoonBuilder {
             system: system_endpoint,
             users: users_endpoint,
             groups: groups_endpoint,
+            roles: roles_endpoint,
         })
     }
 
@@ -653,6 +660,7 @@ impl DracoonBuilder {
         let system_endpoint = SystemEndpoint::new(Arc::clone(&dracoon));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&dracoon));
         let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&dracoon));
+        let roles_endpoint = RolesEndpoint::new(Arc::clone(&dracoon));
 
         Ok(Dracoon {
             client: dracoon,
@@ -672,6 +680,7 @@ impl DracoonBuilder {
             system: system_endpoint,
             users: users_endpoint,
             groups: groups_endpoint,
+            roles: roles_endpoint,
         })
     }
 }
@@ -699,6 +708,7 @@ impl Dracoon<Disconnected> {
         let system_endpoint = SystemEndpoint::new(Arc::clone(&connected_client));
         let nodes_endpoint = NodesEndpoint::new(Arc::clone(&connected_client));
         let eventlog_endpoint = EventlogEndpoint::new(Arc::clone(&connected_client));
+        let roles_endpoint = RolesEndpoint::new(Arc::clone(&connected_client));
 
         let mut dracoon = Dracoon {
             client: connected_client,
@@ -712,6 +722,7 @@ impl Dracoon<Disconnected> {
             user: user_endpoint,
             public: public_endpoint,
             provisioning: provisioning_endpoint,
+            roles: roles_endpoint,
             nodes: nodes_endpoint,
             shares: shares_endpoint,
             settings: settings_endpoint,

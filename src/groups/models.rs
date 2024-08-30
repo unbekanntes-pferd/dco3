@@ -10,7 +10,7 @@ use crate::{
     auth::{DracoonClient, DracoonErrorResponse},
     models::{FilterOperator, FilterQuery, ObjectExpiration, RangedItems, SortOrder, SortQuery},
     nodes::models::UserInfo,
-    user::models::RoleList,
+    roles::RoleList,
     utils::{parse_body, FromResponse},
     DracoonClientError,
 };

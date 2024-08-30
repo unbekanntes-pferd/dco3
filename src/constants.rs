@@ -89,6 +89,11 @@ pub const PROVISIONING_CUSTOMER_ATTRIBUTES: &str = "customerAttributes";
 pub const PROVISIONING_CUSTOMER_USERS: &str = "users";
 pub const PROVISIONING_TOKEN_HEADER: &str = "X-Sds-Service-Token";
 
+// ROLES
+pub const ROLES_BASE: &str = "roles";
+pub const ROLES_GROUPS: &str = "groups";
+pub const ROLES_USERS: &str = "users";
+
 // SETTINGS
 pub const SETTINGS_BASE: &str = "settings";
 pub const SETTINGS_KEYPAIR: &str = "keypair";

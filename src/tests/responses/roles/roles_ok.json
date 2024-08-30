@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "role name",
+      "description": "role description",
+      "items": [
+        {
+          "id": 1,
+          "name": "item name",
+          "description": "item description"
+        }
+      ]
+    }
+  ]
+}
