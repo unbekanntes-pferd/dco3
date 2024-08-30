@@ -812,11 +812,11 @@ impl<S: ConnectedClient> Dracoon<S> {
 
 pub mod auth {
     /// re-export client models for auth
-    pub use crate::client::{Connected, OAuth2Flow, Disconnected, Provisioning};
+    pub use crate::client::{Connected, Disconnected, OAuth2Flow, Provisioning};
 
     pub mod models {
         /// re-export client models for auth
-        pub use crate::client::models::{DracoonErrorResponse, DracoonAuthErrorResponse};
+        pub use crate::client::models::{DracoonAuthErrorResponse, DracoonErrorResponse};
     }
 }
 

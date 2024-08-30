@@ -434,11 +434,8 @@ impl DracoonClient<Disconnected> {
     fn client_credentials(&self) -> String {
         const B64_URLSAFE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-        let client_credentials = format!(
-            "{}:{}",
-            &self.client_id,
-            self.client_secret.expose_secret()
-        );
+        let client_credentials =
+            format!("{}:{}", &self.client_id, self.client_secret.expose_secret());
 
         B64_URLSAFE.encode(client_credentials)
     }
