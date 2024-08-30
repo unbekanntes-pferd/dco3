@@ -50,7 +50,7 @@ pub trait Roles {
     /// let groups = dracoon.roles.get_all_groups_with_role(1, Some(params)).await.unwrap();
     /// # }
     /// ```
-    async fn get_all_groups_with_role(
+    async fn get_role_groups(
         &self,
         role_id: u64,
         params: Option<ListAllParams>,
@@ -121,7 +121,7 @@ pub trait Roles {
     /// let users = dracoon.roles.get_all_users_with_role(1, Some(params)).await.unwrap();
     /// # }
     /// ```
-    async fn get_all_users_with_role(
+    async fn get_role_users(
         &self,
         role_id: u64,
         params: Option<ListAllParams>,

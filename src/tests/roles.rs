@@ -80,7 +80,7 @@ pub mod tests {
 
         let groups = dracoon
             .roles
-            .get_all_groups_with_role(1, None)
+            .get_role_groups(1, None)
             .await
             .unwrap();
 
@@ -168,7 +168,7 @@ pub mod tests {
 
         let res = dracoon
             .roles
-            .get_all_users_with_role(1, None)
+            .get_role_users(1, None)
             .await
             .unwrap();
 
