@@ -660,9 +660,15 @@ impl Dracoon<Disconnected> {
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
-            let kp = dracoon.user().get_user_keypair(encryption_secret.expose_secret()).await?;
+            let kp = dracoon
+                .user()
+                .get_user_keypair(encryption_secret.expose_secret())
+                .await?;
             dracoon.encryption_secret = None;
-            dracoon.keypair.set(Secret::new(WrappedUserKeypair::new(kp))).await;
+            dracoon
+                .keypair
+                .set(Secret::new(WrappedUserKeypair::new(kp)))
+                .await;
             drop(encryption_secret)
         }
 
@@ -715,7 +721,9 @@ impl Dracoon<Connected> {
         if self.keypair.is_none().await {
             if let Some(secret) = secret {
                 let keypair = self.user().get_user_keypair(&secret).await?;
-                self.keypair.set(Secret::new(WrappedUserKeypair::new(keypair))).await;
+                self.keypair
+                    .set(Secret::new(WrappedUserKeypair::new(keypair)))
+                    .await;
             } else {
                 return Err(DracoonClientError::MissingEncryptionSecret);
             }
@@ -801,7 +809,6 @@ impl<S: ConnectedClient> Dracoon<S> {
         &self.endpoints.users
     }
 }
-
 
 pub mod auth {
     /// OAuth2 flow enum - used to pass the required flow to the client

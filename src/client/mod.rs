@@ -434,7 +434,11 @@ impl DracoonClient<Disconnected> {
     fn client_credentials(&self) -> String {
         const B64_URLSAFE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-        let client_credentials = format!("{}:{}", &self.client_id, &self.client_secret.expose_secret());
+        let client_credentials = format!(
+            "{}:{}",
+            &self.client_id,
+            self.client_secret.expose_secret()
+        );
 
         B64_URLSAFE.encode(client_credentials)
     }
@@ -504,7 +508,7 @@ impl DracoonClient<Disconnected> {
 
         let auth = OAuth2AuthCodeFlow::new(
             &self.client_id,
-            &self.client_secret.expose_secret(),
+            self.client_secret.expose_secret(),
             code,
             self.redirect_uri
                 .as_ref()
@@ -534,7 +538,11 @@ impl DracoonClient<Disconnected> {
     ) -> Result<Connection, DracoonClientError> {
         let token_url = self.get_token_url();
 
-        let auth = OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret.expose_secret(), refresh_token);
+        let auth = OAuth2RefreshTokenFlow::new(
+            &self.client_id,
+            self.client_secret.expose_secret(),
+            refresh_token,
+        );
 
         let res = self
             .http
@@ -612,7 +620,7 @@ impl DracoonClient<Connected> {
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
-            &self.client_secret.expose_secret(),
+            self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_ACCESS_TOKEN,
             access_token.expose_secret(),
         );
@@ -639,7 +647,7 @@ impl DracoonClient<Connected> {
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
-            &self.client_secret.expose_secret(),
+            self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_REFRESH_TOKEN,
             refresh_token.expose_secret(),
         );
@@ -668,8 +676,11 @@ impl DracoonClient<Connected> {
             ));
         }
 
-        let auth =
-            OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret.expose_secret(), refresh_token.expose_secret());
+        let auth = OAuth2RefreshTokenFlow::new(
+            &self.client_id,
+            self.client_secret.expose_secret(),
+            refresh_token.expose_secret(),
+        );
 
         let res = self.http.post(token_url).form(&auth).send().await?;
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
@@ -745,7 +756,10 @@ impl DracoonClient<Connected> {
 
             self.curr_connection.set(next_connection).await;
 
-            return Ok(format!("Bearer {}", connection.access_token.expose_secret()));
+            return Ok(format!(
+                "Bearer {}",
+                connection.access_token.expose_secret()
+            ));
         }
 
         if self.is_connection_expired().await {
