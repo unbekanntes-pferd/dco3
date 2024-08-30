@@ -1,4 +1,5 @@
 use reqwest_retry::{default_on_request_failure, Retryable, RetryableStrategy};
+use secrecy::Secret;
 use std::fmt::{Display, Formatter};
 use url::ParseError;
 
@@ -280,8 +281,8 @@ impl From<OAuth2TokenResponse> for Connection {
     fn from(value: OAuth2TokenResponse) -> Self {
         Self {
             connected_at: Utc::now(),
-            access_token: value.access_token,
-            refresh_token: value.refresh_token,
+            access_token: Secret::new(value.access_token),
+            refresh_token: Secret::new(value.refresh_token),
             expires_in: value.expires_in,
         }
     }

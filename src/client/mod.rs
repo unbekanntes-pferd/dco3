@@ -5,6 +5,7 @@ use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use retry_policies::Jitter;
+use secrecy::{ExposeSecret, Secret};
 use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
@@ -74,19 +75,19 @@ impl ConnectedClient for Provisioning {}
 /// represents a connection to DRACOON (`OAuth2` tokens)
 #[derive(Debug, Clone)]
 pub struct Connection {
-    access_token: String,
-    refresh_token: String,
+    access_token: Secret<String>,
+    refresh_token: Secret<String>,
     expires_in: u64,
     connected_at: DateTime<Utc>,
 }
 
 impl Connection {
     pub fn refresh_token(&self) -> String {
-        self.refresh_token.clone()
+        self.refresh_token.expose_secret().clone()
     }
 
     pub fn access_token(&self) -> String {
-        self.access_token.clone()
+        self.access_token.clone().expose_secret().clone()
     }
 
     pub fn expires_in(&self) -> u64 {
@@ -121,8 +122,8 @@ impl Connection {
 
     pub fn new_from_access_token(access_token: String) -> Self {
         Self {
-            access_token,
-            refresh_token: String::new(),
+            access_token: Secret::new(access_token),
+            refresh_token: Secret::new(String::new()),
             expires_in: u64::MAX,
             connected_at: Utc::now(),
         }
@@ -141,15 +142,15 @@ pub struct DracoonClient<State = Disconnected> {
     base_url: Url,
     redirect_uri: Option<Url>,
     client_id: String,
-    client_secret: String,
+    client_secret: Secret<String>,
     pub http: ClientWithMiddleware,
     pub stream_http: Client,
     connection: Container<Connection>,
     token_rotation: Option<u8>,
     additional_connections: Container<Vec<Connection>>,
     curr_connection: Container<CurrentConnection>,
-    connected: PhantomData<State>,
-    provisioning_token: Option<String>,
+    state: PhantomData<State>,
+    provisioning_token: Option<Secret<String>>,
 }
 
 /// Builder for the [DracoonClient] struct.
@@ -303,15 +304,15 @@ impl DracoonClientBuilder {
             base_url,
             redirect_uri: None,
             client_id: String::new(),
-            client_secret: String::new(),
+            client_secret: Secret::new(String::new()),
             http,
             stream_http: upload_http,
-            connected: PhantomData,
+            state: PhantomData,
             connection: Container::new(),
             additional_connections: Container::new(),
             token_rotation: None,
             curr_connection: Container::new(),
-            provisioning_token: Some(provisioning_token.to_string()),
+            provisioning_token: Some(Secret::new(provisioning_token.to_string())),
         })
     }
 
@@ -359,11 +360,11 @@ impl DracoonClientBuilder {
             base_url,
             redirect_uri: Some(redirect_uri),
             client_id,
-            client_secret,
+            client_secret: Secret::new(client_secret),
             connection: Container::<Connection>::new(),
             additional_connections: Container::new(),
             token_rotation,
-            connected: PhantomData,
+            state: PhantomData,
             http,
             curr_connection: Container::new_from(CurrentConnection::Main),
             stream_http: upload_http,
@@ -403,7 +404,7 @@ impl DracoonClient<Disconnected> {
             let mut additional_connections = Vec::new();
             for _ in 0..token_rotation - 1 {
                 let new_connection = self
-                    .connect_refresh_token(&connection.refresh_token)
+                    .connect_refresh_token(connection.refresh_token.expose_secret())
                     .await?;
                 additional_connections.push(new_connection);
             }
@@ -422,7 +423,7 @@ impl DracoonClient<Disconnected> {
             curr_connection: self.curr_connection.clone(),
             base_url: self.base_url.clone(),
             redirect_uri: self.redirect_uri.clone(),
-            connected: PhantomData,
+            state: PhantomData,
             http: self.http.clone(),
             stream_http: self.stream_http.clone(),
             provisioning_token: None,
@@ -433,7 +434,7 @@ impl DracoonClient<Disconnected> {
     fn client_credentials(&self) -> String {
         const B64_URLSAFE: engine::GeneralPurpose =
             engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
-        let client_credentials = format!("{}:{}", &self.client_id, &self.client_secret);
+        let client_credentials = format!("{}:{}", &self.client_id, &self.client_secret.expose_secret());
 
         B64_URLSAFE.encode(client_credentials)
     }
@@ -503,7 +504,7 @@ impl DracoonClient<Disconnected> {
 
         let auth = OAuth2AuthCodeFlow::new(
             &self.client_id,
-            &self.client_secret,
+            &self.client_secret.expose_secret(),
             code,
             self.redirect_uri
                 .as_ref()
@@ -521,6 +522,8 @@ impl DracoonClient<Disconnected> {
                 error!("Error connecting with auth code flow: {}", err);
                 err
             })?;
+
+        drop(auth);
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
     }
 
@@ -531,7 +534,7 @@ impl DracoonClient<Disconnected> {
     ) -> Result<Connection, DracoonClientError> {
         let token_url = self.get_token_url();
 
-        let auth = OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret, refresh_token);
+        let auth = OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret.expose_secret(), refresh_token);
 
         let res = self
             .http
@@ -578,7 +581,7 @@ impl DracoonClient<Connected> {
             curr_connection: Container::new_from(CurrentConnection::Main),
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
-            connected: PhantomData,
+            state: PhantomData,
             http: self.http,
             stream_http: self.stream_http,
             provisioning_token: None,
@@ -609,9 +612,9 @@ impl DracoonClient<Connected> {
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
-            &self.client_secret,
+            &self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_ACCESS_TOKEN,
-            &access_token,
+            access_token.expose_secret(),
         );
 
         self.http.post(api_url).form(&auth).send().await?;
@@ -636,9 +639,9 @@ impl DracoonClient<Connected> {
 
         let auth = OAuth2TokenRevoke::new(
             &self.client_id,
-            &self.client_secret,
+            &self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_REFRESH_TOKEN,
-            &refresh_token,
+            refresh_token.expose_secret(),
         );
 
         self.http.post(api_url).form(&auth).send().await?;
@@ -659,14 +662,14 @@ impl DracoonClient<Connected> {
             .clone();
 
         // this happens for OAuth2Flow::Simple (no refresh token provided)
-        if refresh_token.is_empty() {
+        if refresh_token.expose_secret().is_empty() {
             return Err(DracoonClientError::Auth(
                 DracoonAuthErrorResponse::new_unauthorized(),
             ));
         }
 
         let auth =
-            OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret, &refresh_token);
+            OAuth2RefreshTokenFlow::new(&self.client_id, &self.client_secret.expose_secret(), refresh_token.expose_secret());
 
         let res = self.http.post(token_url).form(&auth).send().await?;
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
@@ -724,7 +727,7 @@ impl DracoonClient<Connected> {
                 }
 
                 // no need to rotate, there's a new access token
-                return Ok(format!("Bearer {}", access_token));
+                return Ok(format!("Bearer {}", access_token.expose_secret()));
             }
 
             // rotate the connection
@@ -742,7 +745,7 @@ impl DracoonClient<Connected> {
 
             self.curr_connection.set(next_connection).await;
 
-            return Ok(format!("Bearer {}", connection.access_token));
+            return Ok(format!("Bearer {}", connection.access_token.expose_secret()));
         }
 
         if self.is_connection_expired().await {
@@ -757,6 +760,7 @@ impl DracoonClient<Connected> {
                 .await
                 .expect("Connected client has no connection")
                 .access_token
+                .expose_secret()
         ))
     }
 
@@ -785,7 +789,8 @@ impl DracoonClient<Provisioning> {
         self.provisioning_token
             .as_ref()
             .expect("Provisioning client has no token")
-            .to_string()
+            .expose_secret()
+            .clone()
     }
 }
 
@@ -1066,7 +1071,8 @@ mod tests {
                 .unwrap()
                 .first()
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "token2"
         );
         assert_eq!(
@@ -1077,7 +1083,8 @@ mod tests {
                 .unwrap()
                 .get(1)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "token3"
         );
         assert_eq!(
@@ -1088,7 +1095,8 @@ mod tests {
                 .unwrap()
                 .get(2)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "token4"
         );
         assert_eq!(
@@ -1099,7 +1107,8 @@ mod tests {
                 .unwrap()
                 .get(3)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "token5"
         );
     }
@@ -1142,7 +1151,8 @@ mod tests {
                 .unwrap()
                 .first()
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "access_token"
         );
         assert_eq!(
@@ -1153,7 +1163,8 @@ mod tests {
                 .unwrap()
                 .get(1)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "access_token"
         );
         assert_eq!(
@@ -1164,7 +1175,8 @@ mod tests {
                 .unwrap()
                 .get(2)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "access_token"
         );
         assert_eq!(
@@ -1175,7 +1187,8 @@ mod tests {
                 .unwrap()
                 .get(3)
                 .unwrap()
-                .access_token,
+                .access_token
+                .expose_secret(),
             "access_token"
         );
     }
@@ -1416,8 +1429,8 @@ mod tests {
         assert_eq!(access_token, "Bearer access_token");
 
         let conn = connected_client.connection.get().await.unwrap();
-        assert_eq!(conn.access_token, "access_token");
-        assert_eq!(conn.refresh_token, "");
+        assert_eq!(conn.access_token.expose_secret(), "access_token");
+        assert_eq!(conn.refresh_token.expose_secret(), "");
         assert_eq!(conn.expires_in, std::u64::MAX);
     }
 }
