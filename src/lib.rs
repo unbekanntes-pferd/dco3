@@ -436,6 +436,7 @@ use provisioning::ProvisioningEndpoint;
 use public::{PublicEndpoint, SystemInfo};
 use reqwest::Url;
 use roles::RolesEndpoint;
+use secrecy::{ExposeSecret, Secret};
 use settings::SettingsEndpoint;
 use shares::SharesEndpoint;
 use system::SystemEndpoint;
@@ -491,9 +492,9 @@ pub struct Dracoon<State = Disconnected> {
     client: Arc<DracoonClient<State>>,
     state: PhantomData<State>,
     user_info: Container<UserAccount>,
-    keypair: Container<PlainUserKeyPairContainer>,
+    keypair: Container<Secret<WrappedUserKeypair>>,
     system_info: Container<SystemInfo>,
-    encryption_secret: Option<String>,
+    encryption_secret: Option<Secret<String>>,
     endpoints: Endpoints<State>,
 }
 
@@ -510,7 +511,7 @@ impl<S: Send + Sync> GetClient<S> for Dracoon<S> {
 #[derive(Default)]
 pub struct DracoonBuilder {
     client_builder: DracoonClientBuilder,
-    encryption_secret: Option<String>,
+    encryption_secret: Option<Secret<String>>,
 }
 
 impl DracoonBuilder {
@@ -528,7 +529,7 @@ impl DracoonBuilder {
     /// The client will then either fail to connect due to wrong encryption secret or permanently store
     /// a user's keypair.
     pub fn with_encryption_password(mut self, encryption_secret: impl Into<String>) -> Self {
-        self.encryption_secret = Some(encryption_secret.into());
+        self.encryption_secret = Some(Secret::new(encryption_secret.into()));
         self
     }
 
@@ -659,9 +660,9 @@ impl Dracoon<Disconnected> {
         };
 
         if let Some(encryption_secret) = dracoon.encryption_secret.clone() {
-            let kp = dracoon.user().get_user_keypair(&encryption_secret).await?;
+            let kp = dracoon.user().get_user_keypair(encryption_secret.expose_secret()).await?;
             dracoon.encryption_secret = None;
-            dracoon.keypair.set(kp).await;
+            dracoon.keypair.set(Secret::new(WrappedUserKeypair::new(kp))).await;
             drop(encryption_secret)
         }
 
@@ -714,14 +715,14 @@ impl Dracoon<Connected> {
         if self.keypair.is_none().await {
             if let Some(secret) = secret {
                 let keypair = self.user().get_user_keypair(&secret).await?;
-                self.keypair.set(keypair).await;
+                self.keypair.set(Secret::new(WrappedUserKeypair::new(keypair))).await;
             } else {
                 return Err(DracoonClientError::MissingEncryptionSecret);
             }
         }
 
         let keypair = self.keypair.get().await.expect("No keypair set");
-        Ok(keypair)
+        Ok(keypair.expose_secret().keypair().clone())
     }
 }
 

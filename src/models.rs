@@ -2,6 +2,8 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
+use dco3_crypto::PlainUserKeyPairContainer;
+use secrecy::{CloneableSecret, Zeroize};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -578,5 +580,26 @@ impl<S> From<&Arc<DracoonClient<S>>> for Endpoints<S> {
             eventlog: EventlogEndpoint::new(client.clone()),
             roles: RolesEndpoint::new(client.clone()),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct WrappedUserKeypair(PlainUserKeyPairContainer);
+
+impl CloneableSecret for WrappedUserKeypair {}
+
+impl Zeroize for WrappedUserKeypair {
+    fn zeroize(&mut self) {
+        self.0.private_key_container.private_key.zeroize();
+    }
+}
+
+impl WrappedUserKeypair {
+    pub fn new(keypair: PlainUserKeyPairContainer) -> Self {
+        Self(keypair)
+    }
+
+    pub fn keypair(&self) -> &PlainUserKeyPairContainer {
+        &self.0
     }
 }
