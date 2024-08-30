@@ -134,7 +134,7 @@ pub trait Roles {
     /// # let dracoon = Dracoon::builder()
     /// #  .with_base_url("https://dracoon.team")
     /// #  .with_client_id("client_id")
-    /// #  .with_client("client_secret")
+    /// #  .with_client_secret("client_secret")
     /// #  .build()
     /// #  .unwrap()
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
