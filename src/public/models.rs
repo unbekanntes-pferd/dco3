@@ -6,7 +6,7 @@ use dco3_derive::FromResponse;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    auth::{DracoonClient, DracoonErrorResponse, GetClient},
+    client::{DracoonClient, DracoonErrorResponse, GetClient},
     nodes::{S3FileUploadPart, S3UploadStatus, UploadOptions, UserUserPublicKey},
 };
 

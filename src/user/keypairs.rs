@@ -1,6 +1,6 @@
 use super::{UserAccountKeyPairs, UserEndpoint};
 use crate::{
-    auth::{errors::DracoonClientError, Connected},
+    client::{errors::DracoonClientError, Connected},
     constants::{DRACOON_API_PREFIX, USER_ACCOUNT, USER_ACCOUNT_KEYPAIR, USER_BASE},
     utils::FromResponse,
 };

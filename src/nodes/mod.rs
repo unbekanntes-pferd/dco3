@@ -1,7 +1,7 @@
 //! This module implements a subset of the nodes DRACOON API.
 //! Documentation can be found here: <https://download.dracoon.com/api/swagger-ui/index.html?configUrl=/api/spec_v4/swagger-config#/nodes>
 pub use self::{models::*, rooms::models::*};
-use super::{auth::errors::DracoonClientError, models::ListAllParams};
+use super::{client::errors::DracoonClientError, models::ListAllParams};
 use async_trait::async_trait;
 use tokio::io::{AsyncRead, AsyncWrite, BufReader};
 
@@ -36,13 +36,13 @@ pub trait Nodes {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let nodes = dracoon.nodes.get_nodes(None, None, None).await.unwrap();
+    /// let nodes = dracoon.nodes().get_nodes(None, None, None).await.unwrap();
     ///
     /// // get all nodes for a parent
-    /// let nodes = dracoon.nodes.get_nodes(Some(123), None, None).await.unwrap();
+    /// let nodes = dracoon.nodes().get_nodes(Some(123), None, None).await.unwrap();
     ///
     /// // get all nodes visible as room manager / admin
-    /// let nodes = dracoon.nodes.get_nodes(None, Some(true), None).await.unwrap();
+    /// let nodes = dracoon.nodes().get_nodes(None, Some(true), None).await.unwrap();
     ///
     /// // use filtering and sorting
     /// let params = ListAllParams::builder()
@@ -51,7 +51,7 @@ pub trait Nodes {
     ///    .with_sort(NodesSortBy::name(SortOrder::Desc))
     ///    .build();
     ///
-    /// let nodes = dracoon.nodes.get_nodes(None, None, Some(params)).await.unwrap();
+    /// let nodes = dracoon.nodes().get_nodes(None, None, Some(params)).await.unwrap();
     /// # }
     /// ```
     async fn get_nodes(
@@ -74,7 +74,7 @@ pub trait Nodes {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let node = dracoon.nodes.get_node_from_path("/foo/bar").await.unwrap();
+    /// let node = dracoon.nodes().get_node_from_path("/foo/bar").await.unwrap();
     /// match node {
     ///    Some(node) => println!("Found node: {}", node.name),
     ///    None => println!("Node not found"),
@@ -97,13 +97,13 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// // search for nodes ("*" is wildcard)
-    /// let nodes = dracoon.nodes.search_nodes("foo", None, None, None).await.unwrap();
+    /// let nodes = dracoon.nodes().search_nodes("foo", None, None, None).await.unwrap();
     ///
     /// // search for nodes in a parent
-    /// let nodes = dracoon.nodes.search_nodes("foo", Some(123), None, None).await.unwrap();
+    /// let nodes = dracoon.nodes().search_nodes("foo", Some(123), None, None).await.unwrap();
     ///
     /// // search for nodes in a parent with a depth level (-1 is full tree)
-    /// let nodes = dracoon.nodes.search_nodes("foo", Some(123), Some(1), None).await.unwrap();
+    /// let nodes = dracoon.nodes().search_nodes("foo", Some(123), Some(1), None).await.unwrap();
     ///
     /// // use filtering and sorting
     /// let params = ListAllParams::builder()
@@ -111,7 +111,7 @@ pub trait Nodes {
     ///                .with_filter(NodesSearchFilter::size_greater_equals(100))
     ///                .with_sort(NodesSearchSortBy::name(SortOrder::Desc))
     ///                .build();
-    /// let nodes = dracoon.nodes.search_nodes("foo", None, None, Some(params)).await.unwrap();
+    /// let nodes = dracoon.nodes().search_nodes("foo", None, None, Some(params)).await.unwrap();
     /// # }
     /// ```
     async fn search_nodes(
@@ -136,7 +136,7 @@ pub trait Nodes {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let node = dracoon.nodes.get_node(123).await.unwrap();
+    /// let node = dracoon.nodes().get_node(123).await.unwrap();
     /// # }
     /// ```
     async fn get_node(&self, node_id: u64) -> Result<Node, DracoonClientError>;
@@ -154,7 +154,7 @@ pub trait Nodes {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// dracoon.nodes.delete_node(123).await.unwrap();
+    /// dracoon.nodes().delete_node(123).await.unwrap();
     /// # }
     /// ```
     async fn delete_node(&self, node_id: u64) -> Result<(), DracoonClientError>;
@@ -173,7 +173,7 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let node_ids = vec![123, 456];
-    /// dracoon.nodes.delete_nodes(node_ids.into()).await.unwrap();
+    /// dracoon.nodes().delete_nodes(node_ids.into()).await.unwrap();
     /// # }
     /// ```
 
@@ -193,7 +193,7 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let node_ids = vec![123, 456];
-    /// dracoon.nodes.move_nodes(node_ids.into(), 789).await.unwrap();
+    /// dracoon.nodes().move_nodes(node_ids.into(), 789).await.unwrap();
     /// # }
     /// ```
     async fn move_nodes(
@@ -216,7 +216,7 @@ pub trait Nodes {
     /// #  .await
     /// #  .unwrap();
     /// let node_ids = vec![123, 456];
-    /// dracoon.nodes.copy_nodes(node_ids.into(), 789).await.unwrap();
+    /// dracoon.nodes().copy_nodes(node_ids.into(), 789).await.unwrap();
     /// # }
     /// ```
     async fn copy_nodes(
@@ -290,7 +290,7 @@ pub trait Folders {
     ///                                .with_classification(1)
     ///                                .with_notes("My notes")
     ///                                .build();
-    /// let folder = dracoon.nodes.create_folder(folder).await.unwrap();
+    /// let folder = dracoon.nodes().create_folder(folder).await.unwrap();
     /// # }
     /// ```
     async fn create_folder(&self, req: CreateFolderRequest) -> Result<Node, DracoonClientError>;
@@ -312,7 +312,7 @@ pub trait Folders {
     ///                              .with_name("My Folder")
     ///                              .with_classification(2)
     ///                              .build();
-    /// dracoon.nodes.update_folder(123, update).await.unwrap();
+    /// dracoon.nodes().update_folder(123, update).await.unwrap();
     /// # }
     /// ```
     async fn update_folder(
@@ -357,7 +357,7 @@ pub trait Rooms {
     ///                              .with_parent_id(123)
     ///                              .with_classification(1)
     ///                              .build();
-    /// let room = dracoon.nodes.create_room(room).await.unwrap();
+    /// let room = dracoon.nodes().create_room(room).await.unwrap();
     /// # }
     /// ```
     async fn create_room(
@@ -381,7 +381,7 @@ pub trait Rooms {
     /// let room = UpdateRoomRequest::builder()
     ///                              .with_name("My new Room")
     ///                              .build();
-    /// let room = dracoon.nodes.update_room(123, room).await.unwrap();
+    /// let room = dracoon.nodes().update_room(123, room).await.unwrap();
     /// # }
     /// ```
     async fn update_room(
@@ -407,7 +407,7 @@ pub trait Rooms {
     ///                              .with_inherit_permissions(true)
     ///                              .with_recycle_bin_retention_period(30)
     ///                              .build();
-    /// let room = dracoon.nodes.config_room(123, room).await.unwrap();
+    /// let room = dracoon.nodes().config_room(123, room).await.unwrap();
     /// # }
     /// ```
     async fn config_room(
@@ -429,7 +429,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    ///  let policies = dracoon.nodes.get_room_policies(123).await.unwrap();
+    ///  let policies = dracoon.nodes().get_room_policies(123).await.unwrap();
     /// # }
     /// ```
     async fn get_room_policies(&self, room_id: u64) -> Result<RoomPolicies, DracoonClientError>;
@@ -451,7 +451,7 @@ pub trait Rooms {
     ///                            .with_default_expiration_period(60 * 60 * 24 * 30)
     ///                            .with_virus_protection_enabled(true)
     ///                            .build();
-    /// dracoon.nodes.update_room_policies(123, new_policies).await.unwrap();
+    /// dracoon.nodes().update_room_policies(123, new_policies).await.unwrap();
     /// # }
     /// ```
     //
@@ -478,7 +478,7 @@ pub trait Rooms {
     ///                           .try_with_data_room_rescue_key("Secret123")
     ///                           .unwrap()
     ///                           .build();
-    /// let room = dracoon.nodes.encrypt_room(123, encryption).await.unwrap();
+    /// let room = dracoon.nodes().encrypt_room(123, encryption).await.unwrap();
     /// # }
     /// ```
     async fn encrypt_room(
@@ -500,7 +500,7 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-    /// let groups = dracoon.nodes.get_room_groups(123, None).await.unwrap();
+    /// let groups = dracoon.nodes().get_room_groups(123, None).await.unwrap();
     /// # }
     /// ```
     async fn get_room_groups(
@@ -527,7 +527,7 @@ pub trait Rooms {
     ///
     /// // add a a list of updates
     /// let group_updates = vec![RoomGroupsAddBatchRequestItem::new(123, NodePermissions::new_with_read_permissions(), None)];
-    /// dracoon.nodes.update_room_groups(123, group_updates.into()).await.unwrap();
+    /// dracoon.nodes().update_room_groups(123, group_updates.into()).await.unwrap();
     /// # }
     /// ```
     async fn update_room_groups(
@@ -553,7 +553,7 @@ pub trait Rooms {
     /// #  .unwrap();
     /// // You can use a vec
     /// let group_ids = vec![1, 2, 3];
-    /// dracoon.nodes.delete_room_groups(123, group_ids.into()).await.unwrap();
+    /// dracoon.nodes().delete_room_groups(123, group_ids.into()).await.unwrap();
     /// # }
     /// ```
     async fn delete_room_groups(
@@ -578,7 +578,7 @@ pub trait Rooms {
     /// #  .await
     /// #  .unwrap();
 
-    /// let users = dracoon.nodes.get_room_users(123, None).await.unwrap();
+    /// let users = dracoon.nodes().get_room_users(123, None).await.unwrap();
     /// # }
     /// ```
     async fn get_room_users(
@@ -605,7 +605,7 @@ pub trait Rooms {
     ///
     /// // add a a list of updates
     /// let user_updates = vec![RoomUsersAddBatchRequestItem::new(123, NodePermissions::new_with_read_permissions())];
-    /// dracoon.nodes.update_room_users(123, user_updates.into()).await.unwrap();
+    /// dracoon.nodes().update_room_users(123, user_updates.into()).await.unwrap();
     /// # }
     /// ```
     async fn update_room_users(
@@ -630,7 +630,7 @@ pub trait Rooms {
     /// #  .unwrap();
     /// // You can use a vec
     /// let user_ids = vec![1, 2, 3];
-    /// dracoon.nodes.delete_room_users(123, user_ids.into()).await.unwrap();
+    /// dracoon.nodes().delete_room_users(123, user_ids.into()).await.unwrap();
     /// # }
     /// ```
     async fn delete_room_users(
@@ -666,7 +666,7 @@ pub trait Download {
     ///
     ///   let node_id = 123u64;
     ///
-    ///   let node = client.nodes.get_node(node_id).await.unwrap();
+    ///   let node = client.nodes().get_node(node_id).await.unwrap();
     ///
     ///   let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
     ///
@@ -722,7 +722,7 @@ pub trait Upload<R: AsyncRead> {
     ///
     /// let parent_node_id = 123u64;
     ///
-    /// let parent_node = client.nodes.get_node(parent_node_id).await.unwrap();
+    /// let parent_node = client.nodes().get_node(parent_node_id).await.unwrap();
     ///
     /// let reader = tokio::io::BufReader::new(file);
     ///

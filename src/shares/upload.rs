@@ -4,7 +4,7 @@ use reqwest::header;
 use crate::constants::{DRACOON_API_PREFIX, SHARES_BASE, SHARES_EMAIL, SHARES_UPLOAD};
 use crate::models::ListAllParams;
 use crate::utils::FromResponse;
-use crate::{auth::Connected, DracoonClientError};
+use crate::{client::Connected, DracoonClientError};
 
 use super::models::*;
 use super::UploadShares;

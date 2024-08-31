@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::utils::FromResponse;
-use crate::{auth::Connected, DracoonClientError};
+use crate::{client::Connected, DracoonClientError};
 
 use crate::constants::{
     DRACOON_API_PREFIX, SYSTEM_AUTH_ADS, SYSTEM_AUTH_BASE, SYSTEM_AUTH_OPENID,
@@ -89,7 +89,7 @@ mod tests {
             .create();
 
         let ad_configs = client
-            .system
+            .system()
             .auth
             .get_active_directory_configurations()
             .await
@@ -127,7 +127,7 @@ mod tests {
             .create();
 
         let openid_configs = client
-            .system
+            .system()
             .auth
             .get_openid_idp_configurations()
             .await

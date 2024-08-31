@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::{
-    auth::Connected,
+    client::Connected,
     constants::{DRACOON_API_PREFIX, ROLES_BASE, ROLES_GROUPS, ROLES_USERS},
     utils::FromResponse,
     DracoonClientError, ListAllParams,
@@ -35,7 +35,7 @@ impl Roles for RolesEndpoint<Connected> {
         RoleList::from_response(response).await
     }
 
-    async fn get_all_groups_with_role(
+    async fn get_role_groups(
         &self,
         role_id: u64,
         params: Option<ListAllParams>,
@@ -109,7 +109,7 @@ impl Roles for RolesEndpoint<Connected> {
         RoleGroupList::from_response(response).await
     }
 
-    async fn get_all_users_with_role(
+    async fn get_role_users(
         &self,
         role_id: u64,
         params: Option<ListAllParams>,

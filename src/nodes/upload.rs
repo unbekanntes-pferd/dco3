@@ -10,7 +10,7 @@ use super::{
     CompleteUploadRequest, Upload,
 };
 use crate::{
-    auth::{errors::DracoonClientError, Connected, GetClient},
+    client::{errors::DracoonClientError, Connected, GetClient},
     constants::{
         DEFAULT_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS,
         FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH,

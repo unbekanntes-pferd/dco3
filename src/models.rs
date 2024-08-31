@@ -2,11 +2,22 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
+use dco3_crypto::PlainUserKeyPairContainer;
+use secrecy::{CloneableSecret, Zeroize};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use super::auth::errors::DracoonClientError;
+use crate::{
+    client::DracoonClient, config::ConfigEndpoint, eventlog::EventlogEndpoint,
+    groups::GroupsEndpoint, nodes::NodesEndpoint, provisioning::ProvisioningEndpoint,
+    public::PublicEndpoint, roles::RolesEndpoint, settings::SettingsEndpoint,
+    shares::SharesEndpoint, system::SystemEndpoint, user::UserEndpoint, users::UsersEndpoint,
+};
+
+use super::client::errors::DracoonClientError;
+
+pub trait ConnectedClient {}
 
 // struct for internal mutability
 #[derive(Debug, Clone, Default)]
@@ -534,5 +545,61 @@ mod tests {
         let query = SortQueryBuilder::new().with_field("field").try_build();
 
         assert!(query.is_err());
+    }
+}
+
+#[derive(Clone)]
+pub struct Endpoints<S> {
+    pub user: UserEndpoint<S>,
+    pub public: PublicEndpoint<S>,
+    pub shares: SharesEndpoint<S>,
+    pub users: UsersEndpoint<S>,
+    pub groups: GroupsEndpoint<S>,
+    pub settings: SettingsEndpoint<S>,
+    pub provisioning: ProvisioningEndpoint<S>,
+    pub config: ConfigEndpoint<S>,
+    pub system: SystemEndpoint<S>,
+    pub nodes: NodesEndpoint<S>,
+    pub eventlog: EventlogEndpoint<S>,
+    pub roles: RolesEndpoint<S>,
+}
+
+impl<S> From<&Arc<DracoonClient<S>>> for Endpoints<S> {
+    fn from(client: &Arc<DracoonClient<S>>) -> Self {
+        Self {
+            user: UserEndpoint::new(client.clone()),
+            public: PublicEndpoint::new(client.clone()),
+            shares: SharesEndpoint::new(client.clone()),
+            users: UsersEndpoint::new(client.clone()),
+            groups: GroupsEndpoint::new(client.clone()),
+            settings: SettingsEndpoint::new(client.clone()),
+            provisioning: ProvisioningEndpoint::new(client.clone()),
+            config: ConfigEndpoint::new(client.clone()),
+            system: SystemEndpoint::new(client.clone()),
+            nodes: NodesEndpoint::new(client.clone()),
+            eventlog: EventlogEndpoint::new(client.clone()),
+            roles: RolesEndpoint::new(client.clone()),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct WrappedUserKeypair(PlainUserKeyPairContainer);
+
+impl CloneableSecret for WrappedUserKeypair {}
+
+impl Zeroize for WrappedUserKeypair {
+    fn zeroize(&mut self) {
+        self.0.private_key_container.private_key.zeroize();
+    }
+}
+
+impl WrappedUserKeypair {
+    pub fn new(keypair: PlainUserKeyPairContainer) -> Self {
+        Self(keypair)
+    }
+
+    pub fn keypair(&self) -> &PlainUserKeyPairContainer {
+        &self.0
     }
 }

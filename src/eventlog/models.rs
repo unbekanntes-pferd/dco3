@@ -7,7 +7,7 @@ use reqwest::Response;
 use serde::Deserialize;
 
 use crate::{
-    auth::{DracoonClient, DracoonErrorResponse},
+    client::{DracoonClient, DracoonErrorResponse},
     nodes::{NodePermissions, UserInfo},
     utils::{parse_body, FromResponse},
     DracoonClientError, FilterOperator, FilterQuery, RangedItems, SortOrder, SortQuery,

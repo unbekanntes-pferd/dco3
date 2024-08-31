@@ -5,7 +5,7 @@ mod models;
 pub use self::models::*;
 
 use crate::{
-    auth::Provisioning,
+    client::Provisioning,
     constants::{
         DRACOON_API_PREFIX, PROVISIONING_BASE, PROVISIONING_CUSTOMERS,
         PROVISIONING_CUSTOMER_ATTRIBUTES, PROVISIONING_CUSTOMER_USERS, PROVISIONING_TOKEN_HEADER,
@@ -34,7 +34,7 @@ use crate::{
 ///    .unwrap();
 ///
 /// // now you can use the client in provisioning state
-/// let customers = dracoon.provisioning.get_customers(None).await.unwrap();
+/// let customers = dracoon.provisioning().get_customers(None).await.unwrap();
 ///
 /// }
 pub trait CustomerProvisioning {
@@ -48,7 +48,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let customers = dracoon.provisioning.get_customers(None).await.unwrap();
+    /// let customers = dracoon.provisioning().get_customers(None).await.unwrap();
     /// # }
     async fn get_customers(
         &self,
@@ -66,7 +66,7 @@ pub trait CustomerProvisioning {
     /// #   .unwrap();
     /// let first_admin = FirstAdminUser::new_local("admin", "admin", None, "admin@localhost", None);
     /// let customer = NewCustomerRequest::builder("pay", 100000, 100, first_admin).build();
-    /// let customer = dracoon.provisioning.create_customer(customer).await.unwrap();
+    /// let customer = dracoon.provisioning().create_customer(customer).await.unwrap();
     /// # }
     async fn create_customer(
         &self,
@@ -82,10 +82,10 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let customer = dracoon.provisioning.get_customer(123, None).await.unwrap();
+    /// let customer = dracoon.provisioning().get_customer(123, None).await.unwrap();
     ///
     /// // include attributes
-    /// let customer = dracoon.provisioning.get_customer(123, Some(true)).await.unwrap();
+    /// let customer = dracoon.provisioning().get_customer(123, Some(true)).await.unwrap();
     /// # }
     async fn get_customer(
         &self,
@@ -107,7 +107,7 @@ pub trait CustomerProvisioning {
     ///    .with_company_name("Foo Inc.")
     ///    .build();
 
-    /// let customer = dracoon.provisioning.update_customer(123, update).await.unwrap();
+    /// let customer = dracoon.provisioning().update_customer(123, update).await.unwrap();
     ///
     /// # }
     async fn update_customer(
@@ -126,7 +126,7 @@ pub trait CustomerProvisioning {
     /// #   .build_provisioning()
     /// #   .unwrap();
     ///
-    /// dracoon.provisioning.delete_customer(123).await.unwrap();
+    /// dracoon.provisioning().delete_customer(123).await.unwrap();
     ///
     /// # }
     async fn delete_customer(&self, id: u64) -> Result<(), DracoonClientError>;
@@ -140,7 +140,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let users = dracoon.provisioning.get_customer_users(123, None).await.unwrap();
+    /// let users = dracoon.provisioning().get_customer_users(123, None).await.unwrap();
     /// # }
     async fn get_customer_users(
         &self,
@@ -157,7 +157,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// let attributes = dracoon.provisioning.get_customer_attributes(123, None).await.unwrap();
+    /// let attributes = dracoon.provisioning().get_customer_attributes(123, None).await.unwrap();
     /// # }
     async fn get_customer_attributes(
         &self,
@@ -176,7 +176,7 @@ pub trait CustomerProvisioning {
     /// #   .unwrap();
     /// let mut attributes = CustomerAttributes::new();
     /// attributes.add_attribute("foo", "bar");
-    /// let customer = dracoon.provisioning.update_customer_attributes(123, attributes).await.unwrap();
+    /// let customer = dracoon.provisioning().update_customer_attributes(123, attributes).await.unwrap();
     /// # }
     async fn update_customer_attributes(
         &self,
@@ -193,7 +193,7 @@ pub trait CustomerProvisioning {
     /// #   .with_provisioning_token("some_token")
     /// #   .build_provisioning()
     /// #   .unwrap();
-    /// dracoon.provisioning.delete_customer_attribute(123, "foo".to_string()).await.unwrap();
+    /// dracoon.provisioning().delete_customer_attribute(123, "foo".to_string()).await.unwrap();
     /// # }
     async fn delete_customer_attribute(
         &self,

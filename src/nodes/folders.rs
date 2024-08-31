@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use reqwest::header;
 
 use crate::{
-    auth::{errors::DracoonClientError, Connected},
+    client::{errors::DracoonClientError, Connected},
     constants::{DRACOON_API_PREFIX, FOLDERS_BASE, NODES_BASE},
     utils::FromResponse,
 };
@@ -148,7 +148,7 @@ mod tests {
             .create();
 
         let folder = CreateFolderRequest::builder("test", 123).build();
-        let folder = dracoon.nodes.create_folder(folder).await.unwrap();
+        let folder = dracoon.nodes().create_folder(folder).await.unwrap();
 
         assert_folder(&folder);
     }
@@ -171,7 +171,7 @@ mod tests {
         let update = UpdateFolderRequest::builder()
             .with_name("other test")
             .build();
-        let folder = dracoon.nodes.update_folder(123, update).await.unwrap();
+        let folder = dracoon.nodes().update_folder(123, update).await.unwrap();
 
         assert_folder(&folder);
     }

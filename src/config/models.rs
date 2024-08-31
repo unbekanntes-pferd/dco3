@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
 use serde::Deserialize;
 
-use crate::{auth::DracoonClient, nodes::UserInfo};
+use crate::{client::DracoonClient, nodes::UserInfo};
 
 #[derive(Clone)]
 pub struct ConfigEndpoint<S> {

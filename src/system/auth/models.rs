@@ -6,7 +6,7 @@ use reqwest::Response;
 use serde::Deserialize;
 
 use crate::{
-    auth::{DracoonClient, DracoonErrorResponse},
+    client::{DracoonClient, DracoonErrorResponse},
     utils::{parse_body, FromResponse},
     DracoonClientError,
 };

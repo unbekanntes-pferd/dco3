@@ -5,7 +5,7 @@ use reqwest::header;
 use tracing::{debug, error};
 
 use crate::{
-    auth::{errors::DracoonClientError, Connected},
+    client::{errors::DracoonClientError, Connected},
     constants::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, NODES_COPY,
         NODES_MOVE, NODES_SEARCH,

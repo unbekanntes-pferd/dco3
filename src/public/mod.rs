@@ -35,7 +35,7 @@ pub trait Public {
     /// #  .await
     /// #  .unwrap();
     ///
-    /// let software_version = dracoon.public.get_software_version().await.unwrap();
+    /// let software_version = dracoon.public().get_software_version().await.unwrap();
     ///
     /// # }
     ///
@@ -55,7 +55,7 @@ pub trait Public {
     /// #  .await
     /// #  .unwrap();
     ///
-    /// let system_info = dracoon.public.get_system_info().await.unwrap();
+    /// let system_info = dracoon.public().get_system_info().await.unwrap();
     ///
     /// # }
     async fn get_system_info(&self) -> Result<SystemInfo, DracoonClientError>;
@@ -75,7 +75,7 @@ pub trait Public {
     /// #  .unwrap();
     /// let access_key = "access_key";
     ///
-    /// let public_download_share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
+    /// let public_download_share = dracoon.public().get_public_download_share(access_key.to_string()).await.unwrap();
     ///
     /// # }
     ///
@@ -102,7 +102,7 @@ pub trait Public {
     /// #  .unwrap();
     /// let access_key = "access_key";
     ///
-    /// let public_upload_share = dracoon.public.get_public_upload_share(access_key.to_string()).await.unwrap();
+    /// let public_upload_share = dracoon.public().get_public_upload_share(access_key.to_string()).await.unwrap();
     ///
     /// # }
     /// ```
@@ -129,18 +129,18 @@ pub trait PublicDownload {
     /// #  .await
     /// #  .unwrap();
     /// let access_key = "access_key";
-    /// let share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
+    /// let share = dracoon.public().get_public_download_share(access_key.to_string()).await.unwrap();
     /// // the password must be set for encrypted shares and for protected shares
     /// let password = Some("TopSecret123!".to_string());
     ///
     /// let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
     ///
-    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, None, None).await.unwrap();
+    /// dracoon.public().download(access_key.to_string(), share, password, &mut writer, None, None).await.unwrap();
     ///
     /// // or with a progress callback
-    /// let share = dracoon.public.get_public_download_share(access_key.to_string()).await.unwrap();
+    /// let share = dracoon.public().get_public_download_share(access_key.to_string()).await.unwrap();
     /// let password = Some("TopSecret123!".to_string());
-    /// dracoon.public.download(access_key.to_string(), share, password, &mut writer, Some(Box::new(|progress, total| {
+    /// dracoon.public().download(access_key.to_string(), share, password, &mut writer, Some(Box::new(|progress, total| {
     ///    println!("Downloaded: {}%", progress);
     /// })), None).await.unwrap();
     /// # }
@@ -279,7 +279,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let system_info = client.public.get_system_info().await.unwrap();
+        let system_info = client.public().get_system_info().await.unwrap();
 
         system_info_mock.assert();
 
@@ -304,7 +304,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let software_version = client.public.get_software_version().await.unwrap();
+        let software_version = client.public().get_software_version().await.unwrap();
 
         software_version_mock.assert();
 
@@ -336,7 +336,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let software_version = client.public.get_software_version().await.unwrap();
+        let software_version = client.public().get_software_version().await.unwrap();
 
         software_version_mock.assert();
         assert_eq!(software_version.rest_api_version, "5.4.6");
@@ -367,7 +367,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let system_info = client.public.get_system_info().await.unwrap();
+        let system_info = client.public().get_system_info().await.unwrap();
 
         system_info_mock.assert();
 
@@ -394,7 +394,7 @@ mod tests {
             .create();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share("test")
             .await
             .unwrap();
@@ -458,7 +458,7 @@ mod tests {
             .create();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share("test")
             .await
             .unwrap();
@@ -537,7 +537,7 @@ mod tests {
             .create();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share("test")
             .await
             .unwrap();
@@ -575,7 +575,7 @@ mod tests {
             .create();
 
         client
-            .public
+            .public()
             .download(
                 "test",
                 public_download_share,
@@ -653,7 +653,7 @@ mod tests {
             .create();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share("test")
             .await
             .unwrap();
@@ -684,7 +684,7 @@ mod tests {
             .create();
 
         client
-            .public
+            .public()
             .download(
                 "test",
                 public_download_share,
@@ -718,7 +718,7 @@ mod tests {
             .unwrap();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share(access_key)
             .await
             .unwrap();
@@ -729,7 +729,7 @@ mod tests {
         let password = "Test1234!".to_string();
 
         client
-            .public
+            .public()
             .download(
                 access_key,
                 public_download_share,
@@ -759,7 +759,7 @@ mod tests {
             .unwrap();
 
         let public_download_share = client
-            .public
+            .public()
             .get_public_download_share(access_key)
             .await
             .unwrap();
@@ -770,7 +770,7 @@ mod tests {
         let password = "Test1234!".to_string();
 
         client
-            .public
+            .public()
             .download(
                 access_key,
                 public_download_share,
@@ -807,7 +807,11 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let public_upload_share = client.public.get_public_upload_share("test").await.unwrap();
+        let public_upload_share = client
+            .public()
+            .get_public_upload_share("test")
+            .await
+            .unwrap();
 
         public_upload_share_mock.assert();
 
@@ -846,7 +850,7 @@ mod tests {
             .unwrap();
 
         let public_upload_share = client
-            .public
+            .public()
             .get_public_upload_share(access_key)
             .await
             .unwrap();
@@ -860,7 +864,7 @@ mod tests {
         let upload_opts = UploadOptions::builder(file_meta).build();
 
         let file_name = client
-            .public
+            .public()
             .upload(
                 access_key,
                 public_upload_share,
@@ -888,7 +892,7 @@ mod tests {
             .unwrap();
 
         let public_upload_share = client
-            .public
+            .public()
             .get_public_upload_share(access_key)
             .await
             .unwrap();
@@ -902,7 +906,7 @@ mod tests {
         let upload_opts = UploadOptions::builder(file_meta).build();
 
         let file_name = client
-            .public
+            .public()
             .upload(
                 access_key,
                 public_upload_share,
@@ -930,7 +934,7 @@ mod tests {
             .unwrap();
 
         let public_upload_share = client
-            .public
+            .public()
             .get_public_upload_share(access_key)
             .await
             .unwrap();
@@ -944,7 +948,7 @@ mod tests {
         let upload_opts = UploadOptions::builder(file_meta).build();
 
         let file_name = client
-            .public
+            .public()
             .upload(
                 access_key,
                 public_upload_share,
@@ -972,7 +976,7 @@ mod tests {
             .unwrap();
 
         let public_upload_share = client
-            .public
+            .public()
             .get_public_upload_share(access_key)
             .await
             .unwrap();
@@ -986,7 +990,7 @@ mod tests {
         let upload_opts = UploadOptions::builder(file_meta).build();
 
         let file_name = client
-            .public
+            .public()
             .upload(
                 access_key,
                 public_upload_share,

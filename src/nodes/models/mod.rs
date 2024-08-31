@@ -16,9 +16,9 @@ use std::fmt::Formatter;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use crate::auth::DracoonClient;
+use crate::client::DracoonClient;
 use crate::{
-    auth::{errors::DracoonClientError, models::DracoonErrorResponse},
+    client::{errors::DracoonClientError, models::DracoonErrorResponse},
     models::{ObjectExpiration, Range, RangedItems},
     utils::parse_body,
     utils::FromResponse,

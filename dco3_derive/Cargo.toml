@@ -1,6 +1,6 @@
 [package]
 name = "dco3_derive"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3/dco3_derive"
@@ -16,5 +16,5 @@ proc-macro = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-syn = "2.0.38"
-quote = "1.0.33"
+syn = "2"
+quote = "1"

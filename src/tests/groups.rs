@@ -23,7 +23,7 @@ mod tests {
             .with_body(groups_res)
             .create();
 
-        let groups = dracoon.groups.get_groups(None).await.unwrap();
+        let groups = dracoon.groups().get_groups(None).await.unwrap();
         let group = groups.items.first().unwrap();
 
         groups_mock.assert();
@@ -122,7 +122,7 @@ mod tests {
             .with_filter(GroupsFilter::Name(FilterOperator::Eq, "string".to_string()))
             .build();
 
-        let groups = dracoon.groups.get_groups(Some(params)).await.unwrap();
+        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -145,7 +145,7 @@ mod tests {
             .with_sort(GroupsSortBy::Name(SortOrder::Asc))
             .build();
 
-        let groups = dracoon.groups.get_groups(Some(params)).await.unwrap();
+        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -166,7 +166,7 @@ mod tests {
 
         let params = ListAllParams::default();
 
-        let groups = dracoon.groups.get_groups(Some(params)).await.unwrap();
+        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -187,7 +187,7 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(10).build();
 
-        let groups = dracoon.groups.get_groups(Some(params)).await.unwrap();
+        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -206,7 +206,7 @@ mod tests {
             .with_body(groups_res)
             .create();
 
-        let group = dracoon.groups.get_group(123).await.unwrap();
+        let group = dracoon.groups().get_group(123).await.unwrap();
 
         group_mock.assert();
 
@@ -253,7 +253,7 @@ mod tests {
 
         let group = CreateGroupRequest::new("string", None);
 
-        let group = dracoon.groups.create_group(group).await.unwrap();
+        let group = dracoon.groups().create_group(group).await.unwrap();
 
         group_mock.assert();
 
@@ -300,7 +300,7 @@ mod tests {
 
         let update = UpdateGroupRequest::name("string");
 
-        let group = dracoon.groups.update_group(123, update).await.unwrap();
+        let group = dracoon.groups().update_group(123, update).await.unwrap();
 
         group_mock.assert();
 
@@ -341,7 +341,7 @@ mod tests {
             .with_status(204)
             .create();
 
-        dracoon.groups.delete_group(123).await.unwrap();
+        dracoon.groups().delete_group(123).await.unwrap();
 
         groups_mock.assert();
     }

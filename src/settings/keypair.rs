@@ -5,7 +5,7 @@ use dco3_crypto::{
 use reqwest::header;
 
 use crate::{
-    auth::Connected,
+    client::Connected,
     constants::{
         DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS, MISSING_FILE_KEYS, NODES_BASE, SETTINGS_BASE,
         SETTINGS_KEYPAIR,
@@ -200,7 +200,7 @@ mod tests {
             .create();
 
         let missing_keys = client
-            .settings
+            .settings()
             .get_missing_file_keys(None, None, None, None)
             .await
             .unwrap();
@@ -256,7 +256,7 @@ mod tests {
             .create();
 
         let keypair = client
-            .settings
+            .settings()
             .get_system_rescue_keypair("TopSecret1234!")
             .await
             .unwrap();
@@ -289,7 +289,7 @@ mod tests {
             .create();
 
         let res = client
-            .settings
+            .settings()
             .distribute_missing_keys("TopSecret1234!", None, None, None)
             .await;
 
@@ -324,7 +324,7 @@ mod tests {
             .create();
 
         let res = client
-            .settings
+            .settings()
             .distribute_missing_keys("wrongsecret", None, None, None)
             .await;
 
@@ -363,7 +363,7 @@ mod tests {
             .create();
 
         let res = client
-            .settings
+            .settings()
             .distribute_missing_keys("TopSecret1234!", Some(1), None, None)
             .await;
 
@@ -398,7 +398,7 @@ mod tests {
             .create();
 
         let res = client
-            .settings
+            .settings()
             .distribute_missing_keys("TopSecret1234!", None, Some(3), None)
             .await;
 
@@ -433,7 +433,7 @@ mod tests {
             .create();
 
         let res = client
-            .settings
+            .settings()
             .distribute_missing_keys("TopSecret1234!", None, None, Some(2))
             .await;
 

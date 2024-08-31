@@ -1,6 +1,6 @@
 [package]
 name = "dco3"
-version = "0.14.3"
+version = "0.15.0"
 edition = "2021"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3"
@@ -14,9 +14,10 @@ description = "Async API wrapper for DRACOON in Rust."
 
 
 [dependencies]
+# http
 reqwest = {version = "0.12", features = ["json", "stream"]}
 reqwest-middleware = {version = "0.3", features = ["json"]}
-reqwest-retry = "0.6.0"
+reqwest-retry = "0.6"
 
 # crypto 
 dco3_crypto = "0.7"
@@ -36,7 +37,7 @@ serde_json = "1"
 
 # error handling
 thiserror = "1"
-retry-policies = "0.4.0"
+retry-policies = "0.4"
 
 # logging and tracing
 tracing = "0.1"
@@ -45,10 +46,11 @@ tracing = "0.1"
 url = "2"
 base64 = "0.22"
 chrono = {version = "0.4", features = ["serde"]}
-dco3_derive = { path = "dco3_derive", version = "0.1.0"}
+dco3_derive = { path = "dco3_derive", version = "0.2.0"}
+secrecy = {version = "0.8", features = ["serde"]}
 
 
 [dev-dependencies]
-mockito = "1.4.0"
+mockito = "1.5"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 
