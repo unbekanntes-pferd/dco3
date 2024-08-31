@@ -28,7 +28,7 @@ tokio-util = { version = "0.7", features = ["full"] }
 async-trait = "0.1"
 async-stream = "0.3"
 futures-util = "0.3"
-bytes = "1.6"
+bytes = "1.7"
 
 # parsing
 serde = { version = "1", features = ["derive"] }
