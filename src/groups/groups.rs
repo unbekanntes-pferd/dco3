@@ -143,9 +143,21 @@ impl Groups for GroupsEndpoint<Connected> {
         group_id: u64,
         params: Option<ListAllParams>,
     ) -> Result<GroupUserList, DracoonClientError> {
+        let params = params.unwrap_or_default();
         let url_part = format!("/{DRACOON_API_PREFIX}/{GROUPS_BASE}/{group_id}/{GROUPS_USERS}");
 
-        let api_url = self.client().build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
+
+        let filters = params.filter_to_string();
+        let sorts = params.sort_to_string();
+
+        api_url
+            .query_pairs_mut()
+            .extend_pairs(params.limit.map(|v| ("limit", v.to_string())))
+            .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
+            .extend_pairs(params.sort.map(|_| ("sort", sorts)))
+            .extend_pairs(params.filter.map(|_| ("filter", filters)))
+            .finish();
 
         let response = self
             .client()
