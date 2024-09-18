@@ -678,8 +678,8 @@ pub trait Download {
     ///    println!("File total: {}", total);
     ///  })), None).await.unwrap();
     /// }
-    /// 
-    ///  // or with chunksize 
+    ///
+    ///  // or with chunksize
     /// let chunksize = 1024 * 1024 * 10; // 10 MB - DEFAULT is 1 GB for downloads
     /// client.download(&node, &mut writer, None, Some(chunksize)).await.unwrap();
     /// ```

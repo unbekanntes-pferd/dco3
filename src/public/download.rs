@@ -93,6 +93,7 @@ trait PublicDownloadInternal {
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 
+    #[allow(clippy::too_many_arguments)]
     async fn download_encrypted(
         &self,
         acess_key: String,

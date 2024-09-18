@@ -618,17 +618,17 @@ mod tests {
     #[tokio::test]
     async fn test_download_encrypted_chunked() {
         let (dracoon, mut mock_server) = get_connected_client().await;
-    
+
         // Create bytes for mocking byte response
         let mock_bytes: [u8; 16] = [
             0, 12, 33, 44, 55, 66, 77, 88, 99, 111, 222, 255, 0, 12, 33, 44,
         ];
         let mock_bytes_compare = mock_bytes;
-    
+
         // Encrypt the mock bytes and get the plain file key
         let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
         let plain_key = mock_bytes_encrypted.1.clone();
-    
+
         // Create a user keypair and encrypt the file key with it
         let keypair =
             DracoonCrypto::create_plain_user_keypair(dco3_crypto::UserKeyPairVersion::RSA4096)
@@ -638,15 +638,15 @@ mod tests {
         let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
         let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
         let file_key_json = serde_json::to_string(&file_key).unwrap();
-    
+
         // Mock the download URL
         let download_url = format!("{}some/download/url", dracoon.get_base_url());
-    
+
         // Mock the download URL generation endpoint
         let download_url_res =
             include_str!("../tests/responses/download/download_url_ok_template.json");
         let download_url_res = download_url_res.replace("$url", &download_url);
-    
+
         let download_url_mock = mock_server
             .mock("POST", "/api/v4/nodes/files/2/downloads")
             .with_status(200)
@@ -654,7 +654,7 @@ mod tests {
             .with_body(download_url_res)
             .expect(2) // 2 hits for 2 chunks
             .create();
-    
+
         // Mock the file key retrieval endpoint
         let file_key_mock = mock_server
             .mock("GET", "/api/v4/nodes/files/2/user_file_key")
@@ -663,7 +663,7 @@ mod tests {
             .with_body(file_key_json)
             .expect(1)
             .create();
-    
+
         // Mock the user keypair retrieval endpoint
         let keypair_mock = mock_server
             .mock("GET", "/api/v4/user/account/keypair")
@@ -672,7 +672,7 @@ mod tests {
             .with_body(enc_keypair_json)
             .expect(1)
             .create();
-    
+
         // Mock the first chunk download
         let download_mock_1 = mock_server
             .mock("GET", "/some/download/url")
@@ -682,7 +682,7 @@ mod tests {
             .with_body(&mock_bytes_encrypted.0[0..8])
             .expect(1)
             .create();
-    
+
         // Mock the second chunk download
         let download_mock_2 = mock_server
             .mock("GET", "/some/download/url")
@@ -692,36 +692,35 @@ mod tests {
             .with_body(&mock_bytes_encrypted.0[8..16])
             .expect(1)
             .create();
-    
+
         // Prepare the buffer and writer
         let buffer = Vec::with_capacity(16);
         let mut writer = tokio::io::BufWriter::new(buffer);
-    
+
         // Deserialize the node object
         let node_json = include_str!("../tests/responses/nodes/node_ok.json");
         let node: Node = serde_json::from_str(node_json).unwrap();
-    
+
         // Retrieve the keypair before downloading (if required)
         let _kp = dracoon
             .get_keypair(Some("TopSecret1234!".into()))
             .await
             .unwrap();
-    
+
         // Call the download_encrypted method
         dracoon
             .download_encrypted(&node, &mut writer, None, Some(8))
             .await
             .unwrap();
-    
+
         // Assert that all mocks were called as expected
         download_url_mock.assert();
         file_key_mock.assert();
         keypair_mock.assert();
         download_mock_1.assert();
         download_mock_2.assert();
-    
+
         // Verify that the decrypted data matches the original mock bytes
         assert_eq!(writer.buffer(), &mock_bytes_compare.to_vec());
     }
-    
 }
