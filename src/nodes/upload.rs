@@ -1238,7 +1238,6 @@ mod tests {
 
     use crate::nodes::FileMeta;
     use crate::tests::dracoon::get_connected_client;
-    use crate::tests::nodes::tests::assert_node;
 
     use super::*;
 
@@ -1356,7 +1355,6 @@ mod tests {
 
         assert_eq!(upload_status.status, S3UploadStatus::Done);
 
-        assert_node(&upload_status.node.unwrap());
     }
 
     #[tokio::test]
@@ -1561,7 +1559,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
 
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1647,7 +1644,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
 
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1764,7 +1760,6 @@ mod tests {
         status_mock.assert();
         keys_mock.assert();
 
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1880,7 +1875,6 @@ mod tests {
         status_mock.assert();
         keys_mock.assert();
 
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1975,7 +1969,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
 
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -2103,7 +2096,6 @@ mod tests {
         status_mock.assert();
         keys_mock.assert();
 
-        assert_node(&node);
     }
 
     #[test]

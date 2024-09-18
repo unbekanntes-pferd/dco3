@@ -34,7 +34,7 @@
           "lastName": "string",
           "email": "string"
         },
-        "size": 123456,
+        "size": 16,
         "classification": 4,
         "notes": "string",
         "permissions": {

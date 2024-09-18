@@ -677,11 +677,10 @@ pub trait Download {
     ///    println!("Download progress: {}", progress);
     ///    println!("File total: {}", total);
     ///  })), None).await.unwrap();
-    /// }
-    ///
-    ///  // or with chunksize
-    /// let chunksize = 1024 * 1024 * 10; // 10 MB - DEFAULT is 1 GB for downloads
+    /// // or with chunksize
+    /// let  chunksize: usize = 1024 * 1024 * 10; 
     /// client.download(&node, &mut writer, None, Some(chunksize)).await.unwrap();
+    /// }
     /// ```
     async fn download<'w>(
         &'w self,
