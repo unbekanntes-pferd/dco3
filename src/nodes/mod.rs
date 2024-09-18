@@ -670,22 +670,25 @@ pub trait Download {
     ///
     ///   let mut writer = tokio::io::BufWriter::new(tokio::fs::File::create("test.txt").await.unwrap());
     ///
-    ///   client.download(&node, &mut writer, None).await.unwrap();
+    ///   client.download(&node, &mut writer, None, None).await.unwrap();
     ///
     ///   // or with progress callback (boxed closure)
     ///   client.download(&node, &mut writer, Some(Box::new(|progress, total| {
     ///    println!("Download progress: {}", progress);
     ///    println!("File total: {}", total);
-    ///  }))).await.unwrap();
+    ///  })), None).await.unwrap();
     /// }
+    /// 
+    ///  // or with chunksize 
+    /// let chunksize = 1024 * 1024 * 10; // 10 MB - DEFAULT is 1 GB for downloads
+    /// client.download(&node, &mut writer, None, Some(chunksize)).await.unwrap();
     /// ```
-    ///
-    ///
     async fn download<'w>(
         &'w self,
         node: &Node,
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         mut callback: Option<DownloadProgressCallback>,
+        chunksize: Option<usize>,
     ) -> Result<(), DracoonClientError>;
 }
 
