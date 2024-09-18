@@ -735,8 +735,14 @@ impl Dracoon<Connected> {
 }
 
 impl Dracoon<Provisioning> {
+    /// Returns the service token for provisioning
     pub fn get_service_token(&self) -> String {
         self.client.get_service_token()
+    }
+
+    /// Returns endpoint for all provisioning routes `/api/v4/provisioning`
+    pub fn provisioning(&self) -> &ProvisioningEndpoint<Provisioning> {
+        &self.endpoints.provisioning
     }
 }
 
@@ -753,59 +759,56 @@ impl<S: ConnectedClient> Dracoon<S> {
             .join(url_part)
             .expect("Invalid base url")
     }
+}
 
+impl Dracoon<Connected> {
     /// Returns endpoint for all config routes `/api/v4/config`
-    pub fn config(&self) -> &ConfigEndpoint<S> {
+    pub fn config(&self) -> &ConfigEndpoint<Connected> {
         &self.endpoints.config
     }
 
     /// Returns endpoint for all eventlog routes `/api/v4/eventlog`
-    pub fn eventlog(&self) -> &EventlogEndpoint<S> {
+    pub fn eventlog(&self) -> &EventlogEndpoint<Connected> {
         &self.endpoints.eventlog
     }
 
     /// Returns endpoint for all groups routes `/api/v4/groups`
-    pub fn groups(&self) -> &GroupsEndpoint<S> {
+    pub fn groups(&self) -> &GroupsEndpoint<Connected> {
         &self.endpoints.groups
     }
 
     /// Returns endpoint for all nodes routes `/api/v4/nodes`
-    pub fn nodes(&self) -> &NodesEndpoint<S> {
+    pub fn nodes(&self) -> &NodesEndpoint<Connected> {
         &self.endpoints.nodes
     }
 
     /// Returns endpoint for all roles routes `/api/v4/roles`
-    pub fn roles(&self) -> &RolesEndpoint<S> {
+    pub fn roles(&self) -> &RolesEndpoint<Connected> {
         &self.endpoints.roles
     }
 
     /// Returns endpoint for all settings routes `/api/v4/settings`
-    pub fn settings(&self) -> &SettingsEndpoint<S> {
+    pub fn settings(&self) -> &SettingsEndpoint<Connected> {
         &self.endpoints.settings
     }
 
     /// Returns endpoint for all shares routes `/api/v4/shares`
-    pub fn shares(&self) -> &SharesEndpoint<S> {
+    pub fn shares(&self) -> &SharesEndpoint<Connected> {
         &self.endpoints.shares
     }
 
     /// Returns endpoint for all system routes `/api/v4/system`
-    pub fn system(&self) -> &SystemEndpoint<S> {
+    pub fn system(&self) -> &SystemEndpoint<Connected> {
         &self.endpoints.system
     }
 
-    /// Returns endpoint for all provisioning routes `/api/v4/provisioning`
-    pub fn provisioning(&self) -> &ProvisioningEndpoint<S> {
-        &self.endpoints.provisioning
-    }
-
     /// Returns endpoint for all user routes `/api/v4/user`
-    pub fn user(&self) -> &UserEndpoint<S> {
+    pub fn user(&self) -> &UserEndpoint<Connected> {
         &self.endpoints.user
     }
 
     /// Returns endpoint for all users routes `/api/v4/users`
-    pub fn users(&self) -> &UsersEndpoint<S> {
+    pub fn users(&self) -> &UsersEndpoint<Connected> {
         &self.endpoints.users
     }
 }

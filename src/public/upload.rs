@@ -5,7 +5,7 @@ use tracing::error;
 
 use crate::{
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS,
+        DEFAULT_UPLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS,
         POLLING_START_DELAY, PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
     },
     nodes::{
@@ -123,7 +123,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
     ) -> Result<FileName, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req =
@@ -260,7 +260,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
                 let url = url.urls.first().expect("Creating S3 url failed");
 
-                let curr_pos: u64 = (url_part - 1) as u64 * (DEFAULT_CHUNK_SIZE as u64);
+                let curr_pos: u64 = (url_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
                 let e_tag = self
                     .upload_stream_to_s3(
@@ -330,7 +330,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -546,7 +546,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
 
                 // truncation is safe because chunk_size is 32 MB
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((url_part - 1) * (DEFAULT_CHUNK_SIZE as u32)) as u64;
+                let curr_pos: u64 = ((url_part - 1) * (DEFAULT_UPLOAD_CHUNK_SIZE as u32)) as u64;
 
                 let e_tag = self
                     .upload_stream_to_s3(
@@ -760,7 +760,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
     ) -> Result<FileName, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req =
@@ -875,7 +875,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
 
                 let url = upload_channel.upload_url.clone();
 
-                let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_CHUNK_SIZE as u64);
+                let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
                 let e_tag = self
                     .upload_stream_to_nfs(
@@ -917,7 +917,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
         callback: Option<UploadProgressCallback>,
         chunk_size: Option<usize>,
     ) -> Result<FileName, DracoonClientError> {
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -1092,7 +1092,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
 
                 // truncation is safe because chunk_size is 32 MB
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((chunk_part - 1) * (DEFAULT_CHUNK_SIZE as u32)) as u64;
+                let curr_pos: u64 = ((chunk_part - 1) * (DEFAULT_UPLOAD_CHUNK_SIZE as u32)) as u64;
 
                 self.upload_stream_to_nfs(
                     Box::pin(stream),

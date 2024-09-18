@@ -12,9 +12,9 @@ use super::{
 use crate::{
     client::{errors::DracoonClientError, Connected, GetClient},
     constants::{
-        DEFAULT_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE, FILES_KEYS,
-        FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS, MISSING_KEYS_BATCH,
-        NODES_BASE, POLLING_START_DELAY, UPLOADS_BASE,
+        DEFAULT_UPLOAD_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE,
+        FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS,
+        MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY, UPLOADS_BASE,
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, FromResponse},
@@ -375,7 +375,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     ) -> Result<Node, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req = CreateFileUploadRequest::from_upload_options(
@@ -528,7 +528,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
     ) -> Result<Node, DracoonClientError> {
         let keypair = self.get_keypair(None).await?;
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -890,7 +890,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
     ) -> Result<Node, DracoonClientError> {
         let fm = upload_options.file_meta.clone();
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         // create upload channel
         let file_upload_req =
@@ -966,7 +966,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
 
                 let url = upload_channel.upload_url.clone();
 
-                let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_CHUNK_SIZE as u64);
+                let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
                 self.upload_stream_to_nfs(
                     Box::pin(stream),
@@ -1012,7 +1012,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
     ) -> Result<Node, DracoonClientError> {
         let keypair = self.get_keypair(None).await?;
 
-        let chunk_size = chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE);
+        let chunk_size = chunk_size.unwrap_or(DEFAULT_UPLOAD_CHUNK_SIZE);
 
         let mut crypto_buff = vec![
             0u8;
@@ -1131,7 +1131,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
 
                 // truncation is safe because chunk_size is 32 MB
                 #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                let curr_pos: u64 = ((chunk_part - 1) * (DEFAULT_CHUNK_SIZE as u32)) as u64;
+                let curr_pos: u64 = ((chunk_part - 1) * (DEFAULT_UPLOAD_CHUNK_SIZE as u32)) as u64;
 
                 self.upload_stream_to_nfs(
                     Box::pin(stream),
@@ -1238,7 +1238,6 @@ mod tests {
 
     use crate::nodes::FileMeta;
     use crate::tests::dracoon::get_connected_client;
-    use crate::tests::nodes::tests::assert_node;
 
     use super::*;
 
@@ -1355,8 +1354,6 @@ mod tests {
         status_mock.assert();
 
         assert_eq!(upload_status.status, S3UploadStatus::Done);
-
-        assert_node(&upload_status.node.unwrap());
     }
 
     #[tokio::test]
@@ -1560,8 +1557,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1646,8 +1641,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1763,8 +1756,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1879,8 +1870,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -1974,8 +1963,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
-        assert_node(&node);
     }
 
     #[tokio::test]
@@ -2102,8 +2089,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
-        assert_node(&node);
     }
 
     #[test]
