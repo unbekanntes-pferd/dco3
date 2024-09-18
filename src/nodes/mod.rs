@@ -678,7 +678,7 @@ pub trait Download {
     ///    println!("File total: {}", total);
     ///  })), None).await.unwrap();
     /// // or with chunksize
-    /// let  chunksize: usize = 1024 * 1024 * 10; 
+    /// let  chunksize: usize = 1024 * 1024 * 10;
     /// client.download(&node, &mut writer, None, Some(chunksize)).await.unwrap();
     /// }
     /// ```

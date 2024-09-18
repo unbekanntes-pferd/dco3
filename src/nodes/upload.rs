@@ -1354,7 +1354,6 @@ mod tests {
         status_mock.assert();
 
         assert_eq!(upload_status.status, S3UploadStatus::Done);
-
     }
 
     #[tokio::test]
@@ -1558,7 +1557,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
     }
 
     #[tokio::test]
@@ -1643,7 +1641,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
     }
 
     #[tokio::test]
@@ -1759,7 +1756,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
     }
 
     #[tokio::test]
@@ -1874,7 +1870,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
     }
 
     #[tokio::test]
@@ -1968,7 +1963,6 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
-
     }
 
     #[tokio::test]
@@ -2095,7 +2089,6 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
-
     }
 
     #[test]
