@@ -5,8 +5,8 @@ use super::{
 use crate::{
     client::{errors::DracoonClientError, Connected},
     constants::{
-        DEFAULT_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE,
-        NODES_DOWNLOAD_URL,
+        DEFAULT_DOWNLOAD_CHUNK_SIZE, DEFAULT_UPLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE,
+        FILES_FILE_KEY, NODES_BASE, NODES_DOWNLOAD_URL,
     },
     utils::{build_s3_error, FromResponse},
     Dracoon,
@@ -14,7 +14,7 @@ use crate::{
 use async_trait::async_trait;
 use dco3_crypto::{ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto, FileKey};
 use futures_util::TryStreamExt;
-use reqwest::header::{self, CONTENT_LENGTH, RANGE};
+use reqwest::header::{self, CONTENT_RANGE, RANGE};
 use std::cmp::min;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tracing::{debug, error};
@@ -27,38 +27,10 @@ impl Download for Dracoon<Connected> {
         writer: &'w mut (dyn AsyncWrite + Send + Unpin),
         callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
-        let download_url_response = self.get_download_url(node.id).await?;
-
-        match node.is_encrypted {
-            Some(encrypted) => {
-                if encrypted {
-                    self.download_encrypted(
-                        &download_url_response.download_url,
-                        node.id,
-                        writer,
-                        node.size,
-                        callback,
-                    )
-                    .await
-                } else {
-                    self.download_unencrypted(
-                        &download_url_response.download_url,
-                        writer,
-                        node.size,
-                        callback,
-                    )
-                    .await
-                }
-            }
-            None => {
-                self.download_unencrypted(
-                    &download_url_response.download_url,
-                    writer,
-                    node.size,
-                    callback,
-                )
-                .await
-            }
+        if node.is_encrypted.unwrap_or(false) {
+            self.download_encrypted(node, writer, callback).await
+        } else {
+            self.download_unencrypted(node, writer, callback).await
         }
     }
 }
@@ -74,18 +46,15 @@ trait DownloadInternal {
 
     async fn download_unencrypted(
         &self,
-        url: &str,
+        node: &Node,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 
     async fn download_encrypted(
         &self,
-        url: &str,
-        node_id: u64,
+        node: &Node,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError>;
 }
@@ -116,30 +85,36 @@ impl DownloadInternal for Dracoon<Connected> {
 
     async fn download_unencrypted(
         &self,
-        url: &str,
+        node: &Node,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
-        // get content length from header
-        let content_length = self
-            .client
-            .http
-            .head(url)
-            .send()
-            .await
-            .map_err(|err| {
-                debug!("Error while getting content length: {}", err);
-                err
-            })?
-            .headers()
-            .get(CONTENT_LENGTH)
-            .and_then(|val| val.to_str().ok())
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(0);
+        let url = self.get_download_url(node.id).await?.download_url;
 
         // if size is given, use it
-        let content_length = size.unwrap_or(content_length);
+        let content_length = if let Some(size) = node.size {
+            size
+        } else {
+            self.client
+                .http
+                .get(&url)
+                .header(RANGE, "bytes=0-0")
+                .send()
+                .await
+                .map_err(|err| {
+                    debug!("Error while getting content length: {}", err);
+                    err
+                })?
+                .headers()
+                .get(CONTENT_RANGE)
+                .and_then(|val| val.to_str().ok())
+                .and_then(|val| {
+                    // get size from bytes=0-0/size
+                    let parts: Vec<&str> = val.split('/').collect();
+                    parts.get(1).and_then(|&len| len.parse().ok())
+                })
+                .unwrap_or(0)
+        };
 
         // offset (in bytes)
         let mut downloaded_bytes = 0u64;
@@ -148,9 +123,18 @@ impl DownloadInternal for Dracoon<Connected> {
 
         // loop until all bytes are downloaded
         while downloaded_bytes < content_length {
+            let url = if downloaded_bytes == 0 {
+                url.clone()
+            } else {
+                self.get_download_url(node.id).await?.download_url
+            };
+
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(
+                start + DEFAULT_DOWNLOAD_CHUNK_SIZE as u64 - 1,
+                content_length - 1,
+            );
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -198,38 +182,43 @@ impl DownloadInternal for Dracoon<Connected> {
 
     async fn download_encrypted(
         &self,
-        url: &str,
-        node_id: u64,
+        node: &Node,
         writer: &mut (dyn AsyncWrite + Send + Unpin),
-        size: Option<u64>,
         mut callback: Option<DownloadProgressCallback>,
     ) -> Result<(), DracoonClientError> {
         // get file key
-        let file_key = self.get_file_key(node_id).await?;
+        let file_key = self.get_file_key(node.id).await?;
 
         let keypair = self.get_keypair(None).await?;
 
         let plain_key = DracoonCrypto::decrypt_file_key(file_key, keypair)?;
 
-        // get content length from header
-        let content_length = self
-            .client
-            .http
-            .head(url)
-            .send()
-            .await
-            .map_err(|err| {
-                debug!("Error while getting content length: {}", err);
-                err
-            })?
-            .headers()
-            .get(CONTENT_LENGTH)
-            .and_then(|val| val.to_str().ok())
-            .and_then(|val| val.parse().ok())
-            .unwrap_or(0);
+        let url = self.get_download_url(node.id).await?.download_url;
 
         // if size is given, use it
-        let content_length = size.unwrap_or(content_length);
+        let content_length = if let Some(size) = node.size {
+            size
+        } else {
+            self.client
+                .http
+                .get(&url)
+                .header(RANGE, "bytes=0-0")
+                .send()
+                .await
+                .map_err(|err| {
+                    debug!("Error while getting content length: {}", err);
+                    err
+                })?
+                .headers()
+                .get(CONTENT_RANGE)
+                .and_then(|val| val.to_str().ok())
+                .and_then(|val| {
+                    // get size from bytes=0-0/size
+                    let parts: Vec<&str> = val.split('/').collect();
+                    parts.get(1).and_then(|&len| len.parse().ok())
+                })
+                .unwrap_or(0)
+        };
 
         // this is safe, because the maximum size of a file (encrypted) is 60 GB
         #[allow(clippy::cast_possible_truncation)]
@@ -244,9 +233,17 @@ impl DownloadInternal for Dracoon<Connected> {
 
         // loop until all bytes are downloaded
         while downloaded_bytes < content_length {
+            let url = if downloaded_bytes == 0 {
+                url.clone()
+            } else {
+                self.get_download_url(node.id).await?.download_url
+            };
             // calculate range
             let start = downloaded_bytes;
-            let end = min(start + DEFAULT_CHUNK_SIZE as u64 - 1, content_length - 1);
+            let end = min(
+                start + DEFAULT_UPLOAD_CHUNK_SIZE as u64 - 1,
+                content_length - 1,
+            );
             let range = format!("bytes={start}-{end}");
 
             // get chunk
@@ -316,7 +313,7 @@ impl DownloadInternal for Dracoon<Connected> {
 mod tests {
     // separate from test folder due to internal trait (DownloadInternal)
 
-    use dco3_crypto::Encrypt;
+    use dco3_crypto::{Encrypt, FileKeyVersion};
 
     use super::*;
 
@@ -365,19 +362,12 @@ mod tests {
         assert_eq!(file_key.iv, "string");
         assert!(file_key.tag.is_some());
         assert_eq!(file_key.tag.unwrap(), "string");
-        // TODO: implement PartialEq for FileKeyVersion
-        // assert_eq!(file_key.version, FileKeyVersion::RSA4096_AES256GCM);
+        assert_eq!(file_key.version, FileKeyVersion::RSA4096_AES256GCM);
     }
 
     #[tokio::test]
     async fn test_download_unencrypted() {
         let (dracoon, mut mock_server) = get_connected_client().await;
-
-        let content_length_mock = mock_server
-            .mock("HEAD", "/some/download/url")
-            .with_status(200)
-            .with_header("content-length", "16")
-            .create();
 
         // create bytes for mocking byte response
         let mock_bytes: [u8; 16] = [
@@ -397,12 +387,24 @@ mod tests {
 
         let mut writer = tokio::io::BufWriter::new(buffer);
 
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let node: Node = serde_json::from_str(node_json).unwrap();
+
+        let download_url_res =
+            include_str!("../tests/responses/download/download_url_ok_template.json");
+        let download_url_res = download_url_res.replace("$url", &download_url);
+
+        let download_url_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/2/downloads")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(download_url_res)
+            .create();
+
         dracoon
-            .download_unencrypted(&download_url, &mut writer, Some(16), None)
+            .download_unencrypted(&node, &mut writer, None)
             .await
             .unwrap();
-
-        content_length_mock.assert();
 
         download_mock.assert();
 
@@ -412,12 +414,6 @@ mod tests {
     #[tokio::test]
     async fn test_download_encrypted() {
         let (dracoon, mut mock_server) = get_connected_client().await;
-
-        let content_length_mock = mock_server
-            .mock("HEAD", "/some/download/url")
-            .with_status(200)
-            .with_header("content-length", "16")
-            .create();
 
         // create bytes for mocking byte response
         let mock_bytes: [u8; 16] = [
@@ -446,7 +442,7 @@ mod tests {
             .create();
 
         let file_key_mock = mock_server
-            .mock("GET", "/api/v4/nodes/files/1234/user_file_key")
+            .mock("GET", "/api/v4/nodes/files/2/user_file_key")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(file_key_json)
@@ -471,14 +467,26 @@ mod tests {
         // create a writer
         let mut writer = tokio::io::BufWriter::new(buffer);
 
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let node: Node = serde_json::from_str(node_json).unwrap();
+
+        let download_url_res =
+            include_str!("../tests/responses/download/download_url_ok_template.json");
+        let download_url_res = download_url_res.replace("$url", &download_url);
+
+        let download_url_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/2/downloads")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(download_url_res)
+            .create();
+
         dracoon
-            .download_encrypted(&download_url, 1234, &mut writer, None, None)
+            .download_encrypted(&node, &mut writer, None)
             .await
             .unwrap();
 
         keypair_mock.assert();
-
-        content_length_mock.assert();
 
         download_mock.assert();
 
@@ -507,7 +515,7 @@ mod tests {
         let file_key_json = serde_json::to_string(&file_key).unwrap();
 
         let file_key_mock = mock_server
-            .mock("GET", "/api/v4/nodes/files/1234/user_file_key")
+            .mock("GET", "/api/v4/nodes/files/2/user_file_key")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(file_key_json)
@@ -520,22 +528,26 @@ mod tests {
         // create a writer
         let mut writer = tokio::io::BufWriter::new(buffer);
 
-        let download_res = dracoon
-            .download_encrypted(&download_url, 1234, &mut writer, None, None)
-            .await;
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let node: Node = serde_json::from_str(node_json).unwrap();
+
+        let download_url_res =
+            include_str!("../tests/responses/download/download_url_ok_template.json");
+        let download_url_res = download_url_res.replace("$url", &download_url);
+
+        let download_url_mock = mock_server
+            .mock("POST", "/api/v4/nodes/files/2/downloads")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(download_url_res)
+            .create();
+
+        let download_res = dracoon.download_encrypted(&node, &mut writer, None).await;
 
         assert!(download_res.is_err());
         assert_eq!(
             download_res.err().unwrap(),
             DracoonClientError::MissingEncryptionSecret
         );
-    }
-
-    async fn test_download_unencrypted_node() {
-        todo!()
-    }
-
-    async fn test_download_full_encrypted_node() {
-        todo!()
     }
 }
