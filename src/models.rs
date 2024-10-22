@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 use dco3_crypto::PlainUserKeyPairContainer;
-use secrecy::{CloneableSecret, Zeroize};
+use secrecy::{CloneableSecret, zeroize::Zeroize};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;

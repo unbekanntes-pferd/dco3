@@ -1,6 +1,6 @@
 [package]
 name = "dco3"
-version = "0.16.0"
+version = "0.16.1"
 edition = "2021"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3"
@@ -28,7 +28,7 @@ tokio-util = { version = "0.7", features = ["full"] }
 async-trait = "0.1"
 async-stream = "0.3"
 futures-util = "0.3"
-bytes = "1.7"
+bytes = "1"
 
 # parsing
 serde = { version = "1", features = ["derive"] }
@@ -47,7 +47,7 @@ url = "2"
 base64 = "0.22"
 chrono = {version = "0.4", features = ["serde"]}
 dco3_derive = { path = "dco3_derive", version = "0.2.0"}
-secrecy = {version = "0.8", features = ["serde"]}
+secrecy = {version = "0.10", features = ["serde"]}
 
 
 [dev-dependencies]
