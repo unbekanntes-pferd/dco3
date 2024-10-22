@@ -139,19 +139,19 @@ mod tests {
         let openid_config = &openid_configs.first().unwrap();
 
         assert_eq!(openid_config.id, 1);
-        assert_eq!(openid_config.name, "string");
-        assert_eq!(openid_config.issuer, "string");
-        assert_eq!(openid_config.authorization_end_point_url, "string");
-        assert_eq!(openid_config.token_end_point_url, "string");
-        assert_eq!(openid_config.user_info_end_point_url, "string");
-        assert_eq!(openid_config.jwks_end_point_url, "string");
-        assert_eq!(openid_config.client_id, "string");
-        assert_eq!(openid_config.client_secret, "string");
+        assert_eq!(openid_config.name.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.issuer.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.authorization_end_point_url.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.token_end_point_url.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.user_info_end_point_url.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.jwks_end_point_url.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.client_id.as_ref().unwrap(), "string");
+        assert_eq!(openid_config.client_secret.as_ref().unwrap(), "string");
         assert_eq!(openid_config.redirect_uris.len(), 1);
-        assert_eq!(openid_config.redirect_uris.first().unwrap(), "string");
-        assert_eq!(openid_config.scopes.len(), 1);
-        assert_eq!(openid_config.scopes.first().unwrap(), "string");
-        assert_eq!(openid_config.mapping_claim, "string");
+        assert_eq!(openid_config.redirect_uris.first().as_ref().unwrap(), &"string");
+        assert_eq!(openid_config.scopes.as_ref().unwrap().len(), 1);
+        assert_eq!(openid_config.scopes.as_ref().unwrap().first().unwrap(), "string");
+        assert_eq!(openid_config.mapping_claim.as_ref().unwrap(), "string");
         assert_eq!(openid_config.flow, Some("authorization_code".to_string()));
         assert_eq!(openid_config.pkce_enabled, Some(true));
         assert_eq!(
