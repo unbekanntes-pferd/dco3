@@ -5,7 +5,7 @@ use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use retry_policies::Jitter;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::{ExposeSecret, SecretString};
 use std::{marker::PhantomData, time::Duration};
 use tracing::{debug, error};
 
@@ -75,19 +75,19 @@ impl ConnectedClient for Provisioning {}
 /// represents a connection to DRACOON (`OAuth2` tokens)
 #[derive(Debug, Clone)]
 pub struct Connection {
-    access_token: Secret<String>,
-    refresh_token: Secret<String>,
+    access_token: SecretString,
+    refresh_token: SecretString,
     expires_in: u64,
     connected_at: DateTime<Utc>,
 }
 
 impl Connection {
-    pub fn refresh_token(&self) -> String {
-        self.refresh_token.expose_secret().clone()
+    pub fn refresh_token(&self) -> &str {
+        self.refresh_token.expose_secret()
     }
 
-    pub fn access_token(&self) -> String {
-        self.access_token.clone().expose_secret().clone()
+    pub fn access_token(&self) -> &str {
+        self.access_token.expose_secret()
     }
 
     pub fn expires_in(&self) -> u64 {
@@ -122,8 +122,8 @@ impl Connection {
 
     pub fn new_from_access_token(access_token: String) -> Self {
         Self {
-            access_token: Secret::new(access_token),
-            refresh_token: Secret::new(String::new()),
+            access_token: SecretString::from(access_token),
+            refresh_token: SecretString::from(String::new()),
             expires_in: u64::MAX,
             connected_at: Utc::now(),
         }
@@ -142,7 +142,7 @@ pub struct DracoonClient<State = Disconnected> {
     base_url: Url,
     redirect_uri: Option<Url>,
     client_id: String,
-    client_secret: Secret<String>,
+    client_secret: SecretString,
     pub http: ClientWithMiddleware,
     pub stream_http: Client,
     connection: Container<Connection>,
@@ -150,7 +150,7 @@ pub struct DracoonClient<State = Disconnected> {
     additional_connections: Container<Vec<Connection>>,
     curr_connection: Container<CurrentConnection>,
     state: PhantomData<State>,
-    provisioning_token: Option<Secret<String>>,
+    provisioning_token: Option<SecretString>,
 }
 
 /// Builder for the [DracoonClient] struct.
@@ -304,7 +304,7 @@ impl DracoonClientBuilder {
             base_url,
             redirect_uri: None,
             client_id: String::new(),
-            client_secret: Secret::new(String::new()),
+            client_secret: SecretString::from(String::new()),
             http,
             stream_http: upload_http,
             state: PhantomData,
@@ -312,7 +312,7 @@ impl DracoonClientBuilder {
             additional_connections: Container::new(),
             token_rotation: None,
             curr_connection: Container::new(),
-            provisioning_token: Some(Secret::new(provisioning_token.to_string())),
+            provisioning_token: Some(SecretString::from(provisioning_token.to_string())),
         })
     }
 
@@ -360,7 +360,7 @@ impl DracoonClientBuilder {
             base_url,
             redirect_uri: Some(redirect_uri),
             client_id,
-            client_secret: Secret::new(client_secret),
+            client_secret: SecretString::from(client_secret),
             connection: Container::<Connection>::new(),
             additional_connections: Container::new(),
             token_rotation,
@@ -607,8 +607,8 @@ impl DracoonClient<Connected> {
             .get()
             .await
             .expect("Connected client has no connection")
-            .access_token
-            .clone();
+            .access_token()
+            .to_string();
 
         let api_url = self
             .base_url
@@ -619,7 +619,7 @@ impl DracoonClient<Connected> {
             &self.client_id,
             self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_ACCESS_TOKEN,
-            access_token.expose_secret(),
+            &access_token,
         );
 
         self.http.post(api_url).form(&auth).send().await?;
@@ -634,8 +634,8 @@ impl DracoonClient<Connected> {
             .get()
             .await
             .expect("Connected client has no connection")
-            .refresh_token
-            .clone();
+            .refresh_token()
+            .to_string();
 
         let api_url = self
             .base_url
@@ -646,7 +646,7 @@ impl DracoonClient<Connected> {
             &self.client_id,
             self.client_secret.expose_secret(),
             TOKEN_TYPE_HINT_REFRESH_TOKEN,
-            refresh_token.expose_secret(),
+            &refresh_token,
         );
 
         self.http.post(api_url).form(&auth).send().await?;
@@ -782,6 +782,7 @@ impl DracoonClient<Connected> {
             .await
             .expect("Connected client has no connection")
             .refresh_token()
+            .to_string()
     }
 
     /// Checks if the access token is still valid
@@ -801,7 +802,7 @@ impl DracoonClient<Provisioning> {
             .as_ref()
             .expect("Provisioning client has no token")
             .expose_secret()
-            .clone()
+            .to_string()
     }
 }
 
@@ -938,7 +939,8 @@ mod tests {
             .get()
             .await
             .unwrap()
-            .access_token();
+            .access_token()
+            .to_string();
 
         let refresh_token = res
             .as_ref()
@@ -947,7 +949,8 @@ mod tests {
             .get()
             .await
             .unwrap()
-            .refresh_token();
+            .refresh_token()
+            .to_string();
 
         let expires_in = res
             .as_ref()
