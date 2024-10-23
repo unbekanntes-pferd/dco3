@@ -141,16 +141,31 @@ mod tests {
         assert_eq!(openid_config.id, 1);
         assert_eq!(openid_config.name.as_ref().unwrap(), "string");
         assert_eq!(openid_config.issuer.as_ref().unwrap(), "string");
-        assert_eq!(openid_config.authorization_end_point_url.as_ref().unwrap(), "string");
-        assert_eq!(openid_config.token_end_point_url.as_ref().unwrap(), "string");
-        assert_eq!(openid_config.user_info_end_point_url.as_ref().unwrap(), "string");
+        assert_eq!(
+            openid_config.authorization_end_point_url.as_ref().unwrap(),
+            "string"
+        );
+        assert_eq!(
+            openid_config.token_end_point_url.as_ref().unwrap(),
+            "string"
+        );
+        assert_eq!(
+            openid_config.user_info_end_point_url.as_ref().unwrap(),
+            "string"
+        );
         assert_eq!(openid_config.jwks_end_point_url.as_ref().unwrap(), "string");
         assert_eq!(openid_config.client_id.as_ref().unwrap(), "string");
         assert_eq!(openid_config.client_secret.as_ref().unwrap(), "string");
         assert_eq!(openid_config.redirect_uris.len(), 1);
-        assert_eq!(openid_config.redirect_uris.first().as_ref().unwrap(), &"string");
+        assert_eq!(
+            openid_config.redirect_uris.first().as_ref().unwrap(),
+            &"string"
+        );
         assert_eq!(openid_config.scopes.as_ref().unwrap().len(), 1);
-        assert_eq!(openid_config.scopes.as_ref().unwrap().first().unwrap(), "string");
+        assert_eq!(
+            openid_config.scopes.as_ref().unwrap().first().unwrap(),
+            "string"
+        );
         assert_eq!(openid_config.mapping_claim.as_ref().unwrap(), "string");
         assert_eq!(openid_config.flow, Some("authorization_code".to_string()));
         assert_eq!(openid_config.pkce_enabled, Some(true));
