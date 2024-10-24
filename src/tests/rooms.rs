@@ -4,9 +4,7 @@ mod tests {
 
     use crate::{
         nodes::{
-            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, GroupMemberAcceptance,
-            NodePermissions, RoomGroup, RoomGroupsAddBatchRequestItem, RoomPoliciesRequest,
-            RoomUser, RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType,
+            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, GroupMemberAcceptance, NodePermissions, RoomGroup, RoomGroupsAddBatchRequestItem, RoomGuestUserInvitation, RoomPoliciesRequest, RoomUser, RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -497,5 +495,27 @@ mod tests {
             .unwrap();
 
         room_groups_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_invite_guest_users() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let room_guests_mock = mock_server
+            .mock("PUT", "/api/v4/nodes/rooms/123/guest_users")
+            .with_status(204)
+            .create();
+
+        let guest = RoomGuestUserInvitation::new("test@foo.com", "first", "last");
+
+        let result = client
+            .nodes()
+            .invite_guest_users(123, vec![guest].into())
+            .await;
+
+        assert!(result.is_ok());
+
+        room_guests_mock.assert();
+
     }
 }
