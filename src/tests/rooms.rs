@@ -4,7 +4,10 @@ mod tests {
 
     use crate::{
         nodes::{
-            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, GroupMemberAcceptance, NodePermissions, RoomGroup, RoomGroupsAddBatchRequestItem, RoomGuestUserInvitation, RoomPoliciesRequest, RoomUser, RoomUsersAddBatchRequestItem, UpdateRoomRequest, UserType
+            ConfigRoomRequest, CreateRoomRequest, EncryptRoomRequest, GroupMemberAcceptance,
+            NodePermissions, RoomGroup, RoomGroupsAddBatchRequestItem, RoomGuestUserInvitation,
+            RoomPoliciesRequest, RoomUser, RoomUsersAddBatchRequestItem, UpdateRoomRequest,
+            UserType,
         },
         tests::{dracoon::get_connected_client, nodes::tests::assert_node},
         ListAllParams, Rooms,
@@ -516,6 +519,5 @@ mod tests {
         assert!(result.is_ok());
 
         room_guests_mock.assert();
-
     }
 }

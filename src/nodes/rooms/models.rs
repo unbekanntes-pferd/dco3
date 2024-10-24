@@ -656,7 +656,6 @@ impl From<Vec<u64>> for RoomUsersDeleteBatchRequest {
     }
 }
 
-
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGuestUserAddRequest {
@@ -672,7 +671,11 @@ pub struct RoomGuestUserInvitation {
 }
 
 impl RoomGuestUserInvitation {
-    pub fn new(email: impl Into<String>, first_name: impl Into<String>, last_name: impl Into<String>) -> Self {
+    pub fn new(
+        email: impl Into<String>,
+        first_name: impl Into<String>,
+        last_name: impl Into<String>,
+    ) -> Self {
         RoomGuestUserInvitation {
             email: email.into(),
             first_name: first_name.into(),
@@ -683,6 +686,8 @@ impl RoomGuestUserInvitation {
 
 impl From<Vec<RoomGuestUserInvitation>> for RoomGuestUserAddRequest {
     fn from(room_guest_invitations: Vec<RoomGuestUserInvitation>) -> Self {
-        RoomGuestUserAddRequest { room_guest_invitations }
+        RoomGuestUserAddRequest {
+            room_guest_invitations,
+        }
     }
 }

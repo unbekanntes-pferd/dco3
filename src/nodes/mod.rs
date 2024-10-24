@@ -663,7 +663,6 @@ pub trait Rooms {
         room_id: u64,
         invite_req: RoomGuestUserAddRequest,
     ) -> Result<(), DracoonClientError>;
-
 }
 /// This trait represents the download functionality and provides
 /// a signle method to download a stream of bytes to a writer.
