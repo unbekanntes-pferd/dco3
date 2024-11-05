@@ -638,6 +638,31 @@ pub trait Rooms {
         room_id: u64,
         room_users_del_req: RoomUsersDeleteBatchRequest,
     ) -> Result<(), DracoonClientError>;
+    /// Deletes room users by id.
+    /// Gets groups of a room by id with optional params.
+    /// ```no_run
+    /// # use dco3::{Dracoon, OAuth2Flow, Rooms, nodes::RoomGuestUserInvitation};
+    /// # #[tokio::main]
+    /// # async fn main() {
+    /// # let dracoon = Dracoon::builder()
+    /// #  .with_base_url("https://dracoon.team")
+    /// #  .with_client_id("client_id")
+    /// #  .with_client_secret("client_secret")
+    /// #  .build()
+    /// #  .unwrap()
+    /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
+    /// #  .await
+    /// #  .unwrap();
+    /// // You can use a vec
+    /// let guest = RoomGuestUserInvitation::new("email", "first name", "last name");
+    /// dracoon.nodes().invite_guest_users(123, vec![guest].into()).await.unwrap();
+    /// # }
+    /// ```
+    async fn invite_guest_users(
+        &self,
+        room_id: u64,
+        invite_req: RoomGuestUserAddRequest,
+    ) -> Result<(), DracoonClientError>;
 }
 /// This trait represents the download functionality and provides
 /// a signle method to download a stream of bytes to a writer.

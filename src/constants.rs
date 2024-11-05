@@ -39,6 +39,7 @@ pub const ROOMS_ENCRYPT: &str = "encrypt";
 pub const ROOMS_USERS: &str = "users";
 pub const ROOMS_GROUPS: &str = "groups";
 pub const ROOMS_POLICIES: &str = "policies";
+pub const ROOMS_GUEST_USERS: &str = "guest_users";
 // note: needed for NFS upload (DRACOON Server)
 pub const UPLOADS_BASE: &str = "uploads";
 

@@ -5,7 +5,7 @@ use crate::{
     client::{errors::DracoonClientError, Connected},
     constants::{
         DRACOON_API_PREFIX, NODES_BASE, ROOMS_BASE, ROOMS_CONFIG, ROOMS_ENCRYPT, ROOMS_GROUPS,
-        ROOMS_POLICIES, ROOMS_USERS,
+        ROOMS_GUEST_USERS, ROOMS_POLICIES, ROOMS_USERS,
     },
     models::ListAllParams,
     utils::FromResponse,
@@ -17,7 +17,7 @@ use self::models::{
     RoomUserList, RoomUsersAddBatchRequest, RoomUsersDeleteBatchRequest, UpdateRoomRequest,
 };
 
-use super::{models::Node, NodesEndpoint, Rooms};
+use super::{models::Node, NodesEndpoint, RoomGuestUserAddRequest, Rooms};
 
 pub mod models;
 
@@ -334,6 +334,36 @@ impl Rooms for NodesEndpoint<Connected> {
             )
             .header(header::CONTENT_TYPE, "application/json")
             .json(&room_users_del_req)
+            .send()
+            .await?;
+
+        if response.status().is_client_error() || response.status().is_server_error() {
+            return Err(DracoonClientError::from_response(response).await?);
+        }
+
+        Ok(())
+    }
+
+    async fn invite_guest_users(
+        &self,
+        room_id: u64,
+        invite_req: RoomGuestUserAddRequest,
+    ) -> Result<(), DracoonClientError> {
+        let url_part = format!(
+            "/{DRACOON_API_PREFIX}/{NODES_BASE}/{ROOMS_BASE}/{room_id}/{ROOMS_GUEST_USERS}"
+        );
+        let api_url = self.client().build_api_url(&url_part);
+
+        let response = self
+            .client()
+            .http
+            .put(api_url)
+            .header(
+                header::AUTHORIZATION,
+                self.client().get_auth_header().await?,
+            )
+            .header(header::CONTENT_TYPE, "application/json")
+            .json(&invite_req)
             .send()
             .await?;
 
