@@ -218,7 +218,7 @@ impl DracoonErrorResponse {
 }
 
 /// DRACOON `OAuth2` error response
-#[derive(Deserialize, Debug, PartialEq)]
+#[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DracoonAuthErrorResponse {
     error: String,

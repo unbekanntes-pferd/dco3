@@ -453,7 +453,7 @@ pub struct DownloadUrlResponse {
 }
 
 /// Error response for S3 requests (XML)
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct S3XmlError {
     code: Option<String>,
@@ -464,7 +464,7 @@ pub struct S3XmlError {
 }
 
 /// Error response for S3 requests
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct S3ErrorResponse {
     pub status: StatusCode,
     pub error: S3XmlError,

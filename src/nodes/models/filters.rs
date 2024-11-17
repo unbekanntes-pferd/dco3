@@ -5,7 +5,7 @@ use super::NodeType;
 #[derive(Debug, Clone)]
 pub enum NodesFilter {
     Name(FilterOperator, String),
-    Type(FilterOperator, NodeType),
+    Type(FilterOperator, NodeTypes),
     Encrypted(FilterOperator, bool),
     BranchVersion(FilterOperator, u64),
     TimestampCreation(FilterOperator, String),
@@ -13,6 +13,26 @@ pub enum NodesFilter {
     ReferenceId(FilterOperator, u64),
     // missing: perm, childPerm
     // TODO: add permission model enum in api/models.rs
+}
+
+#[derive(Debug, Clone)]
+pub struct NodeTypes(Vec<NodeType>);
+
+impl From<&NodeTypes> for String {
+    fn from(node_types: &NodeTypes) -> Self {
+        node_types
+            .0
+            .iter()
+            .map(|node_type| String::from(node_type))
+            .collect::<Vec<_>>()
+            .join(":")
+    }
+}
+
+impl From<Vec<NodeType>> for NodeTypes {
+    fn from(node_types: Vec<NodeType>) -> Self {
+        NodeTypes(node_types)
+    }
 }
 
 impl FilterQuery for NodesFilter {
@@ -93,15 +113,20 @@ impl NodesFilter {
     }
 
     pub fn is_file() -> Self {
-        NodesFilter::Type(FilterOperator::Eq, NodeType::File)
+        NodesFilter::Type(FilterOperator::Eq, vec![NodeType::File].into())
     }
 
     pub fn is_folder() -> Self {
-        NodesFilter::Type(FilterOperator::Eq, NodeType::Folder)
+        NodesFilter::Type(FilterOperator::Eq, vec![NodeType::Folder].into())
     }
 
     pub fn is_room() -> Self {
-        NodesFilter::Type(FilterOperator::Eq, NodeType::Room)
+        NodesFilter::Type(FilterOperator::Eq, vec![NodeType::Room].into())
+    }
+
+    pub fn is_types(val: Vec<NodeType>) -> Self {
+        let node_types = NodeTypes(val);
+        NodesFilter::Type(FilterOperator::Eq, node_types)
     }
 }
 
@@ -113,7 +138,7 @@ impl From<NodesFilter> for Box<dyn FilterQuery> {
 
 #[derive(Debug, Clone)]
 pub enum NodesSearchFilter {
-    Type(FilterOperator, NodeType),
+    Type(FilterOperator, NodeTypes),
     FileType(FilterOperator, String),
     Classification(FilterOperator, u8),
     CreatedBy(FilterOperator, String),
@@ -134,15 +159,20 @@ pub enum NodesSearchFilter {
 
 impl NodesSearchFilter {
     pub fn is_file() -> Self {
-        NodesSearchFilter::Type(FilterOperator::Eq, NodeType::File)
+        NodesSearchFilter::Type(FilterOperator::Eq, vec![NodeType::File].into())
     }
 
     pub fn is_folder() -> Self {
-        NodesSearchFilter::Type(FilterOperator::Eq, NodeType::Folder)
+        NodesSearchFilter::Type(FilterOperator::Eq, vec![NodeType::Folder].into())
     }
 
     pub fn is_room() -> Self {
-        NodesSearchFilter::Type(FilterOperator::Eq, NodeType::Room)
+        NodesSearchFilter::Type(FilterOperator::Eq, vec![NodeType::Room].into())
+    }
+
+    pub fn is_types(val: Vec<NodeType>) -> Self {
+        let node_types = NodeTypes(val);
+        NodesSearchFilter::Type(FilterOperator::Eq, node_types)
     }
 
     pub fn is_favorite(val: bool) -> Self {
@@ -313,6 +343,25 @@ mod tests {
     fn test_nodes_filter_is_file() {
         let filter = NodesFilter::is_file();
         assert_eq!(filter.to_filter_string(), "type:eq:file");
+    }
+
+    #[test]
+    fn test_nodes_filter_is_room() {
+        let filter = NodesFilter::is_file();
+        assert_eq!(filter.to_filter_string(), "type:eq:room");
+    }
+
+
+    #[test]
+    fn test_nodes_filter_is_folder() {
+        let filter = NodesFilter::is_folder();
+        assert_eq!(filter.to_filter_string(), "type:eq:folder");
+    }
+
+    #[test]
+    fn test_nodes_filter_is_folder_room() {
+        let filter = NodesFilter::is_types(vec![NodeType::Folder, NodeType::Room]);
+        assert_eq!(filter.to_filter_string(), "type:eq:folder:room");
     }
 
     #[test]
@@ -503,5 +552,11 @@ mod tests {
     fn test_nodes_search_filter_file_type_contains() {
         let filter = NodesSearchFilter::file_type_contains("jpg");
         assert_eq!(filter.to_filter_string(), "fileType:cn:jpg");
+    }
+
+    #[test]
+    fn test_nodes_search_folder_room() {
+        let filter = NodesSearchFilter::is_types(vec![NodeType::Folder, NodeType::Room]);
+        assert_eq!(filter.to_filter_string(), "type:eq:folder:room");
     }
 }
