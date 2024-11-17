@@ -23,7 +23,7 @@ impl From<&NodeTypes> for String {
         node_types
             .0
             .iter()
-            .map(|node_type| String::from(node_type))
+            .map(String::from)
             .collect::<Vec<_>>()
             .join(":")
     }
@@ -347,10 +347,9 @@ mod tests {
 
     #[test]
     fn test_nodes_filter_is_room() {
-        let filter = NodesFilter::is_file();
+        let filter = NodesFilter::is_room();
         assert_eq!(filter.to_filter_string(), "type:eq:room");
     }
-
 
     #[test]
     fn test_nodes_filter_is_folder() {
