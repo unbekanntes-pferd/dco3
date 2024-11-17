@@ -32,5 +32,5 @@ To contribute, fork the repository and create a pull request.
 
 * implement missing API calls
     * branding
-* improve upload callback (chunk stream)
+    * reporting
 * add examples
