@@ -101,7 +101,7 @@ pub struct LastAdminUserRoom {
 
 #[derive(Debug, Clone, Deserialize, FromResponse)]
 pub struct LastAdminUserRoomList {
-    items: Vec<LastAdminUserRoom>,
+    pub items: Vec<LastAdminUserRoom>,
 }
 
 #[derive(Debug, Clone, Serialize)]
