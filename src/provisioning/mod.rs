@@ -106,7 +106,6 @@ pub trait CustomerProvisioning {
     /// let update = UpdateCustomerRequest::builder()
     ///    .with_company_name("Foo Inc.")
     ///    .build();
-
     /// let customer = dracoon.provisioning().update_customer(123, update).await.unwrap();
     ///
     /// # }
