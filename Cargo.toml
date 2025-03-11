@@ -15,8 +15,9 @@ description = "Async API wrapper for DRACOON in Rust."
 
 [dependencies]
 # http
-reqwest = {version = "0.12", features = ["json", "stream"]}
-reqwest-middleware = {version = "0.4", features = ["json"]}
+# pinned to 0.12.12 because reqwest-middleware is not compatible
+reqwest = {version = "=0.12.12", features = ["json", "stream"]}
+reqwest-middleware = {version = "0.4.0", features = ["json"]}
 reqwest-retry = "0.7"
 
 # crypto 
