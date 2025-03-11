@@ -176,7 +176,6 @@ pub trait Nodes {
     /// dracoon.nodes().delete_nodes(node_ids.into()).await.unwrap();
     /// # }
     /// ```
-
     async fn delete_nodes(&self, req: DeleteNodesRequest) -> Result<(), DracoonClientError>;
     /// Move nodes to a target parent node (folder or room).
     /// ```no_run
@@ -577,7 +576,6 @@ pub trait Rooms {
     /// #  .connect(OAuth2Flow::PasswordFlow("username".into(), "password".into()))
     /// #  .await
     /// #  .unwrap();
-
     /// let users = dracoon.nodes().get_room_users(123, None).await.unwrap();
     /// # }
     /// ```

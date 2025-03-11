@@ -94,7 +94,6 @@ pub struct AlgorithmVersionInfoList {
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(from = "u8")]
-
 pub enum MinimumClassification {
     NoPassword = 0,
     Public = 1,
