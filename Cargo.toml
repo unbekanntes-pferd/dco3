@@ -15,10 +15,10 @@ description = "Async API wrapper for DRACOON in Rust."
 
 [dependencies]
 # http
-# pinned to 0.12.12 because reqwest-middleware is not compatible
-reqwest = {version = "=0.12.12", features = ["json", "stream"]}
-reqwest-middleware = {version = "0.4.0", features = ["json"]}
+reqwest = {version = "0.12", features = ["json", "stream"]}
+reqwest-middleware = {version = "0.4", features = ["json"]}
 reqwest-retry = "0.7"
+retry-policies = "0.4" # pin to 0.4 due to reqwest-retry compatibility
 
 # crypto 
 dco3_crypto = "0.7"
@@ -33,25 +33,25 @@ bytes = "1"
 
 # parsing
 serde = { version = "1", features = ["derive"] }
-serde-xml-rs = "0.6"
+serde-xml-rs = "0.8"
 serde_json = "1"
 
 # error handling
 thiserror = "2"
-retry-policies = "0.4"
+
 
 # logging and tracing
 tracing = "0.1"
 
 # utils
-url = "2"
+url = "2.5.7"
 base64 = "0.22"
-chrono = {version = "0.4", features = ["serde"]}
+chrono = {version = "0.4.42", features = ["serde"]}
 dco3_derive = { path = "dco3_derive", version = "0.2"}
 secrecy = {version = "0.10", features = ["serde"]}
 
 
 [dev-dependencies]
 mockito = "1"
-tracing-subscriber = {version = "0.3", features = ["env-filter"]}
+tracing-subscriber = {version = "0.3.20", features = ["env-filter"]}
 
