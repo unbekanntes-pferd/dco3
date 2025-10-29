@@ -214,9 +214,7 @@ mod tests {
             DracoonClientError::Http(error) => {
                 assert_eq!(error.code(), StatusCode::BAD_GATEWAY.as_u16() as i32);
                 assert!(
-                    error
-                        .error_message()
-                        .contains("failed to parse error body"),
+                    error.error_message().contains("failed to parse error body"),
                     "unexpected error message: {}",
                     error.error_message()
                 );
