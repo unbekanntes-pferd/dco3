@@ -3,8 +3,12 @@ use dco3_crypto::DracoonCryptoError;
 use reqwest::{Error as ClientError, Response};
 use reqwest_middleware::Error as ReqError;
 use thiserror::Error;
+use tracing::error;
 
-use crate::{nodes::models::S3ErrorResponse, utils::FromResponse};
+use crate::{
+    nodes::models::S3ErrorResponse,
+    utils::{fallback_http_error, FromResponse},
+};
 
 use super::models::{DracoonAuthErrorResponse, DracoonErrorResponse};
 
@@ -79,9 +83,18 @@ impl From<ClientError> for DracoonClientError {
 #[async_trait]
 impl FromResponse for DracoonClientError {
     async fn from_response(value: Response) -> Result<Self, DracoonClientError> {
-        if !value.status().is_success() {
-            let error = value.json::<DracoonErrorResponse>().await?;
-            return Ok(DracoonClientError::Http(error));
+        let status = value.status();
+
+        if !status.is_success() {
+            let parsed = value.json::<DracoonErrorResponse>().await;
+            return match parsed {
+                Ok(error) => Ok(DracoonClientError::Http(error)),
+                Err(err) => {
+                    error!("Failed to parse error body ({}): {}", status, err);
+                    let fallback = fallback_http_error(status, "failed to parse error body");
+                    Ok(DracoonClientError::Http(fallback))
+                }
+            };
         }
         Err(DracoonClientError::Unknown)
     }
@@ -172,6 +185,41 @@ impl DracoonClientError {
         match self {
             DracoonClientError::Http(error) => error.is_server_error(),
             _ => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use http::Response as HttpResponse;
+    use reqwest::{Body, StatusCode};
+
+    fn build_response(status: StatusCode, body: &str) -> Response {
+        HttpResponse::builder()
+            .status(status)
+            .body(Body::from(body.to_string()))
+            .unwrap()
+            .into()
+    }
+
+    #[tokio::test]
+    async fn from_response_returns_http_error_when_error_body_cannot_be_parsed() {
+        let response = build_response(StatusCode::BAD_GATEWAY, "not-json");
+        let error = DracoonClientError::from_response(response)
+            .await
+            .expect("expected fallback Http error");
+
+        match error {
+            DracoonClientError::Http(error) => {
+                assert_eq!(error.code(), StatusCode::BAD_GATEWAY.as_u16() as i32);
+                assert!(
+                    error.error_message().contains("failed to parse error body"),
+                    "unexpected error message: {}",
+                    error.error_message()
+                );
+            }
+            other => panic!("expected Http error, got {other:?}"),
         }
     }
 }
