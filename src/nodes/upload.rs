@@ -858,7 +858,7 @@ pub fn calculate_s3_url_count(total_size: u64, chunk_size: u64) -> (u32, u64) {
     }
 
     let full_chunks = total_size / chunk_size;
-    let last_chunk_size = if total_size % chunk_size == 0 {
+    let last_chunk_size = if total_size.is_multiple_of(chunk_size) {
         chunk_size // If it's an exact multiple, the last chunk is a full chunk
     } else {
         total_size % chunk_size
