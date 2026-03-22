@@ -130,9 +130,7 @@ impl Groups for GroupsEndpoint<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response)
-                .await
-                .unwrap_or(DracoonClientError::Unknown));
+            return Err(DracoonClientError::from_response(response).await?);
         }
 
         Ok(())

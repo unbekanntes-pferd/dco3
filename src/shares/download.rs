@@ -68,9 +68,7 @@ impl DownloadShares for SharesEndpoint<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response)
-                .await
-                .expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response).await?);
         }
 
         Ok(())
@@ -98,9 +96,7 @@ impl DownloadShares for SharesEndpoint<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response)
-                .await
-                .expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response).await?);
         }
 
         Ok(())
@@ -208,9 +204,7 @@ impl DownloadShares for SharesEndpoint<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response)
-                .await
-                .expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response).await?);
         }
 
         Ok(())
@@ -242,9 +236,7 @@ impl DownloadShares for SharesEndpoint<Connected> {
             .await?;
 
         if response.status().is_server_error() || response.status().is_client_error() {
-            return Err(DracoonClientError::from_response(response)
-                .await
-                .expect("Could not parse error response"));
+            return Err(DracoonClientError::from_response(response).await?);
         }
 
         Ok(())
