@@ -8,7 +8,7 @@ pub mod tests {
 
     pub fn assert_role_group(role_group: &RoleGroup) {
         assert_eq!(role_group.id, 1);
-        assert_eq!(role_group.is_member, true);
+        assert!(role_group.is_member);
         assert_eq!(role_group.name, "group name");
     }
 

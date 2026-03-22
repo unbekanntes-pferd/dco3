@@ -590,7 +590,7 @@ impl DracoonBuilder {
     }
 
     /// Sets the token rotation for the client (use amount of tokens per client)
-    #[doc(hidden = "Experimental")]
+    #[doc(hidden)]
     pub fn with_token_rotation(mut self, token_rotation: u8) -> Self {
         self.client_builder = self.client_builder.with_token_rotation(token_rotation);
         self

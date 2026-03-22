@@ -49,13 +49,12 @@ mod tests {
             .unwrap()
             .items
             .is_empty());
-        assert!(customer
+        assert!(!customer
             .customer_attributes
             .as_ref()
             .unwrap()
             .items
-            .first()
-            .is_some());
+            .is_empty());
         let kv = customer
             .customer_attributes
             .as_ref()

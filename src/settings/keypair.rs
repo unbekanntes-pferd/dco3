@@ -34,11 +34,7 @@ impl RescueKeyPair for SettingsEndpoint<Connected> {
             .get_missing_file_keys(room_id, file_id, user_id, None)
             .await?;
 
-        let remaining_keys = if missing_keys.range.is_none() {
-            0
-        } else {
-            missing_keys.range.as_ref().unwrap().total
-        };
+        let remaining_keys = missing_keys.range.as_ref().map_or(0, |range| range.total);
 
         let key_reqs =
             UserFileKeySetBatchRequest::try_new_from_missing_keys(missing_keys, &keypair)?;

@@ -151,13 +151,13 @@ mod tests {
 
         assert_eq!(customer.name, "string");
         assert_eq!(customer.id, 1);
-        assert_eq!(customer.is_provider_customer, true);
+        assert!(customer.is_provider_customer);
         assert_eq!(customer.accounts_limit, 100);
         assert_eq!(customer.space_limit, 100);
         assert_eq!(customer.space_used, 10);
         assert_eq!(customer.accounts_used, 10);
         assert_eq!(customer.cnt_guest_user.unwrap(), 1);
         assert_eq!(customer.cnt_internal_user.unwrap(), 9);
-        assert_eq!(customer.customer_encryption_enabled, true);
+        assert!(customer.customer_encryption_enabled);
     }
 }

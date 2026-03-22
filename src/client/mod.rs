@@ -239,7 +239,7 @@ impl DracoonClientBuilder {
         self
     }
 
-    #[doc(hidden = "experimental")]
+    #[doc(hidden)]
     pub fn with_token_rotation(mut self, token_rotation: u8) -> Self {
         self.token_rotation = Some(token_rotation);
         self
@@ -1445,6 +1445,6 @@ mod tests {
         let conn = connected_client.connection.get().await.unwrap();
         assert_eq!(conn.access_token.expose_secret(), "access_token");
         assert_eq!(conn.refresh_token.expose_secret(), "");
-        assert_eq!(conn.expires_in, std::u64::MAX);
+        assert_eq!(conn.expires_in, u64::MAX);
     }
 }

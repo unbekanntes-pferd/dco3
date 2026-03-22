@@ -365,7 +365,6 @@ impl SortQuery for NodesSortBy {
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
 
