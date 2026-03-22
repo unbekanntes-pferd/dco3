@@ -65,6 +65,14 @@ pub async fn build_s3_error(response: Response) -> DracoonClientError {
     DracoonClientError::S3Error(Box::new(err_response))
 }
 
+pub(crate) fn build_s3_protocol_error(
+    status: StatusCode,
+    code: &'static str,
+    message: impl Into<String>,
+) -> DracoonClientError {
+    DracoonClientError::S3Error(Box::new(S3ErrorResponse::protocol(status, code, message)))
+}
+
 #[async_trait]
 pub trait FromResponse {
     /// Trait that allows to convert a response into a specific type (async)
@@ -147,5 +155,28 @@ mod tests {
         let error = fallback_http_error(status, "context info");
         assert_eq!(error.code(), status.as_u16() as i32);
         assert_eq!(error.error_message(), "I'm a teapot (context info)");
+    }
+
+    #[test]
+    fn build_s3_protocol_error_returns_s3_error() {
+        let err = build_s3_protocol_error(
+            StatusCode::BAD_GATEWAY,
+            "missing_etag",
+            "S3 upload succeeded without ETag header",
+        );
+
+        match err {
+            DracoonClientError::S3Error(error) => {
+                assert_eq!(error.status, StatusCode::BAD_GATEWAY);
+                match &error.kind {
+                    crate::nodes::models::S3ErrorKind::Protocol { code, message } => {
+                        assert_eq!(*code, "missing_etag");
+                        assert_eq!(message, "S3 upload succeeded without ETag header");
+                    }
+                    other => panic!("expected protocol S3 error, got {other:?}"),
+                }
+            }
+            other => panic!("expected S3 error, got {other:?}"),
+        }
     }
 }

@@ -254,9 +254,7 @@ impl<S: Send + Sync> Public for PublicEndpoint<S> {
 mod tests {
 
     use chrono::Datelike;
-    use dco3_crypto::{
-        DracoonCrypto, DracoonRSACrypto, Encrypt, FileKeyVersion, UserKeyPairVersion,
-    };
+    use dco3_crypto::{DracoonCrypto, DracoonRSACrypto, FileKeyVersion, UserKeyPairVersion};
 
     use crate::{
         nodes::{FileMeta, UploadOptions},
@@ -264,6 +262,14 @@ mod tests {
         tests::dracoon::get_connected_client,
         Dracoon, Public, PublicDownload,
     };
+
+    fn encrypt_streaming(plaintext: impl AsRef<[u8]>) -> (Vec<u8>, dco3_crypto::PlainFileKey) {
+        let mut encryptor = DracoonCrypto::file_encryptor().unwrap();
+        let mut ciphertext = encryptor.update(plaintext.as_ref()).unwrap();
+        let finalized = encryptor.finalize().unwrap();
+        ciphertext.extend_from_slice(&finalized.final_chunk);
+        (ciphertext, finalized.plain_file_key)
+    }
 
     #[tokio::test]
     async fn test_get_system_info_connected() {
@@ -615,7 +621,7 @@ mod tests {
 
         let mock_bytes = b"testtesttesttest".to_vec();
         let mock_compare = mock_bytes.clone();
-        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
+        let mock_bytes_encrypted = encrypt_streaming(mock_bytes);
 
         let plain_key = mock_bytes_encrypted.1.clone();
 

@@ -1,7 +1,7 @@
 use std::cmp::min;
 
 use async_trait::async_trait;
-use dco3_crypto::{ChunkedEncryption, Decrypter, DracoonCrypto, DracoonRSACrypto};
+use dco3_crypto::{DracoonCrypto, DracoonRSACrypto};
 use futures_util::TryStreamExt;
 use reqwest::header::{self, RANGE};
 use tokio::io::{AsyncWrite, AsyncWriteExt};
@@ -224,14 +224,8 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
     ) -> Result<(), DracoonClientError> {
         let plain_private_key =
             DracoonCrypto::decrypt_private_key(&password, &encryption_info.private_key_container)?;
-        let plain_key =
-            DracoonCrypto::decrypt_file_key(encryption_info.file_key, plain_private_key)?;
-
-        // this is safe, because the maximum size of a file (encrypted) is 60 GB
-        #[allow(clippy::cast_possible_truncation)]
-        let mut buffer = vec![0u8; size as usize];
-
-        let mut crypter = DracoonCrypto::decrypter(plain_key, &mut buffer)?;
+        let mut crypter =
+            DracoonCrypto::file_decryptor(encryption_info.file_key, plain_private_key)?;
 
         // offset (in bytes)
         let mut downloaded_bytes = 0u64;
@@ -277,8 +271,13 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
 
             while let Some(chunk) = stream.try_next().await? {
                 let len = chunk.len() as u64;
+                let plain = crypter.update(&chunk)?;
 
-                crypter.update(&chunk)?;
+                writer
+                    .write_all(&plain)
+                    .await
+                    .or(Err(DracoonClientError::IoError))?;
+
                 downloaded_bytes += len;
 
                 // call progress callback if provided
@@ -291,10 +290,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
             }
         }
 
-        crypter.finalize()?;
-
+        let final_chunk = crypter.finalize()?;
         writer
-            .write_all(&buffer)
+            .write_all(&final_chunk)
             .await
             .or(Err(DracoonClientError::IoError))?;
         Ok(())
@@ -303,7 +301,11 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
 
 #[cfg(test)]
 mod tests {
-    use dco3_crypto::{DracoonCrypto, DracoonRSACrypto, Encrypt};
+    use std::pin::Pin;
+    use std::task::{Context, Poll};
+
+    use dco3_crypto::{DracoonCrypto, DracoonRSACrypto};
+    use tokio::io::AsyncWrite;
 
     use crate::{
         public::{
@@ -312,6 +314,44 @@ mod tests {
         },
         Dracoon,
     };
+
+    #[derive(Default)]
+    struct RecordingAsyncWriter {
+        writes: Vec<Vec<u8>>,
+    }
+
+    impl RecordingAsyncWriter {
+        fn flattened(&self) -> Vec<u8> {
+            self.writes.iter().flatten().copied().collect()
+        }
+    }
+
+    impl AsyncWrite for RecordingAsyncWriter {
+        fn poll_write(
+            mut self: Pin<&mut Self>,
+            _cx: &mut Context<'_>,
+            buf: &[u8],
+        ) -> Poll<std::io::Result<usize>> {
+            self.writes.push(buf.to_vec());
+            Poll::Ready(Ok(buf.len()))
+        }
+
+        fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+
+        fn poll_shutdown(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<std::io::Result<()>> {
+            Poll::Ready(Ok(()))
+        }
+    }
+
+    fn encrypt_streaming(plaintext: impl AsRef<[u8]>) -> (Vec<u8>, dco3_crypto::PlainFileKey) {
+        let mut encryptor = DracoonCrypto::file_encryptor().unwrap();
+        let mut ciphertext = encryptor.update(plaintext.as_ref()).unwrap();
+        let finalized = encryptor.finalize().unwrap();
+        ciphertext.extend_from_slice(&finalized.final_chunk);
+        (ciphertext, finalized.plain_file_key)
+    }
 
     #[tokio::test]
     async fn test_generate_download_url() {
@@ -416,7 +456,7 @@ mod tests {
         ];
         let mock_bytes_compare = mock_bytes;
 
-        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
+        let mock_bytes_encrypted = encrypt_streaming(mock_bytes);
         let plain_key = mock_bytes_encrypted.1.clone();
 
         let keypair =
@@ -556,7 +596,7 @@ mod tests {
         ];
         let mock_bytes_compare = mock_bytes;
 
-        let mock_bytes_encrypted = DracoonCrypto::encrypt(mock_bytes).unwrap();
+        let mock_bytes_encrypted = encrypt_streaming(mock_bytes);
         let plain_key = mock_bytes_encrypted.1.clone();
 
         let keypair =
@@ -591,10 +631,7 @@ mod tests {
 
         let secret = "TopSecret1234!";
 
-        let buffer = Vec::with_capacity(16);
-
-        // create a writer
-        let mut writer = tokio::io::BufWriter::new(buffer);
+        let mut writer = RecordingAsyncWriter::default();
         let access_key = "123456";
 
         let res = include_str!("../tests/responses/download/download_url_ok_template.json");
@@ -624,5 +661,11 @@ mod tests {
         download_mock_1.assert();
         download_mock_2.assert();
         url_mock.assert();
+        assert_eq!(writer.flattened(), mock_bytes_compare.to_vec());
+        assert!(writer.writes.len() > 1);
+        assert!(writer
+            .writes
+            .iter()
+            .all(|write| write.len() < mock_bytes_compare.len()));
     }
 }

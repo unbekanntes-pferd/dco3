@@ -1,14 +1,15 @@
+pub(crate) mod crypto;
 pub mod filters;
 pub mod sorts;
 
+pub(crate) use crypto::*;
 use dco3_crypto::DracoonCrypto;
 use dco3_crypto::DracoonRSACrypto;
 use dco3_crypto::PlainUserKeyPairContainer;
 use dco3_derive::FromResponse;
 pub use filters::*;
 pub use sorts::*;
-use tracing::debug;
-use tracing::error;
+use tracing::{debug, error, warn};
 
 use std::fmt::Debug;
 use std::fmt::Display;
@@ -465,29 +466,55 @@ pub struct S3XmlError {
 
 /// Error response for S3 requests
 #[derive(Debug, PartialEq, Clone)]
+pub enum S3ErrorKind {
+    Xml(S3XmlError),
+    Protocol { code: &'static str, message: String },
+}
+
+/// Error response for S3 requests
+#[derive(Debug, PartialEq, Clone)]
 pub struct S3ErrorResponse {
     pub status: StatusCode,
-    pub error: S3XmlError,
+    pub kind: S3ErrorKind,
 }
 
 impl Display for S3ErrorResponse {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Error: {} ({})",
-            self.error
-                .message
-                .as_ref()
-                .unwrap_or(&String::from("Unknown S3 error")),
-            self.status,
-        )
+        match &self.kind {
+            S3ErrorKind::Xml(error) => write!(
+                f,
+                "Error: {} ({})",
+                error
+                    .message
+                    .as_ref()
+                    .unwrap_or(&String::from("Unknown S3 error")),
+                self.status,
+            ),
+            S3ErrorKind::Protocol { code, message } => {
+                write!(f, "Error: {message} [{code}] ({})", self.status)
+            }
+        }
     }
 }
 
 impl S3ErrorResponse {
     /// transforms a `S3XmlError` into a `S3ErrorResponse`
     pub fn from_xml_error(status: StatusCode, error: S3XmlError) -> Self {
-        Self { status, error }
+        Self {
+            status,
+            kind: S3ErrorKind::Xml(error),
+        }
+    }
+
+    /// builds an S3/upload protocol error when the upstream response shape is invalid
+    pub fn protocol(status: StatusCode, code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            status,
+            kind: S3ErrorKind::Protocol {
+                code,
+                message: message.into(),
+            },
+        }
     }
 }
 
@@ -1177,47 +1204,59 @@ impl UserFileKeySetBatchRequest {
         missing_keys: MissingKeysResponse,
         keypair: &PlainUserKeyPairContainer,
     ) -> Result<Self, DracoonClientError> {
-        let reqs = missing_keys
-            .items
-            .into_iter()
-            .flat_map::<Result<UserFileKeySetRequest, DracoonClientError>, _>(|item| {
-                let file_id = item.file_id;
-                let user_id = item.user_id;
-                let public_key = missing_keys
-                    .users
-                    .iter()
-                    .find(|u| u.id == user_id)
-                    .ok_or_else(|| {
-                        error!("User not found in response: {}", user_id);
-                        DracoonClientError::Unknown
-                    })? // this is safe because the user id is in the response
-                    .public_key_container
-                    .clone();
-                let file_key = missing_keys
-                    .files
-                    .iter()
-                    .find(|f| f.id == file_id)
-                    .ok_or_else(|| {
-                        error!("File not found in response: {}", file_id);
-                        DracoonClientError::Unknown
-                    })? // this is safe because the file id is in the response
-                    .file_key_container
-                    .clone();
+        let mut reqs = Vec::new();
 
-                let plain_file_key = DracoonCrypto::decrypt_file_key(file_key, keypair.clone())
-                    .map_err(|err| {
-                        error!("Could not decrypt file key: {:?}", err);
-                        DracoonClientError::CryptoError(err)
-                    })?;
-                let file_key = DracoonCrypto::encrypt_file_key(plain_file_key, public_key)
-                    .map_err(|err| {
-                        error!("Could not encrypt file key: {:?}", err);
-                        DracoonClientError::CryptoError(err)
-                    })?;
-                let set_key_req = UserFileKeySetRequest::new(user_id, file_id, file_key);
-                Ok(set_key_req)
-            })
-            .collect::<Vec<_>>();
+        for item in missing_keys.items {
+            let file_id = item.file_id;
+            let user_id = item.user_id;
+            let public_key = missing_keys
+                .users
+                .iter()
+                .find(|u| u.id == user_id)
+                .ok_or_else(|| {
+                    error!("User not found in response: {}", user_id);
+                    DracoonClientError::Unknown
+                })?
+                .public_key_container
+                .clone();
+            let file_key = missing_keys
+                .files
+                .iter()
+                .find(|f| f.id == file_id)
+                .ok_or_else(|| {
+                    error!("File not found in response: {}", file_id);
+                    DracoonClientError::Unknown
+                })?
+                .file_key_container
+                .clone();
+
+            let plain_file_key = match DracoonCrypto::decrypt_file_key(file_key, keypair.clone()) {
+                Ok(plain_file_key) => plain_file_key,
+                Err(err) => {
+                    warn!(
+                        user_id,
+                        file_id,
+                        error = ?err,
+                        "Skipping missing-key redistribution because file key decryption failed",
+                    );
+                    continue;
+                }
+            };
+            let file_key = match DracoonCrypto::encrypt_file_key(plain_file_key, public_key) {
+                Ok(file_key) => file_key,
+                Err(err) => {
+                    warn!(
+                        user_id,
+                        file_id,
+                        error = ?err,
+                        "Skipping missing-key redistribution because file key encryption failed",
+                    );
+                    continue;
+                }
+            };
+
+            reqs.push(UserFileKeySetRequest::new(user_id, file_id, file_key));
+        }
 
         debug!("Built {} key requests", reqs.len());
 
