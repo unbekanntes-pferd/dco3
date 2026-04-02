@@ -14,6 +14,7 @@ use crate::{
     utils::{parse_body, FromResponse},
 };
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateRoomRequest {
@@ -44,6 +45,7 @@ pub struct CreateRoomRequest {
     timestamp_modification: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum GroupMemberAcceptance {
     #[serde(rename = "autoallow")]
@@ -171,6 +173,7 @@ impl CreateRoomRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRoomRequest {
@@ -246,6 +249,7 @@ impl UpdateRoomRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomPoliciesRequest {
@@ -288,6 +292,7 @@ impl RoomPoliciesRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomPolicies {
@@ -295,6 +300,7 @@ pub struct RoomPolicies {
     pub is_virus_protection_enabled: bool,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ConfigRoomRequest {
@@ -400,6 +406,7 @@ impl ConfigRoomRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EncryptRoomRequest {
@@ -460,6 +467,7 @@ impl FromResponse for RoomGroupList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroup {
@@ -470,12 +478,14 @@ pub struct RoomGroup {
     pub permissions: Option<NodePermissions>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsAddBatchRequest {
     items: Vec<RoomGroupsAddBatchRequestItem>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsAddBatchRequestItem {
@@ -589,6 +599,7 @@ impl NodePermissionsBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGroupsDeleteBatchRequest {
@@ -610,6 +621,7 @@ impl FromResponse for RoomUserList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUser {
@@ -619,12 +631,14 @@ pub struct RoomUser {
     pub public_key_container: Option<PublicKeyContainer>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersAddBatchRequest {
     items: Vec<RoomUsersAddBatchRequestItem>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersAddBatchRequestItem {
@@ -644,6 +658,7 @@ impl RoomUsersAddBatchRequestItem {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomUsersDeleteBatchRequest {
@@ -656,12 +671,14 @@ impl From<Vec<u64>> for RoomUsersDeleteBatchRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGuestUserAddRequest {
     room_guest_invitations: Vec<RoomGuestUserInvitation>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoomGuestUserInvitation {
