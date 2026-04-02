@@ -1,4 +1,6 @@
 mod groups;
+#[cfg(feature = "mcp")]
+mod mcp;
 pub mod nodes;
 mod provisioning;
 mod roles;
