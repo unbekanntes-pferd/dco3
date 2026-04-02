@@ -34,6 +34,7 @@ impl<S> GroupsEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Group {
@@ -57,6 +58,7 @@ impl FromResponse for GroupList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGroupRequest {
@@ -74,6 +76,7 @@ impl CreateGroupRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateGroupRequest {
@@ -106,6 +109,7 @@ impl UpdateGroupRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ChangeGroupMembersRequest {
@@ -124,12 +128,14 @@ impl ChangeGroupMembersRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoomList {
     pub items: Vec<LastAdminGroupRoom>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminGroupRoom {
@@ -139,6 +145,7 @@ pub struct LastAdminGroupRoom {
     pub parent_id: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GroupUser {

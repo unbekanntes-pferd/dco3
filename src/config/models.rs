@@ -25,6 +25,7 @@ impl<S> ConfigEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneralSettingsInfo {
@@ -40,6 +41,7 @@ pub struct GeneralSettingsInfo {
     pub auth_token_restrictions: Option<AuthTokenRestrictions>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthTokenRestrictions {
@@ -48,6 +50,7 @@ pub struct AuthTokenRestrictions {
     pub refresh_token_validity: Option<u32>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemDefaults {
@@ -59,6 +62,7 @@ pub struct SystemDefaults {
     pub hide_login_input_fields: Option<bool>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct InfrastructureProperties {
@@ -70,6 +74,7 @@ pub struct InfrastructureProperties {
     pub tenant_uuid: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub enum AlgorithmStatus {
     #[serde(rename = "REQUIRED")]
@@ -78,6 +83,7 @@ pub enum AlgorithmStatus {
     Discouraged,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 pub struct AlgorithmVersionInfo {
     pub version: String,
@@ -85,6 +91,7 @@ pub struct AlgorithmVersionInfo {
     pub status: AlgorithmStatus,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct AlgorithmVersionInfoList {
@@ -92,6 +99,7 @@ pub struct AlgorithmVersionInfoList {
     pub key_pair_algorithms: Vec<AlgorithmVersionInfo>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(from = "u8")]
 pub enum MinimumClassification {
@@ -102,6 +110,7 @@ pub enum MinimumClassification {
     StrictlyConfidential = 4,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShareClassificationPolicies {
@@ -120,12 +129,14 @@ impl From<u8> for MinimumClassification {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct ClassificationPoliciesConfig {
     pub share_classification_policies: Option<ShareClassificationPolicies>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PasswordExpiration {
@@ -133,6 +144,7 @@ pub struct PasswordExpiration {
     pub max_password_age: Option<u32>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub enum CharacterRule {
     #[serde(rename = "alpha")]
@@ -151,6 +163,7 @@ pub enum CharacterRule {
     None,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CharacterRules {
@@ -158,6 +171,7 @@ pub struct CharacterRules {
     pub number_of_characteristics_to_enforce: i32,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserLockout {
@@ -166,6 +180,7 @@ pub struct UserLockout {
     pub lockout_period: Option<i32>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginPasswordPolicies {
@@ -181,6 +196,7 @@ pub struct LoginPasswordPolicies {
     pub updated_by: UserInfo,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SharesPasswordPolicies {
@@ -193,6 +209,7 @@ pub struct SharesPasswordPolicies {
     pub updated_by: Option<UserInfo>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EncryptionPasswordPolicies {
@@ -205,6 +222,7 @@ pub struct EncryptionPasswordPolicies {
     pub updated_by: Option<UserInfo>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PasswordPoliciesConfig {
@@ -213,6 +231,7 @@ pub struct PasswordPoliciesConfig {
     pub encryption_password_policies: Option<EncryptionPasswordPolicies>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Feature {
@@ -221,6 +240,7 @@ pub struct Feature {
     pub is_available: bool,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FeaturedOAuthClient {
@@ -228,6 +248,7 @@ pub struct FeaturedOAuthClient {
     pub oauth_client_name: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct ProductPackagesResponse {
@@ -237,11 +258,13 @@ pub struct ProductPackagesResponse {
     pub clients: Vec<FeaturedOAuthClient>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 pub struct ProductPackageResponseList {
     pub packages: Vec<ProductPackagesResponse>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3Tag {
@@ -251,6 +274,7 @@ pub struct S3Tag {
     pub is_mandatory: Option<bool>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 pub struct S3TagList {
     pub items: Option<Vec<S3Tag>>,

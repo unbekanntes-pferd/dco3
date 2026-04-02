@@ -230,6 +230,7 @@ impl NodeList {
 }
 
 /// A node in DRACOON - GET /nodes/{nodeId}
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct Node {
@@ -274,6 +275,7 @@ pub struct Node {
     pub auth_parent_id: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum NodeType {
     #[serde(rename = "room")]
@@ -305,6 +307,7 @@ impl From<&NodeType> for String {
 }
 
 /// DRACOOON node permissions
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(clippy::struct_excessive_bools)]
@@ -405,6 +408,7 @@ impl Display for NodePermissions {
 }
 
 /// DRACOOON encryption info (rescue keys)
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct EncryptionInfo {
@@ -414,6 +418,7 @@ pub struct EncryptionInfo {
 }
 
 /// DRACOON user info on nodes (`created_by`, `updated_by`)
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserInfo {
@@ -426,6 +431,7 @@ pub struct UserInfo {
     pub email: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum UserType {
     #[serde(rename = "internal")]
@@ -447,6 +453,7 @@ impl FromResponse for NodeList {
 }
 
 /// Response for download url of a node - POST /nodes/files/{nodeId}/download
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadUrlResponse {
@@ -454,6 +461,7 @@ pub struct DownloadUrlResponse {
 }
 
 /// Error response for S3 requests (XML)
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct S3XmlError {
@@ -526,6 +534,7 @@ impl FromResponse for FileKey {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFileUploadResponse {
@@ -534,6 +543,7 @@ pub struct CreateFileUploadResponse {
     pub token: String,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrl {
@@ -541,12 +551,14 @@ pub struct PresignedUrl {
     pub part_number: u32,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PresignedUrlList {
     pub urls: Vec<PresignedUrl>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadStatus {
@@ -555,6 +567,7 @@ pub struct S3FileUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub enum S3UploadStatus {
     #[serde(rename = "transfer")]
@@ -567,6 +580,7 @@ pub enum S3UploadStatus {
     Error,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
@@ -693,6 +707,7 @@ impl CreateFileUploadRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GeneratePresignedUrlsRequest {
@@ -711,6 +726,7 @@ impl GeneratePresignedUrlsRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteS3FileUploadRequest {
@@ -777,6 +793,7 @@ impl CompleteS3FileUploadRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CompleteUploadRequest {
@@ -839,6 +856,7 @@ impl CompleteUploadRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone, Default)]
 pub enum ResolutionStrategy {
     #[default]
@@ -850,6 +868,7 @@ pub enum ResolutionStrategy {
     Fail,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct S3FileUploadPart {
@@ -866,6 +885,7 @@ impl S3FileUploadPart {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteNodesRequest {
@@ -878,6 +898,7 @@ impl From<Vec<u64>> for DeleteNodesRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferNodesRequest {
@@ -888,6 +909,7 @@ pub struct TransferNodesRequest {
     keep_share_links: Option<bool>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TransferNode {
@@ -1002,6 +1024,7 @@ impl TransferNode {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateFolderRequest {
@@ -1075,6 +1098,7 @@ impl CreateFolderRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateFolderRequest {
@@ -1150,6 +1174,7 @@ impl UpdateFolderRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserIdFileItem {
@@ -1157,6 +1182,7 @@ pub struct UserIdFileItem {
     pub file_id: u64,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserUserPublicKey {
@@ -1164,6 +1190,7 @@ pub struct UserUserPublicKey {
     pub public_key_container: PublicKeyContainer,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FileFileKeys {
@@ -1171,6 +1198,7 @@ pub struct FileFileKeys {
     pub file_key_container: FileKey,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MissingKeysResponse {
@@ -1180,6 +1208,7 @@ pub struct MissingKeysResponse {
     pub files: Vec<FileFileKeys>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetBatchRequest {
@@ -1270,6 +1299,7 @@ impl From<Vec<UserFileKeySetRequest>> for UserFileKeySetBatchRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKeySetRequest {

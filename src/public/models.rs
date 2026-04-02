@@ -35,6 +35,7 @@ impl<S> GetClient<S> for PublicEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct SoftwareVersionData {
@@ -44,6 +45,7 @@ pub struct SoftwareVersionData {
     pub is_dracoon_cloud: Option<bool>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct SystemInfo {
@@ -54,6 +56,7 @@ pub struct SystemInfo {
     pub use_s3_storage: bool,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
@@ -64,6 +67,7 @@ pub struct S3ShareUploadStatus {
     pub error_details: Option<DracoonErrorResponse>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicDownloadShare {
@@ -85,6 +89,7 @@ pub struct PublicDownloadShare {
     //virus_protection_info: VirusProtectionInfo TODO: add VirusProtectionInfo into Nodes
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct PublicDownloadTokenGenerateRequest {
     password: Option<String>,
@@ -102,12 +107,14 @@ impl PublicDownloadTokenGenerateRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicDownloadTokenGenerateResponse {
     pub download_url: String,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 pub struct PublicShareEncryption {
     pub file_key: FileKey,
     pub private_key_container: PrivateKeyContainer,
@@ -122,6 +129,7 @@ impl PublicShareEncryption {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicUploadShare {
@@ -138,6 +146,7 @@ pub struct PublicUploadShare {
     pub remaining_slots: Option<u32>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct PublicUploadedFileData {
@@ -147,11 +156,13 @@ pub struct PublicUploadedFileData {
     pub hash: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct UserUserPublicKeyList {
     pub items: Vec<UserUserPublicKey>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
@@ -262,6 +273,7 @@ impl CreateShareUploadChannelRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateShareUploadChannelResponse {
@@ -269,6 +281,7 @@ pub struct CreateShareUploadChannelResponse {
     pub upload_url: String,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserFileKey {
@@ -282,6 +295,7 @@ impl UserFileKey {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 pub struct UserFileKeyList {
     pub items: Vec<UserFileKey>,
@@ -293,6 +307,7 @@ impl From<Vec<UserFileKey>> for UserFileKeyList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]

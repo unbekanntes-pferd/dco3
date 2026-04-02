@@ -13,6 +13,7 @@ use crate::{
     DracoonClientError,
 };
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadShare {
@@ -40,6 +41,7 @@ pub struct DownloadShare {
 
 pub type DownloadSharesList = RangedItems<DownloadShare>;
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateDownloadShareRequest {
@@ -180,6 +182,7 @@ impl CreateDownloadShareRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadSharesBulkRequest {
@@ -267,6 +270,7 @@ impl UpdateDownloadSharesBulkRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteDownloadSharesRequest {
@@ -285,6 +289,7 @@ impl DeleteDownloadSharesRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateDownloadShareRequest {
@@ -618,6 +623,7 @@ impl DownloadSharesSortBy {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 pub struct DownloadShareLinkEmail {
     recipients: Vec<String>,

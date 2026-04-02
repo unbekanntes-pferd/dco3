@@ -30,6 +30,7 @@ impl<S> SystemAuthEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveDirectoryConfig {
@@ -47,11 +48,13 @@ pub struct ActiveDirectoryConfig {
     pub ssl_finger_print: Option<String>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 pub struct ActiveDirectoryConfigList {
     pub items: Vec<ActiveDirectoryConfig>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct OpenIdIdpConfig {

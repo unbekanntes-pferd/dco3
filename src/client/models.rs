@@ -114,6 +114,7 @@ pub struct OAuth2TokenResponse {
 }
 
 /// DRACOON http error response
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DracoonErrorResponse {
@@ -218,6 +219,7 @@ impl DracoonErrorResponse {
 }
 
 /// DRACOON `OAuth2` error response
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DracoonAuthErrorResponse {

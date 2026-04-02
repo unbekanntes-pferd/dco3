@@ -12,6 +12,7 @@ use crate::{
     DracoonClientError,
 };
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadShare {
@@ -50,6 +51,7 @@ impl FromResponse for UploadSharesList {
 
 pub type UploadSharesList = RangedItems<UploadShare>;
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UploadShareLinkEmail {
@@ -72,6 +74,7 @@ impl UploadShareLinkEmail {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUploadShareRequest {
@@ -212,6 +215,7 @@ impl CreateUploadShareRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadShareRequest {
@@ -391,6 +395,7 @@ impl UpdateUploadShareRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteUploadSharesRequest {
@@ -409,6 +414,7 @@ impl DeleteUploadSharesRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUploadSharesBulkRequest {
