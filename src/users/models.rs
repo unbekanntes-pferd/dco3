@@ -36,6 +36,7 @@ impl<S> UsersEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct UserData {
@@ -59,6 +60,7 @@ pub struct UserData {
     pub is_mfa_enforced: Option<bool>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserItem {
@@ -88,6 +90,7 @@ impl FromResponse for UserList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LastAdminUserRoom {
@@ -99,11 +102,13 @@ pub struct LastAdminUserRoom {
     pub last_admin_in_group_id: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize, FromResponse)]
 pub struct LastAdminUserRoomList {
     pub items: Vec<LastAdminUserRoom>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateUserRequest {
@@ -129,6 +134,7 @@ pub struct CreateUserRequest {
     mfa_config: Option<MfaConfig>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MfaConfig {
@@ -244,6 +250,7 @@ impl CreateUserRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserRequest {
@@ -362,6 +369,7 @@ impl UpdateUserRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAuthDataUpdateRequest {

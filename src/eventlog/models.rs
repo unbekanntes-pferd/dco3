@@ -32,6 +32,7 @@ impl<S> EventlogEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 #[serde(try_from = "i64")]
 pub enum EventStatus {
@@ -57,6 +58,7 @@ impl TryFrom<i64> for EventStatus {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEvent {
@@ -93,6 +95,7 @@ impl FromResponse for LogEventList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct LogOperation {
@@ -101,6 +104,7 @@ pub struct LogOperation {
     pub is_deprecated: bool,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct LogOperationList {
@@ -238,6 +242,7 @@ impl From<EventlogSortBy> for Box<dyn SortQuery> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, FromResponse, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditUserPermission {
@@ -248,6 +253,7 @@ pub struct AuditUserPermission {
     pub permissions: NodePermissions,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, FromResponse, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditNodeResponse {

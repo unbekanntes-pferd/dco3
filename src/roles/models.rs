@@ -40,6 +40,7 @@ impl FromResponse for RoleGroupList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleGroup {
@@ -50,6 +51,7 @@ pub struct RoleGroup {
 
 pub type RoleUserList = RangedItems<RoleUser>;
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Right {
@@ -58,6 +60,7 @@ pub struct Right {
     pub description: String,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Role {
@@ -67,6 +70,7 @@ pub struct Role {
     pub items: Option<Vec<Right>>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleList {
@@ -87,6 +91,7 @@ impl FromResponse for RoleUserList {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoleUser {
@@ -96,6 +101,7 @@ pub struct RoleUser {
     pub display_name: Option<String>, // depreacted, but still returned
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct RevokeRoleBatchRequest {
@@ -108,6 +114,7 @@ impl From<Vec<u64>> for RevokeRoleBatchRequest {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AssignRoleBatchRequest {

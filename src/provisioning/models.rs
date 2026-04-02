@@ -32,6 +32,7 @@ impl<S> ProvisioningEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct CustomerAttributes {
     pub items: Vec<KeyValueEntry>,
@@ -53,6 +54,7 @@ impl CustomerAttributes {
 
 pub type AttributesResponse = RangedItems<KeyValueEntry>;
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Customer {
@@ -90,6 +92,7 @@ impl FromResponse for AttributesResponse {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct FirstAdminUser {
@@ -131,6 +134,7 @@ impl FirstAdminUser {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCustomerRequest {
@@ -257,6 +261,7 @@ impl NewCustomerRequestBuilder {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NewCustomerResponse {
@@ -274,6 +279,7 @@ pub struct NewCustomerResponse {
     pub webhooks_max: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, FromResponse, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCustomerResponse {
@@ -292,6 +298,7 @@ pub struct UpdateCustomerResponse {
     pub webhooks_max: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCustomerRequest {

@@ -226,6 +226,7 @@ impl From<ListAllParams> for String {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Range {
     pub offset: u64,
@@ -233,6 +234,7 @@ pub struct Range {
     pub total: u64,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ObjectExpiration {
@@ -261,6 +263,7 @@ impl From<DateTime<Utc>> for ObjectExpiration {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Deserialize, Debug, Clone)]
 pub struct RangedItems<T> {
     pub range: Range,
@@ -456,6 +459,7 @@ impl From<String> for Box<dyn SortQuery> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct KeyValueEntry {
     pub key: String,

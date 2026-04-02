@@ -32,6 +32,7 @@ impl<S> UserEndpoint<S> {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
@@ -57,6 +58,7 @@ pub struct UserAccount {
     pub user_groups: Option<Vec<UserGroup>>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserAuthData {
@@ -68,6 +70,7 @@ pub struct UserAuthData {
     pub oid_config_id: Option<u64>,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct UserGroup {
@@ -76,6 +79,7 @@ pub struct UserGroup {
     pub name: String,
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 #[allow(non_snake_case)]
@@ -175,6 +179,7 @@ impl FromResponse for UserKeyPairContainer {
     }
 }
 
+#[cfg_attr(feature = "mcp", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Clone, FromResponse)]
 #[serde(rename_all = "camelCase")]
 pub struct CustomerData {
