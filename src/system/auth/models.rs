@@ -67,7 +67,7 @@ pub struct OpenIdIdpConfig {
     pub jwks_end_point_url: Option<String>,
     pub client_id: Option<String>,
     pub client_secret: Option<String>,
-    pub redirect_uris: Vec<String>,
+    pub redirect_uris: Option<Vec<String>>,
     pub scopes: Option<Vec<String>>,
     pub mapping_claim: Option<String>,
     pub flow: Option<String>,
