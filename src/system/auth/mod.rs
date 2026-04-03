@@ -156,9 +156,15 @@ mod tests {
         assert_eq!(openid_config.jwks_end_point_url.as_ref().unwrap(), "string");
         assert_eq!(openid_config.client_id.as_ref().unwrap(), "string");
         assert_eq!(openid_config.client_secret.as_ref().unwrap(), "string");
-        assert_eq!(openid_config.redirect_uris.len(), 1);
+        assert_eq!(openid_config.redirect_uris.as_ref().unwrap().len(), 1);
         assert_eq!(
-            openid_config.redirect_uris.first().as_ref().unwrap(),
+            openid_config
+                .redirect_uris
+                .as_ref()
+                .unwrap()
+                .first()
+                .as_ref()
+                .unwrap(),
             &"string"
         );
         assert_eq!(openid_config.scopes.as_ref().unwrap().len(), 1);
