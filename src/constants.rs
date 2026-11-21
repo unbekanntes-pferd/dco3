@@ -68,6 +68,7 @@ pub const POLLING_MAX_DELAY: u64 = 30 * 1000;
 /// max. time to wait for DRACOON to finish an S3 upload (in seconds)
 pub const POLLING_TIMEOUT: u64 = 60 * 60;
 // defines how many keys (users) distributed per file on upload
+// deliberately capped (no pagination): fetching all missing keys slows down uploads into large rooms
 pub const MISSING_KEYS_BATCH: usize = 50;
 
 // EVENTLOG
