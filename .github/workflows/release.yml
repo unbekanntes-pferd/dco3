@@ -3,7 +3,7 @@ name: release
 # publish to crates.io on version tags (e.g. v0.21.0) via trusted publishing, then create the GitHub release
 # dco3_derive is published first, but only if its version is not on crates.io yet
 # requires a crates.io trusted publisher for both crates (dco3, dco3_derive):
-# repository unbekanntes-pferd/dco3, workflow release.yml, environment crates-io
+# repository unbekanntes-pferd/dco3, workflow release.yml, environment crates.io
 on:
   push:
     tags: [ "v*" ]
@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
-      name: crates-io
+      name: crates.io
       url: https://crates.io/crates/dco3
     permissions:
       id-token: write
