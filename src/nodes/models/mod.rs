@@ -982,6 +982,26 @@ impl TransferNodesRequest {
     }
 }
 
+impl TransferNodesRequestBuilder {
+    pub fn with_resolution_strategy(mut self, resolution_strategy: ResolutionStrategy) -> Self {
+        self.resolution_strategy = Some(resolution_strategy);
+        self
+    }
+
+    pub fn with_keep_share_links(mut self, keep_share_links: bool) -> Self {
+        self.keep_share_links = Some(keep_share_links);
+        self
+    }
+
+    pub fn build(self) -> TransferNodesRequest {
+        TransferNodesRequest {
+            items: self.items,
+            resolution_strategy: self.resolution_strategy,
+            keep_share_links: self.keep_share_links,
+        }
+    }
+}
+
 pub struct TransferNodeBuilder {
     id: u64,
     name: Option<String>,
@@ -999,6 +1019,32 @@ impl TransferNode {
         }
     }
 
+    pub fn with_name(mut self, name: String) -> Self {
+        self.name = Some(name);
+        self
+    }
+
+    pub fn with_timestamp_creation(mut self, timestamp_creation: String) -> Self {
+        self.timestamp_creation = Some(timestamp_creation);
+        self
+    }
+
+    pub fn with_timestamp_modification(mut self, timestamp_modification: String) -> Self {
+        self.timestamp_modification = Some(timestamp_modification);
+        self
+    }
+
+    pub fn build(self) -> TransferNode {
+        TransferNode {
+            id: self.id,
+            name: self.name,
+            timestamp_creation: self.timestamp_creation,
+            timestamp_modification: self.timestamp_modification,
+        }
+    }
+}
+
+impl TransferNodeBuilder {
     pub fn with_name(mut self, name: String) -> Self {
         self.name = Some(name);
         self
@@ -1336,5 +1382,42 @@ impl From<UseKey> for String {
             UseKey::PreviousRoomRescueKey => "previous_room_rescue_key".to_string(),
             UseKey::PreviousSystemRescueKey => "previous_system_rescue_key".to_string(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_transfer_nodes_request_builders() {
+        let node = TransferNode::builder(1)
+            .with_name("renamed.txt".to_string())
+            .build();
+
+        let req = TransferNodesRequest::builder(vec![node, 2.into()])
+            .with_resolution_strategy(ResolutionStrategy::Overwrite)
+            .with_keep_share_links(true)
+            .build();
+
+        assert_eq!(
+            serde_json::to_value(&req).unwrap(),
+            serde_json::json!({
+                "items": [
+                    {"id": 1, "name": "renamed.txt", "timestampCreation": null, "timestampModification": null},
+                    {"id": 2, "name": null, "timestampCreation": null, "timestampModification": null}
+                ],
+                "resolutionStrategy": "overwrite",
+                "keepShareLinks": true
+            })
+        );
+
+        let from_ids = TransferNodesRequest::new_from_ids(vec![3])
+            .with_resolution_strategy(ResolutionStrategy::Fail)
+            .build();
+        assert_eq!(
+            serde_json::to_value(&from_ids).unwrap()["resolutionStrategy"],
+            "fail"
+        );
     }
 }
