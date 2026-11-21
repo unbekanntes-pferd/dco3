@@ -972,6 +972,45 @@ mod tests {
         assert!(err.is_auth_error(), "unexpected error: {err:?}");
     }
 
+    #[tokio::test]
+    async fn test_password_flow_without_refresh_token() {
+        // e.g. the dracoon_legacy_scripting client issues no refresh token (null or missing)
+        for body in [
+            r#"{"access_token": "token1", "refresh_token": null, "token_type": "bearer", "expires_in": 28800}"#,
+            r#"{"access_token": "token1", "token_type": "bearer", "expires_in": 28800}"#,
+        ] {
+            let mut mock_server = mockito::Server::new_async().await;
+            let auth_mock = mock_server
+                .mock("POST", "/oauth/token")
+                .with_status(200)
+                .with_header("content-type", "application/json")
+                .with_body(body)
+                .expect(1)
+                .create_async()
+                .await;
+
+            let client = get_test_client(&mock_server.url())
+                .connect(OAuth2Flow::password_flow("username", "password"))
+                .await
+                .expect("connect without refresh token");
+
+            assert_eq!(client.get_auth_header().await.unwrap(), "Bearer token1");
+            assert_eq!(client.get_refresh_token().await, "");
+
+            // once expired, there is nothing to refresh with: auth error, no token request
+            client
+                .connection
+                .set(Connection {
+                    refresh_token: SecretString::from(String::new()),
+                    ..connection_expiring_in("token1", -1_000)
+                })
+                .await;
+            let err = client.get_auth_header().await.unwrap_err();
+            assert!(err.is_auth_error(), "unexpected error: {err:?}");
+            auth_mock.assert_async().await;
+        }
+    }
+
     #[test]
     fn test_connection_is_expired_with_skew() {
         let connected_at = Timestamp::now();

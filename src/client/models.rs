@@ -106,7 +106,9 @@ impl OAuth2TokenRevoke {
 #[derive(Serialize, Deserialize)]
 pub struct OAuth2TokenResponse {
     access_token: String,
-    refresh_token: String,
+    /// not issued by every OAuth client (e.g. `dracoon_legacy_scripting`)
+    #[serde(default)]
+    refresh_token: Option<String>,
     token_type: Option<String>,
     expires_in: u64,
     expires_in_inactive: Option<u64>,
@@ -345,7 +347,8 @@ impl From<OAuth2TokenResponse> for Connection {
         Self {
             connected_at: Timestamp::now(),
             access_token: SecretString::from(value.access_token),
-            refresh_token: SecretString::from(value.refresh_token),
+            // without a refresh token, an expired access token results in an auth error
+            refresh_token: SecretString::from(value.refresh_token.unwrap_or_default()),
             expires_in: value.expires_in,
         }
     }
