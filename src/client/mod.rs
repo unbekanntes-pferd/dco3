@@ -10,11 +10,7 @@ use std::{marker::PhantomData, sync::Arc, time::Duration};
 use tokio::sync::Mutex;
 use tracing::{debug, error};
 
-use base64::{
-    self, alphabet,
-    engine::{self, general_purpose},
-    Engine,
-};
+use base64::{engine::general_purpose, Engine};
 
 mod auth;
 pub mod errors;
@@ -464,14 +460,13 @@ impl DracoonClient<Disconnected> {
         Ok(DracoonClient { http, ..connected })
     }
 
-    /// returns client id and client secret bas64 encoded for the basic auth header
+    /// returns client id and client secret base64 encoded for the basic auth header
     fn client_credentials(&self) -> String {
-        const B64_URLSAFE: engine::GeneralPurpose =
-            engine::GeneralPurpose::new(&alphabet::URL_SAFE, general_purpose::NO_PAD);
+        // RFC 7617: standard base64 alphabet with padding
         let client_credentials =
             format!("{}:{}", &self.client_id, self.client_secret.expose_secret());
 
-        B64_URLSAFE.encode(client_credentials)
+        general_purpose::STANDARD.encode(client_credentials)
     }
 
     /// Returns the authorize url for the OAuth2 auth code flow
@@ -901,6 +896,37 @@ mod tests {
             .expect("connect");
         auth_mock.remove_async().await;
         client
+    }
+
+    #[tokio::test]
+    async fn test_password_flow_uses_standard_base64_basic_auth() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        // "client_id:x?~" encodes to a '/' and needs padding in standard base64
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .match_header("authorization", "Basic Y2xpZW50X2lkOng/fg==")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response("token1"))
+            .expect(1)
+            .create_async()
+            .await;
+
+        let client = DracoonClientBuilder::new()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("x?~")
+            .with_max_retries(1)
+            .build()
+            .unwrap();
+
+        let res = client
+            .connect(OAuth2Flow::password_flow("username", "password"))
+            .await;
+
+        auth_mock.assert_async().await;
+        assert!(res.is_ok());
     }
 
     #[test]
