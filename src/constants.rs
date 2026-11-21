@@ -58,7 +58,8 @@ pub const SHARES_DOWNLOAD: &str = "downloads";
 // DEFAULTS
 pub const DEFAULT_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
 pub const DEFAULT_DOWNLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
-pub const DEFAULT_UPLOAD_GRANULARITY: usize = 1024; // default upload stream granularity
+/// size of the slices an upload chunk is streamed in (and progress is reported for)
+pub const DEFAULT_UPLOAD_GRANULARITY: usize = 64 * 1024;
 pub const POLLING_START_DELAY: u64 = 300;
 // defines how many keys (users) distributed per file on upload
 pub const MISSING_KEYS_BATCH: usize = 50;

@@ -260,23 +260,30 @@ pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
         chunk: bytes::Bytes,
         callback: Option<CloneableUploadProgressCallback>,
     ) -> impl Stream<Item = Result<bytes::Bytes, std::io::Error>> {
-        async_stream::stream! {
-            let mut buffer = Vec::new();
-            let mut bytes_read = 0;
-
-            for byte in chunk.iter() {
-                buffer.push(*byte);
-                bytes_read += 1;
-                if buffer.len() == DEFAULT_UPLOAD_GRANULARITY || bytes_read == chunk.len() {
-                    if let Some(callback) = callback.clone() {
-                        callback.call(buffer.len() as u64, chunk.len() as u64);
-                    }
-                    yield Ok(bytes::Bytes::from(buffer.clone()));
-                    buffer.clear();
-                }
-            }
-        }
+        let total = chunk.len() as u64;
+        chunk_stream(chunk, callback, total)
     }
+}
+
+/// Streams a chunk as zero-copy slices of [`DEFAULT_UPLOAD_GRANULARITY`] bytes and reports
+/// progress `(slice_len, total)` to the callback for each slice.
+pub(crate) fn chunk_stream(
+    chunk: bytes::Bytes,
+    callback: Option<CloneableUploadProgressCallback>,
+    total: u64,
+) -> impl Stream<Item = Result<bytes::Bytes, std::io::Error>> {
+    let len = chunk.len();
+    futures_util::stream::iter(
+        (0..len)
+            .step_by(DEFAULT_UPLOAD_GRANULARITY)
+            .map(move |start| {
+                let slice = chunk.slice(start..(start + DEFAULT_UPLOAD_GRANULARITY).min(len));
+                if let Some(callback) = &callback {
+                    callback.call(slice.len() as u64, total);
+                }
+                Ok(slice)
+            }),
+    )
 }
 
 impl StreamUploadInternal<Connected> for Dracoon<Connected> {}
@@ -2348,6 +2355,47 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_chunk_stream_yields_zero_copy_slices_and_reports_progress() {
+        use futures_util::StreamExt;
+
+        let len = DEFAULT_UPLOAD_GRANULARITY * 3 + 17;
+        let data: Vec<u8> = (0..len).map(|i| (i % 251) as u8).collect();
+        let chunk = bytes::Bytes::from(data.clone());
+
+        let reported = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let reported_cb = reported.clone();
+        let callback = CloneableUploadProgressCallback::new(move |n, total| {
+            reported_cb.lock().unwrap().push((n, total));
+        });
+
+        let slices: Vec<bytes::Bytes> = chunk_stream(chunk.clone(), Some(callback), 9999)
+            .map(|slice| slice.unwrap())
+            .collect()
+            .await;
+
+        // same bytes, in slices of at most the granularity
+        assert_eq!(slices.concat(), data);
+        assert_eq!(slices.len(), 4);
+        assert!(slices.iter().all(|s| s.len() <= DEFAULT_UPLOAD_GRANULARITY));
+        // zero-copy: slices point into the original buffer
+        assert_eq!(slices[0].as_ptr(), chunk.as_ptr());
+
+        // one progress report per slice, summing up to the chunk length, with the given total
+        let reported = reported.lock().unwrap();
+        assert_eq!(reported.len(), 4);
+        assert_eq!(reported.iter().map(|(n, _)| n).sum::<u64>(), len as u64);
+        assert!(reported.iter().all(|(_, total)| *total == 9999));
+    }
+
+    #[tokio::test]
+    async fn test_chunk_stream_empty_chunk_yields_nothing() {
+        use futures_util::StreamExt;
+
+        let count = chunk_stream(bytes::Bytes::new(), None, 0).count().await;
+        assert_eq!(count, 0);
     }
 
     #[test]
