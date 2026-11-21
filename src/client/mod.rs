@@ -465,7 +465,7 @@ impl DracoonClient<Disconnected> {
     fn client_credentials(&self) -> String {
         // RFC 7617: standard base64 alphabet with padding
         let client_credentials =
-            format!("{}:{}", &self.client_id, self.client_secret.expose_secret());
+            format!("{}:{}", self.client_id, self.client_secret.expose_secret());
 
         general_purpose::STANDARD.encode(client_credentials)
     }
