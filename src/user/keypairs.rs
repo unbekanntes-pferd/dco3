@@ -1,4 +1,4 @@
-use super::{UserAccountKeyPairs, UserEndpoint};
+use super::{models::SetUserKeyPairRequest, UserAccountKeyPairs, UserEndpoint};
 use crate::{
     client::{errors::DracoonClientError, Connected},
     constants::{DRACOON_API_PREFIX, USER_ACCOUNT, USER_ACCOUNT_KEYPAIR, USER_BASE},
@@ -58,11 +58,15 @@ impl UserAccountKeyPairs for UserEndpoint<Connected> {
                 self.client().get_auth_header().await?,
             )
             .header(header::CONTENT_TYPE, "application/json")
-            .json(&enc_keypair)
+            .json(&SetUserKeyPairRequest::from(&enc_keypair))
             .send()
             .await?;
 
-        Ok(())
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(DracoonClientError::from_response(response).await?)
+        }
     }
 
     async fn delete_user_keypair(&self) -> Result<(), DracoonClientError> {
@@ -83,6 +87,10 @@ impl UserAccountKeyPairs for UserEndpoint<Connected> {
             .send()
             .await?;
 
-        Ok(())
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(DracoonClientError::from_response(response).await?)
+        }
     }
 }

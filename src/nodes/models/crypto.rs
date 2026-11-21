@@ -96,6 +96,7 @@ impl<R: AsyncRead + Unpin> StreamingEncryptedUpload<R> {
         Ok(Some(self.pending_ciphertext.split_to(emit_len).freeze()))
     }
 
+    #[cfg(test)]
     pub(crate) fn plain_file_key(&self) -> Option<&PlainFileKey> {
         self.plain_file_key.as_ref()
     }

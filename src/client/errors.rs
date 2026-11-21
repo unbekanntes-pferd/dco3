@@ -2,8 +2,9 @@ use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
 use reqwest::{Error as ClientError, Response};
 use reqwest_middleware::Error as ReqError;
+use reqwest_retry::RetryError;
 use thiserror::Error;
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     nodes::models::S3ErrorResponse,
@@ -44,30 +45,43 @@ pub enum DracoonClientError {
     MissingEncryptionSecret,
     #[error("Missing argument")]
     MissingArgument,
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+    #[error("Unsupported operation: {0}")]
+    Unsupported(String),
 }
 
 impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
         match value {
             ReqError::Middleware(error) => {
-                DracoonClientError::ConnectionFailed("Error in middleware".into())
-            }
-            ReqError::Reqwest(error) => {
-                if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed("Timeout".into());
-                }
+                // the retry middleware wraps every error (incl. timeouts / connection errors) - unwrap it
+                let error = match error.downcast::<RetryError>() {
+                    Ok(RetryError::WithRetries { err, .. } | RetryError::Error(err)) => {
+                        return err.into()
+                    }
+                    Err(error) => error,
+                };
 
-                if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed("Connection failed".into());
+                match error.downcast::<DracoonClientError>() {
+                    // errors raised by our own middleware (e.g. failed token refresh) are passed through
+                    Ok(error) => error,
+                    Err(error) => {
+                        error!("Error in middleware: {:#}", error);
+                        DracoonClientError::ConnectionFailed("Error in middleware".into())
+                    }
                 }
-                DracoonClientError::ConnectionFailed("Unknown".into())
             }
+            ReqError::Reqwest(error) => error.into(),
         }
     }
 }
 
 impl From<ClientError> for DracoonClientError {
     fn from(error: ClientError) -> Self {
+        // keep the full error chain in the logs - the variant only carries a message
+        debug!("HTTP request failed: {:?}", error);
+
         if error.is_timeout() {
             return DracoonClientError::ConnectionFailed("Timeout".into());
         }
@@ -76,8 +90,20 @@ impl From<ClientError> for DracoonClientError {
             return DracoonClientError::ConnectionFailed("Connection failed".into());
         }
 
-        DracoonClientError::ConnectionFailed("Unknown".into())
+        DracoonClientError::ConnectionFailed(error_chain(&error))
     }
+}
+
+/// formats an error with all its sources (`outer: inner: innermost`)
+fn error_chain(error: &dyn std::error::Error) -> String {
+    let mut message = error.to_string();
+    let mut source = error.source();
+    while let Some(err) = source {
+        message.push_str(": ");
+        message.push_str(&err.to_string());
+        source = err.source();
+    }
+    message
 }
 
 #[async_trait]
@@ -112,6 +138,16 @@ impl DracoonClientError {
             DracoonClientError::Http(error) => Some(error),
             _ => None,
         }
+    }
+
+    /// Check if the error is caused by an invalid argument (e.g. a range that is too large)
+    pub fn is_invalid_argument(&self) -> bool {
+        matches!(self, DracoonClientError::InvalidArgument(_))
+    }
+
+    /// Check if the error is caused by an unsupported operation (e.g. a range read of an encrypted file)
+    pub fn is_unsupported(&self) -> bool {
+        matches!(self, DracoonClientError::Unsupported(_))
     }
 
     /// Check if the error is an authentication error
@@ -201,6 +237,40 @@ mod tests {
             .body(Body::from(body.to_string()))
             .unwrap()
             .into()
+    }
+
+    #[test]
+    fn invalid_argument_and_unsupported_errors_carry_their_reason() {
+        let invalid = DracoonClientError::InvalidArgument("length too large".into());
+        let unsupported = DracoonClientError::Unsupported("encrypted ranges".into());
+
+        assert_eq!(invalid.to_string(), "Invalid argument: length too large");
+        assert_eq!(
+            unsupported.to_string(),
+            "Unsupported operation: encrypted ranges"
+        );
+        assert!(invalid.is_invalid_argument());
+        assert!(unsupported.is_unsupported());
+        assert!(!invalid.is_unsupported());
+    }
+
+    #[tokio::test]
+    async fn reqwest_errors_keep_their_description() {
+        // a URL without a host fails while building the request
+        let err = reqwest::Client::new()
+            .get("http://")
+            .send()
+            .await
+            .unwrap_err();
+
+        let DracoonClientError::ConnectionFailed(message) = DracoonClientError::from(err) else {
+            panic!("expected ConnectionFailed");
+        };
+        assert_ne!(message, "Unknown");
+        assert!(
+            message.contains("builder error"),
+            "unexpected message: {message}"
+        );
     }
 
     #[tokio::test]

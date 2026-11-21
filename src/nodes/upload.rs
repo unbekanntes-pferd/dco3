@@ -14,8 +14,9 @@ use crate::{
     client::{errors::DracoonClientError, Connected, GetClient},
     constants::{
         DEFAULT_UPLOAD_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE,
-        FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS,
-        MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY, UPLOADS_BASE,
+        FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MIN_S3_UPLOAD_CHUNK_SIZE,
+        MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_MAX_DELAY, POLLING_START_DELAY,
+        POLLING_TIMEOUT, UPLOADS_BASE,
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, build_s3_protocol_error, FromResponse},
@@ -52,6 +53,74 @@ fn missing_upload_error_details_error() -> DracoonClientError {
     )
 }
 
+/// Logs (once per process) that NFS (DRACOON Server) uploads are deprecated
+pub(crate) fn warn_nfs_upload_deprecated() {
+    static WARNED: std::sync::Once = std::sync::Once::new();
+    WARNED.call_once(|| {
+        warn!(
+            "NFS (DRACOON Server) uploads are deprecated and will be removed in a future release"
+        );
+    });
+}
+
+/// Chunk size for an upload: on S3, every part but the last must have at least
+/// [`MIN_S3_UPLOAD_CHUNK_SIZE`] bytes - smaller chunk sizes are raised to that minimum.
+pub(crate) fn upload_chunk_size(chunk_size: Option<usize>, is_s3_upload: bool) -> Option<usize> {
+    match chunk_size {
+        Some(size) if is_s3_upload && size < MIN_S3_UPLOAD_CHUNK_SIZE => {
+            warn!(
+                chunk_size = size,
+                min_chunk_size = MIN_S3_UPLOAD_CHUNK_SIZE,
+                "Chunk size below S3 minimum - using minimum"
+            );
+            Some(MIN_S3_UPLOAD_CHUNK_SIZE)
+        }
+        other => other,
+    }
+}
+
+/// Waits between S3 upload status polls.
+///
+/// The first status request is sent right after finalizing the upload (no wait). Only if the
+/// upload is still pending, the poller waits [`POLLING_START_DELAY`], then backs off exponentially,
+/// with every single wait capped at [`POLLING_MAX_DELAY`]. Fails once [`POLLING_TIMEOUT`] has passed.
+pub(crate) struct S3UploadPoller {
+    started: tokio::time::Instant,
+    delay: Duration,
+}
+
+impl S3UploadPoller {
+    pub(crate) fn new() -> Self {
+        Self {
+            started: tokio::time::Instant::now(),
+            delay: Duration::from_millis(POLLING_START_DELAY),
+        }
+    }
+
+    /// Sleeps before the next poll - returns an error if the upload did not finish in time
+    pub(crate) async fn wait(&mut self) -> Result<(), DracoonClientError> {
+        let timeout = Duration::from_secs(POLLING_TIMEOUT);
+        let elapsed = self.started.elapsed();
+        if elapsed >= timeout {
+            error!("S3 upload not finished after {} seconds", elapsed.as_secs());
+            return Err(upload_status_timeout_error());
+        }
+
+        let delay = self.delay.min(timeout - elapsed);
+        tokio::time::sleep(delay).await;
+        self.delay = (self.delay * 2).min(Duration::from_millis(POLLING_MAX_DELAY));
+        Ok(())
+    }
+}
+
+fn upload_status_timeout_error() -> DracoonClientError {
+    build_s3_protocol_error(
+        StatusCode::GATEWAY_TIMEOUT,
+        "upload_status_timeout",
+        "S3 upload was not finished by DRACOON in time",
+    )
+}
+
 #[async_trait]
 impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connected> {
     async fn upload<'r>(
@@ -64,6 +133,10 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
     ) -> Result<Node, DracoonClientError> {
         let is_s3_upload = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = parent_node.is_encrypted.unwrap_or(false);
+        let chunk_size = upload_chunk_size(chunk_size, is_s3_upload);
+        if !is_s3_upload {
+            warn_nfs_upload_deprecated();
+        }
 
         let upload_fn = match (is_encrypted, is_s3_upload) {
             (true, true) => Self::upload_to_s3_encrypted,
@@ -260,23 +333,30 @@ pub(crate) trait StreamUploadInternal<S>: GetClient<S> {
         chunk: bytes::Bytes,
         callback: Option<CloneableUploadProgressCallback>,
     ) -> impl Stream<Item = Result<bytes::Bytes, std::io::Error>> {
-        async_stream::stream! {
-            let mut buffer = Vec::new();
-            let mut bytes_read = 0;
-
-            for byte in chunk.iter() {
-                buffer.push(*byte);
-                bytes_read += 1;
-                if buffer.len() == DEFAULT_UPLOAD_GRANULARITY || bytes_read == chunk.len() {
-                    if let Some(callback) = callback.clone() {
-                        callback.call(buffer.len() as u64, chunk.len() as u64);
-                    }
-                    yield Ok(bytes::Bytes::from(buffer.clone()));
-                    buffer.clear();
-                }
-            }
-        }
+        let total = chunk.len() as u64;
+        chunk_stream(chunk, callback, total)
     }
+}
+
+/// Streams a chunk as zero-copy slices of [`DEFAULT_UPLOAD_GRANULARITY`] bytes and reports
+/// progress `(slice_len, total)` to the callback for each slice.
+pub(crate) fn chunk_stream(
+    chunk: bytes::Bytes,
+    callback: Option<CloneableUploadProgressCallback>,
+    total: u64,
+) -> impl Stream<Item = Result<bytes::Bytes, std::io::Error>> {
+    let len = chunk.len();
+    futures_util::stream::iter(
+        (0..len)
+            .step_by(DEFAULT_UPLOAD_GRANULARITY)
+            .map(move |start| {
+                let slice = chunk.slice(start..(start + DEFAULT_UPLOAD_GRANULARITY).min(len));
+                if let Some(callback) = &callback {
+                    callback.call(slice.len() as u64, total);
+                }
+                Ok(slice)
+            }),
+    )
 }
 
 impl StreamUploadInternal<Connected> for Dracoon<Connected> {}
@@ -440,7 +520,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             while url_part < count_urls {
                 let mut buffer = vec![0; chunk_size];
                 let cb = cloneable_callback.clone();
-                let fm = fm.clone();
 
                 match reader.read_exact(&mut buffer).await {
                     Ok(0) => break,
@@ -519,7 +598,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response = <Dracoon<Connected> as UploadInternal<R>>::get_upload_status(
                 self,
@@ -543,10 +622,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                     error!("Error uploading file: {}", response);
                     return Err(DracoonClientError::Http(response));
                 }
-                _ => {
-                    tokio::time::sleep(Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -626,7 +702,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response = <Dracoon<Connected> as UploadInternal<R>>::get_upload_status(
                 self,
@@ -693,10 +769,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             .ok_or_else(missing_upload_error_details_error)?,
                     ));
                 }
-                _ => {
-                    tokio::time::sleep(Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -851,7 +924,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             while chunk_part < count_chunks {
                 let mut buffer = vec![0; chunk_size];
                 let cb = cloneable_callback.clone();
-                let fm = fm.clone();
 
                 match reader.read_exact(&mut buffer).await {
                     Ok(0) => break,
@@ -1427,7 +1499,7 @@ mod tests {
             part_number: 1,
         };
 
-        let file_meta = FileMeta::builder("test", 16).build();
+        let _file_meta = FileMeta::builder("test", 16).build();
 
         let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
             &client,
@@ -1560,7 +1632,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1585,7 +1657,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -1644,7 +1716,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1669,7 +1741,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -1750,7 +1822,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1784,16 +1856,17 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
-            &client,
-            &parent_node,
-            upload_options,
-            reader_clone,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let _node =
+            <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
+                &client,
+                &parent_node,
+                upload_options,
+                reader_clone,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         upload_channel_mock.assert();
         s3_urls_mock.assert();
@@ -1980,7 +2053,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2014,16 +2087,17 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
-            &client,
-            &parent_node,
-            upload_options,
-            reader_clone,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let _node =
+            <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
+                &client,
+                &parent_node,
+                upload_options,
+                reader_clone,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         upload_channel_mock.assert();
         s3_urls_mock.assert();
@@ -2131,8 +2205,8 @@ mod tests {
         keys_mock.assert();
     }
 
-    #[tokio::test]
-    async fn test_full_upload_unencrypted_s3() {
+    /// full unencrypted S3 upload of 16 bytes - returns after asserting the expected number of parts
+    async fn full_upload_unencrypted_s3(chunk_size: Option<usize>, expected_parts: usize) {
         let (client, mut mock_server) = get_connected_client().await;
 
         let parent_node: Node =
@@ -2149,7 +2223,7 @@ mod tests {
 
         let sys_info_res = include_str!("../tests/responses/public/system_info_ok.json");
 
-        let system_info_mock = mock_server
+        let _system_info_mock = mock_server
             .mock("GET", "/api/v4/public/system/info")
             .with_status(200)
             .with_body(sys_info_res)
@@ -2179,9 +2253,10 @@ mod tests {
             .with_status(201)
             .with_body(s3_urls_response.clone())
             .with_header("content-type", "application/json")
+            .expect(expected_parts)
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2189,6 +2264,7 @@ mod tests {
             .mock("PUT", "/upload_url")
             .with_status(202)
             .with_header("etag", "string")
+            .expect(expected_parts)
             .create();
 
         // mock finalize upload
@@ -2206,13 +2282,13 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
+        let _node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
             &parent_node,
             upload_options,
             reader_clone,
             None,
-            None,
+            chunk_size,
         )
         .await
         .unwrap();
@@ -2222,6 +2298,17 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_full_upload_unencrypted_s3() {
+        full_upload_unencrypted_s3(None, 1).await;
+    }
+
+    #[tokio::test]
+    async fn test_full_upload_s3_clamps_chunk_size_to_s3_minimum() {
+        // 4 byte chunks would be 4 parts - S3 rejects non-final parts below 5 MiB
+        full_upload_unencrypted_s3(Some(4), 1).await;
     }
 
     #[tokio::test]
@@ -2242,7 +2329,7 @@ mod tests {
 
         let sys_info_res = include_str!("../tests/responses/public/system_info_ok.json");
 
-        let system_info_mock = mock_server
+        let _system_info_mock = mock_server
             .mock("GET", "/api/v4/public/system/info")
             .with_status(200)
             .with_body(sys_info_res)
@@ -2297,7 +2384,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2331,7 +2418,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
+        let _node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
             &parent_node,
             upload_options,
@@ -2348,6 +2435,99 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn test_s3_upload_poller_backoff_is_capped() {
+        let mut poller = S3UploadPoller::new();
+        let mut delays = Vec::new();
+
+        for _ in 0..10 {
+            let before = tokio::time::Instant::now();
+            poller.wait().await.unwrap();
+            delays.push(before.elapsed().as_millis());
+        }
+
+        assert_eq!(
+            delays,
+            vec![300, 600, 1200, 2400, 4800, 9600, 19200, 30000, 30000, 30000]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn test_s3_upload_poller_times_out() {
+        let started = tokio::time::Instant::now();
+        let mut poller = S3UploadPoller::new();
+
+        let err = loop {
+            if let Err(err) = poller.wait().await {
+                break err;
+            }
+        };
+
+        assert_eq!(started.elapsed(), Duration::from_secs(POLLING_TIMEOUT));
+        let DracoonClientError::S3Error(err) = err else {
+            panic!("expected S3 error, got {err:?}");
+        };
+        assert_eq!(err.status, StatusCode::GATEWAY_TIMEOUT);
+        match &err.kind {
+            S3ErrorKind::Protocol { code, .. } => assert_eq!(*code, "upload_status_timeout"),
+            other => panic!("expected protocol error, got {other:?}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_chunk_stream_yields_zero_copy_slices_and_reports_progress() {
+        use futures_util::StreamExt;
+
+        let len = DEFAULT_UPLOAD_GRANULARITY * 3 + 17;
+        let data: Vec<u8> = (0..len).map(|i| (i % 251) as u8).collect();
+        let chunk = bytes::Bytes::from(data.clone());
+
+        let reported = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let reported_cb = reported.clone();
+        let callback = CloneableUploadProgressCallback::new(move |n, total| {
+            reported_cb.lock().unwrap().push((n, total));
+        });
+
+        let slices: Vec<bytes::Bytes> = chunk_stream(chunk.clone(), Some(callback), 9999)
+            .map(|slice| slice.unwrap())
+            .collect()
+            .await;
+
+        // same bytes, in slices of at most the granularity
+        assert_eq!(slices.concat(), data);
+        assert_eq!(slices.len(), 4);
+        assert!(slices.iter().all(|s| s.len() <= DEFAULT_UPLOAD_GRANULARITY));
+        // zero-copy: slices point into the original buffer
+        assert_eq!(slices[0].as_ptr(), chunk.as_ptr());
+
+        // one progress report per slice, summing up to the chunk length, with the given total
+        let reported = reported.lock().unwrap();
+        assert_eq!(reported.len(), 4);
+        assert_eq!(reported.iter().map(|(n, _)| n).sum::<u64>(), len as u64);
+        assert!(reported.iter().all(|(_, total)| *total == 9999));
+    }
+
+    #[tokio::test]
+    async fn test_chunk_stream_empty_chunk_yields_nothing() {
+        use futures_util::StreamExt;
+
+        let count = chunk_stream(bytes::Bytes::new(), None, 0).count().await;
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_upload_chunk_size_respects_s3_minimum() {
+        assert_eq!(upload_chunk_size(None, true), None);
+        assert_eq!(
+            upload_chunk_size(Some(4), true),
+            Some(MIN_S3_UPLOAD_CHUNK_SIZE)
+        );
+        let big = MIN_S3_UPLOAD_CHUNK_SIZE * 2;
+        assert_eq!(upload_chunk_size(Some(big), true), Some(big));
+        // no minimum outside of S3
+        assert_eq!(upload_chunk_size(Some(4), false), Some(4));
     }
 
     #[test]
@@ -2418,7 +2598,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2446,15 +2626,15 @@ mod tests {
         let arc_processed = Arc::new(AtomicU64::new(0));
         let cloned_processed = arc_processed.clone();
 
-        let callback = move |processed: u64, total: u64| {
-            let current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
+        let callback = move |processed: u64, _total: u64| {
+            let _current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
 
             cloned_processed.fetch_add(processed, std::sync::atomic::Ordering::Release);
         };
 
         let callback_boxed = Box::new(callback);
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -2519,7 +2699,7 @@ mod tests {
             .expect(2)
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2548,15 +2728,15 @@ mod tests {
         let arc_processed = Arc::new(AtomicU64::new(0));
         let cloned_processed = arc_processed.clone();
 
-        let callback = move |processed: u64, total: u64| {
-            let current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
+        let callback = move |processed: u64, _total: u64| {
+            let _current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
 
             cloned_processed.fetch_add(processed, std::sync::atomic::Ordering::Release);
         };
 
         let callback_boxed = Box::new(callback);
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,

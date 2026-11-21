@@ -77,7 +77,12 @@ impl Users for UsersEndpoint<Connected> {
         effective_roles: Option<bool>,
     ) -> Result<UserData, DracoonClientError> {
         let url_part = format!("/{DRACOON_API_PREFIX}/{USERS_BASE}/{user_id}");
-        let api_url = self.client().build_api_url(&url_part);
+        let mut api_url = self.client().build_api_url(&url_part);
+        if let Some(effective_roles) = effective_roles {
+            api_url
+                .query_pairs_mut()
+                .append_pair("effective_roles", &effective_roles.to_string());
+        }
 
         let response = self
             .client()

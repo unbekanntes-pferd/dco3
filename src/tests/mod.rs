@@ -35,6 +35,7 @@ pub mod dracoon {
         assert_eq!(user_account.auth_data.method, "basic");
     }
 
+    #[allow(dead_code)] // call manually when debugging a test
     pub async fn init_tracing() {
         let _ = tracing_subscriber::fmt()
             .with_env_filter(
@@ -51,7 +52,7 @@ pub mod dracoon {
 
         let auth_res = include_str!("../client/tests/auth_ok.json");
 
-        let auth_mock = mock_server
+        let _auth_mock = mock_server
             .mock("POST", "/oauth/token")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -87,7 +88,7 @@ pub mod dracoon {
             .with_body(kp_res)
             .create();
 
-        let kp = dracoon
+        let _kp = dracoon
             .get_keypair(Some("TopSecret1234!".to_string()))
             .await
             .unwrap();

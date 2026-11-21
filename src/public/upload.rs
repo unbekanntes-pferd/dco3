@@ -7,11 +7,14 @@ use tracing::{error, warn};
 use crate::{
     constants::{
         DEFAULT_UPLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS,
-        POLLING_START_DELAY, PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
+        PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
     },
     nodes::{
         models::StreamingEncryptedUpload,
-        upload::{calculate_s3_url_count, StreamUploadInternal},
+        upload::{
+            calculate_s3_url_count, chunk_stream, upload_chunk_size, warn_nfs_upload_deprecated,
+            S3UploadPoller, StreamUploadInternal,
+        },
         CloneableUploadProgressCallback, GeneratePresignedUrlsRequest, PresignedUrlList,
         S3FileUploadPart, S3UploadStatus, UploadOptions, UploadProgressCallback,
     },
@@ -56,6 +59,10 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUpload<
     ) -> Result<FileName, DracoonClientError> {
         let use_s3_storage = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = share.is_encrypted.unwrap_or(false);
+        let chunk_size = upload_chunk_size(chunk_size, use_s3_storage);
+        if !use_s3_storage {
+            warn_nfs_upload_deprecated();
+        }
 
         let upload_fn = match (use_s3_storage, is_encrypted) {
             (true, true) => PublicUploadInternal::upload_to_s3_encrypted,
@@ -133,7 +140,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
     async fn upload_to_s3_unencrypted(
         &self,
         access_key: String,
-        share: &PublicUploadShare,
+        _share: &PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
         callback: Option<UploadProgressCallback>,
@@ -174,25 +181,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                        let stream = chunk_stream(chunk, cb, fm.size);
 
                         let url_req = GeneratePresignedUrlsRequest::new(
                             n.try_into().map_err(|_| DracoonClientError::IoError)?,
@@ -204,10 +193,6 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             create_s3_upload_urls(self, access_key.clone(), upload_channel.upload_id.clone(), url_req)
                             .await?;
                         let url = url.urls.first().ok_or_else(missing_presigned_url_error)?;
-
-                        // truncation is safe because chunk_size is 32 MB
-                        #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                        let curr_pos: u64 = ((url_part - 1) * (chunk_size as u32)) as u64;
 
                         let e_tag = self
                             .upload_stream_to_s3(
@@ -242,26 +227,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream: async_stream::__private::AsyncStream<
-                    Result<bytes::Bytes, std::io::Error>,
-                    _,
-                > = async_stream::stream! {
-                    let mut buffer = Vec::new();
-                    let mut bytes_read = 0;
-
-                    for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                    if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size);
-                                }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                        }
-                    }
-
-                };
+                let stream = chunk_stream(chunk, cb, fm.size);
 
                 let url_req = GeneratePresignedUrlsRequest::new(
                     n.try_into().map_err(|_| DracoonClientError::IoError)?,
@@ -277,8 +243,6 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                 .await?;
 
                 let url = url.urls.first().ok_or_else(missing_presigned_url_error)?;
-
-                let curr_pos: u64 = (url_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
                 let e_tag = self
                     .upload_stream_to_s3(
@@ -311,7 +275,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response =
                 <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
@@ -332,10 +296,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     error!("Error uploading file: {}", response);
                     return Err(DracoonClientError::Http(response));
                 }
-                _ => {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -378,25 +339,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
             let cb = cloneable_callback.clone();
             let fm = fm.clone();
             let chunk_len = chunk.len();
-            let stream: async_stream::__private::AsyncStream<
-                Result<bytes::Bytes, std::io::Error>,
-                _,
-            > = async_stream::stream! {
-                let mut buffer = Vec::new();
-                let mut bytes_read = 0;
-
-                for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                        if let Some(callback) = cb.clone() {
-                            callback.call(buffer.len() as u64, fm.size);
-                        }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                    }
-                }
-            };
+            let stream = chunk_stream(chunk, cb, fm.size);
 
             let url_req = GeneratePresignedUrlsRequest::new(
                 chunk_len
@@ -477,7 +420,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response =
                 <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
@@ -502,10 +445,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             .ok_or_else(missing_upload_error_details_error)?,
                     ));
                 }
-                _ => {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -641,7 +581,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
     async fn upload_to_nfs_unencrypted(
         &self,
         access_key: String,
-        share: &PublicUploadShare,
+        _share: &PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
         callback: Option<UploadProgressCallback>,
@@ -684,25 +624,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
                         buffer.truncate(n);
                         let chunk = bytes::Bytes::from(buffer);
 
-                        let stream: async_stream::__private::AsyncStream<
-                            Result<bytes::Bytes, std::io::Error>,
-                            _,
-                        > = async_stream::stream! {
-                            let mut buffer = Vec::new();
-                            let mut bytes_read = 0;
-
-                            for byte in chunk.iter() {
-                            buffer.push(*byte);
-                            bytes_read += 1;
-                            if buffer.len() == 1024 || bytes_read == chunk.len() {
-                            if let Some(callback) = cb.clone() {
-                                callback.call(buffer.len() as u64, fm.size);
-                                        }
-                                yield Ok(bytes::Bytes::from(buffer.clone()));
-                                buffer.clear();
-                                }
-                            }
-                        };
+                        let stream = chunk_stream(chunk, cb, fm.size);
 
                         let url = upload_channel.upload_url.clone();
 
@@ -741,40 +663,20 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
             Ok(n) => {
                 buffer.truncate(n);
                 let chunk = bytes::Bytes::from(buffer);
-                let stream: async_stream::__private::AsyncStream<
-                    Result<bytes::Bytes, std::io::Error>,
-                    _,
-                > = async_stream::stream! {
-                    let mut buffer = Vec::new();
-                    let mut bytes_read = 0;
-
-                    for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                    if let Some(callback) = cb.clone() {
-                        callback.call(buffer.len() as u64, fm.size);
-                                }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                        }
-                    }
-
-                };
+                let stream = chunk_stream(chunk, cb, fm.size);
 
                 let url = upload_channel.upload_url.clone();
 
                 let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
-                let e_tag = self
-                    .upload_stream_to_nfs(
-                        Box::pin(stream),
-                        &url,
-                        upload_options.file_meta.size,
-                        n,
-                        Some(curr_pos),
-                    )
-                    .await?;
+                self.upload_stream_to_nfs(
+                    Box::pin(stream),
+                    &url,
+                    upload_options.file_meta.size,
+                    n,
+                    Some(curr_pos),
+                )
+                .await?;
             }
             Err(err) => {
                 error!("Error reading file: {}", err);
@@ -834,25 +736,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
             let cb = cloneable_callback.clone();
             let fm = fm.clone();
             let chunk_len = chunk.len();
-            let stream: async_stream::__private::AsyncStream<
-                Result<bytes::Bytes, std::io::Error>,
-                _,
-            > = async_stream::stream! {
-                let mut buffer = Vec::new();
-                let mut bytes_read = 0;
-
-                for byte in chunk.iter() {
-                    buffer.push(*byte);
-                    bytes_read += 1;
-                    if buffer.len() == 1024 || bytes_read == chunk.len() {
-                        if let Some(callback) = cb.clone() {
-                            callback.call(buffer.len() as u64, fm.size);
-                        }
-                        yield Ok(bytes::Bytes::from(buffer.clone()));
-                        buffer.clear();
-                    }
-                }
-            };
+            let stream = chunk_stream(chunk, cb, fm.size);
 
             let url = upload_channel.upload_url.clone();
 

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
 
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::*;
 
@@ -48,7 +48,7 @@ mod tests {
         );
         assert_eq!(
             group.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
@@ -90,7 +90,7 @@ mod tests {
         );
         assert_eq!(
             group.updated_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2023-07-23T08:58:01.236Z").unwrap()
+            &"2023-07-23T08:58:01.236Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(group.updated_by.as_ref().unwrap().id, 2);
         assert_eq!(
@@ -122,7 +122,7 @@ mod tests {
             .with_filter(GroupsFilter::Name(FilterOperator::Eq, "string".to_string()))
             .build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -145,7 +145,7 @@ mod tests {
             .with_sort(GroupsSortBy::Name(SortOrder::Asc))
             .build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -166,7 +166,7 @@ mod tests {
 
         let params = ListAllParams::default();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -187,7 +187,7 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(10).build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -229,7 +229,7 @@ mod tests {
         );
         assert_eq!(
             group.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
@@ -276,7 +276,7 @@ mod tests {
         );
         assert_eq!(
             group.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);
@@ -323,7 +323,7 @@ mod tests {
         );
         assert_eq!(
             group.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(group.created_by.id, 2);
         assert_eq!(group.created_by.user_type, UserType::Internal);

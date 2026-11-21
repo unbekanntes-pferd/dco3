@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         nodes::{
@@ -35,19 +35,19 @@ pub mod tests {
         assert!(node.has_activities_log.unwrap());
         assert_eq!(
             node.clone().timestamp_creation.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             node.clone().timestamp_modification.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             node.clone().updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
+            "2020-02-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             node.clone().created_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(node.clone().size.unwrap(), 16);
         assert_eq!(node.clone().classification.unwrap(), 4);
@@ -237,10 +237,11 @@ pub mod tests {
 
         let nodes_res = include_str!("./responses/nodes/nodes_ok.json");
 
-        let path = "/some/path/test";
+        // fixture node is named "string"
+        let path = "/some/path/string";
 
         let nodes_mock = mock_server
-            .mock("GET", "/api/v4/nodes/search?search_string=test&depth_level=2&filter=parentPath%3Aeq%3A%2Fsome%2Fpath%2F")
+            .mock("GET", "/api/v4/nodes/search?search_string=string&depth_level=2&filter=parentPath%3Aeq%3A%2Fsome%2Fpath%2F")
             .with_status(200)
             .with_header("content-type", "application/json")
             .with_body(nodes_res)
@@ -255,6 +256,80 @@ pub mod tests {
         let node = node.unwrap();
 
         assert_node(&node);
+    }
+
+    /// search response with one node per given name (based on the nodes_ok fixture)
+    fn search_response(names: &[&str]) -> String {
+        let mut res: serde_json::Value =
+            serde_json::from_str(include_str!("./responses/nodes/nodes_ok.json")).unwrap();
+        let template = res["items"][0].clone();
+        res["items"] = names
+            .iter()
+            .enumerate()
+            .map(|(idx, name)| {
+                let mut node = template.clone();
+                node["id"] = serde_json::json!(idx + 1);
+                node["name"] = serde_json::json!(name);
+                node
+            })
+            .collect();
+        res["range"]["total"] = serde_json::json!(names.len());
+        res.to_string()
+    }
+
+    async fn node_from_path_with_hits(path: &str, query: &str, names: &[&str]) -> Option<Node> {
+        let (dracoon, mut mock_server) = get_connected_client().await;
+
+        let nodes_mock = mock_server
+            .mock("GET", format!("/api/v4/nodes/search?{query}").as_str())
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(search_response(names))
+            .create();
+
+        let node = dracoon.nodes().get_node_from_path(path).await.unwrap();
+        nodes_mock.assert();
+        node
+    }
+
+    #[tokio::test]
+    async fn test_get_node_from_path_exact_match_among_similar_names() {
+        // the search matches names containing the search string
+        let node = node_from_path_with_hits(
+            "/room/report.pdf",
+            "search_string=report.pdf&depth_level=1&filter=parentPath%3Aeq%3A%2Froom%2F",
+            &["report.pdf.bak", "report.pdf", "old_report.pdf"],
+        )
+        .await
+        .expect("exact match expected");
+
+        assert_eq!(node.name, "report.pdf");
+        assert_eq!(node.id, 2);
+    }
+
+    #[tokio::test]
+    async fn test_get_node_from_path_only_similar_name_is_no_match() {
+        let node = node_from_path_with_hits(
+            "/room/a",
+            "search_string=a&depth_level=1&filter=parentPath%3Aeq%3A%2Froom%2F",
+            &["ab"],
+        )
+        .await;
+
+        assert!(node.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_get_node_from_path_case_insensitive_fallback() {
+        let node = node_from_path_with_hits(
+            "/room/Report.PDF",
+            "search_string=Report.PDF&depth_level=1&filter=parentPath%3Aeq%3A%2Froom%2F",
+            &["report.pdf", "report.pdf.bak"],
+        )
+        .await
+        .expect("case-insensitive match expected");
+
+        assert_eq!(node.name, "report.pdf");
     }
 
     #[tokio::test]
@@ -289,7 +364,7 @@ pub mod tests {
 
         let node_res = include_str!("./responses/nodes/node_ok.json");
 
-        let node_mock = mock_server
+        let _node_mock = mock_server
             .mock("GET", "/api/v4/nodes/123")
             .with_status(200)
             .with_header("content-type", "application/json")

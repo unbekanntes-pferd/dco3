@@ -87,6 +87,76 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_set_keypair_sends_only_documented_fields() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        // DRACOON rejects explicit nulls / undocumented fields (expireAt) with "JSON parsing error"
+        let keypair_mock = mock_server
+            .mock("POST", "/api/v4/user/account/keypair")
+            .match_request(|request| {
+                let body: serde_json::Value =
+                    serde_json::from_slice(request.body().unwrap()).unwrap();
+                let keys = |container: &str| {
+                    let mut keys: Vec<String> = body[container]
+                        .as_object()
+                        .unwrap()
+                        .keys()
+                        .cloned()
+                        .collect();
+                    keys.sort();
+                    keys
+                };
+                body.as_object().unwrap().len() == 2
+                    && keys("privateKeyContainer") == ["privateKey", "version"]
+                    && keys("publicKeyContainer") == ["publicKey", "version"]
+                    && body["privateKeyContainer"]["version"] == "RSA-4096"
+            })
+            .with_status(204)
+            .create();
+
+        let res = client.user().set_user_keypair("TopSecret1234!").await;
+
+        keypair_mock.assert();
+        assert!(res.is_ok(), "unexpected error: {res:?}");
+    }
+
+    const CONFLICT_RES: &str = r#"{"code": 409, "message": "Conflict", "debugInfo": "keypair exists", "errorCode": -70022}"#;
+
+    #[tokio::test]
+    async fn test_set_keypair_returns_api_error() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let keypair_mock = mock_server
+            .mock("POST", "/api/v4/user/account/keypair")
+            .with_status(409)
+            .with_header("content-type", "application/json")
+            .with_body(CONFLICT_RES)
+            .create();
+
+        let res = client.user().set_user_keypair("TopSecret1234!").await;
+
+        keypair_mock.assert();
+        assert!(res.unwrap_err().is_conflict());
+    }
+
+    #[tokio::test]
+    async fn test_delete_keypair_returns_api_error() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let keypair_mock = mock_server
+            .mock("DELETE", "/api/v4/user/account/keypair")
+            .with_status(409)
+            .with_header("content-type", "application/json")
+            .with_body(CONFLICT_RES)
+            .create();
+
+        let res = client.user().delete_user_keypair().await;
+
+        keypair_mock.assert();
+        assert!(res.unwrap_err().is_conflict());
+    }
+
+    #[tokio::test]
     async fn test_get_user_account() {
         let (client, mut mock_server) = get_connected_client().await;
 

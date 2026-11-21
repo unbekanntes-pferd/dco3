@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod download_share_tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         nodes::NodeType,
@@ -21,15 +21,15 @@ mod download_share_tests {
         assert_eq!(share.cnt_downloads, 10);
         assert_eq!(
             share.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             share.updated_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            &"2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             share.expire_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            &"2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(share.notes.as_ref().unwrap(), "string");
         assert_eq!(share.internal_notes.as_ref().unwrap(), "string");
@@ -359,7 +359,7 @@ mod download_share_tests {
     async fn test_delete_download_share() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let share_res = include_str!("./responses/shares/download_share_ok.json");
+        let _share_res = include_str!("./responses/shares/download_share_ok.json");
 
         let share_mock = mock_server
             .mock("DELETE", "/api/v4/shares/downloads/123")
@@ -377,7 +377,7 @@ mod download_share_tests {
     async fn test_send_download_share_email() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let share_res = include_str!("./responses/shares/download_share_ok.json");
+        let _share_res = include_str!("./responses/shares/download_share_ok.json");
 
         let share_mock = mock_server
             .mock("POST", "/api/v4/shares/downloads/123/email")
@@ -396,7 +396,7 @@ mod download_share_tests {
 
 #[cfg(test)]
 mod upload_share_tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         shares::{
@@ -414,15 +414,15 @@ mod upload_share_tests {
         assert_eq!(share.access_key, "string");
         assert_eq!(
             share.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             share.updated_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            &"2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             share.expire_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            &"2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(share.notes.as_ref().unwrap(), "string");
         assert_eq!(share.internal_notes.as_ref().unwrap(), "string");

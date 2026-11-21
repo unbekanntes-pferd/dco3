@@ -15,6 +15,8 @@ pub const TOKEN_TYPE_HINT_ACCESS_TOKEN: &str = "access_token";
 pub const TOKEN_TYPE_HINT_REFRESH_TOKEN: &str = "refresh_token";
 pub const MAX_TOKEN_COUNT: u8 = 5;
 pub const MIN_TOKEN_COUNT: u8 = 1;
+/// access tokens are treated as expired this many seconds early (capped at half the token lifetime)
+pub const TOKEN_EXPIRY_SKEW_SECS: u64 = 60;
 
 // API
 pub const DRACOON_API_PREFIX: &str = "api/v4";
@@ -56,9 +58,19 @@ pub const SHARES_DOWNLOAD: &str = "downloads";
 // DEFAULTS
 pub const DEFAULT_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
 pub const DEFAULT_DOWNLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
-pub const DEFAULT_UPLOAD_GRANULARITY: usize = 1024; // default upload stream granularity
+/// max. number of bytes a single `Download::download_range` call returns (32 MiB)
+pub const MAX_DOWNLOAD_RANGE_SIZE: usize = DEFAULT_DOWNLOAD_CHUNK_SIZE;
+/// S3 rejects multipart upload parts (except the last one) below 5 MiB
+pub const MIN_S3_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 5;
+/// size of the slices an upload chunk is streamed in (and progress is reported for)
+pub const DEFAULT_UPLOAD_GRANULARITY: usize = 64 * 1024;
 pub const POLLING_START_DELAY: u64 = 300;
+/// max. delay between two S3 upload status polls (in milliseconds)
+pub const POLLING_MAX_DELAY: u64 = 30 * 1000;
+/// max. time to wait for DRACOON to finish an S3 upload (in seconds)
+pub const POLLING_TIMEOUT: u64 = 60 * 60;
 // defines how many keys (users) distributed per file on upload
+// deliberately capped (no pagination): fetching all missing keys slows down uploads into large rooms
 pub const MISSING_KEYS_BATCH: usize = 50;
 
 // EVENTLOG

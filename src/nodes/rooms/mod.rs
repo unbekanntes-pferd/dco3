@@ -270,8 +270,8 @@ impl Rooms for NodesEndpoint<Connected> {
             .query_pairs_mut()
             .extend_pairs(params.limit.map(|limit| ("limit", limit.to_string())))
             .extend_pairs(params.offset.map(|offset| ("offset", offset.to_string())))
-            .extend_pairs(params.filter.map(|filter| ("filter", filters)))
-            .extend_pairs(params.sort.map(|sort| ("sort", sorts)))
+            .extend_pairs(params.filter.map(|_filter| ("filter", filters)))
+            .extend_pairs(params.sort.map(|_sort| ("sort", sorts)))
             .finish();
 
         let response = self

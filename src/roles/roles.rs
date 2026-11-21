@@ -42,7 +42,10 @@ impl Roles for RolesEndpoint<Connected> {
     ) -> Result<RoleGroupList, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{ROLES_BASE}/{role_id}/{ROLES_GROUPS}");
 
-        let url = self.client().build_api_url(&url_part);
+        let mut url = self.client().build_api_url(&url_part);
+        if let Some(params) = params {
+            params.apply_to(&mut url);
+        }
 
         let response = self
             .client()
@@ -116,7 +119,10 @@ impl Roles for RolesEndpoint<Connected> {
     ) -> Result<RoleUserList, DracoonClientError> {
         let url_part = format!("{DRACOON_API_PREFIX}/{ROLES_BASE}/{role_id}/{ROLES_USERS}");
 
-        let url = self.client().build_api_url(&url_part);
+        let mut url = self.client().build_api_url(&url_part);
+        if let Some(params) = params {
+            params.apply_to(&mut url);
+        }
 
         let response = self
             .client()

@@ -1,10 +1,10 @@
 [package]
 name = "dco3"
-version = "0.20.1"
+version = "0.21.0"
 edition = "2021"
+rust-version = "1.88"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3"
-homepage = "https://github.com/unbekanntes-pferd/dco3"
 license = "MIT"
 readme = "README.md"
 keywords = ["dracoon", "api-client", "rust-sdk"]
@@ -12,30 +12,30 @@ description = "Async API wrapper for DRACOON in Rust."
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[workspace]
+members = [".", "dco3_derive"]
 
 [dependencies]
 # http
 reqwest = {version = "0.13", features = ["json", "stream"]}
 reqwest-middleware = {version = "0.5", features = ["json", "form"]}
 reqwest-retry = "0.9"
+http = "1"
 retry-policies = "0.5"
 
 # crypto
 dco3_crypto = "0.10.0"
 
 # async runtime and utils
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7", features = ["full"] }
+tokio = { version = "1", features = ["io-util", "sync", "time"] }
 async-trait = "0.1"
-async-stream = "0.3"
 futures-util = "0.3"
 bytes = "1"
 
 # parsing
 serde = { version = "1", features = ["derive"] }
 serde-xml-rs = "0.8"
-serde_json = "1"
-schemars = { version = "1", features = ["chrono04"], optional = true }
+schemars = { version = "1", optional = true }
 
 # error handling
 thiserror = "2"
@@ -46,8 +46,8 @@ tracing = "0.1"
 
 # utils
 url = "2"
-base64 = "0.22"
-chrono = {version = "0.4", features = ["serde"]}
+base64 = "0.23"
+jiff = { version = "1", features = ["serde"] }
 dco3_derive = { path = "dco3_derive", version = "0.2"}
 secrecy = {version = "0.10", features = ["serde"]}
 
@@ -57,6 +57,16 @@ mcp = ["dep:schemars", "dco3_crypto/mcp"]
 
 
 [dev-dependencies]
+async-stream = "0.3"
+dotenvy = "0.15"
+libtest-mimic = "0.8"
+serde_json = "1"
 mockito = "1"
+tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "test-util"] }
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
-http = "1"
+
+# end-to-end tests against a real DRACOON instance (custom runner: run room cleanup after all tests)
+[[test]]
+name = "e2e"
+path = "tests/e2e/main.rs"
+harness = false

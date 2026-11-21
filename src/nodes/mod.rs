@@ -712,6 +712,52 @@ pub trait Download {
         mut callback: Option<DownloadProgressCallback>,
         chunksize: Option<usize>,
     ) -> Result<(), DracoonClientError>;
+
+    /// Reads up to `length` bytes of an unencrypted file (node), starting at byte `offset`.
+    ///
+    /// Returns exactly `length` bytes, or fewer only if the range reaches the end of the file
+    /// (an empty buffer for an `offset` at or beyond the end, or for `length == 0`).
+    ///
+    /// - `length` must not exceed [`MAX_DOWNLOAD_RANGE_SIZE`](crate::constants::MAX_DOWNLOAD_RANGE_SIZE)
+    ///   (32 MiB), otherwise [`DracoonClientError::InvalidArgument`] is returned - split larger reads
+    ///   or use [`Download::download`].
+    /// - Encrypted files are not supported ([`DracoonClientError::Unsupported`]): their content can only
+    ///   be authenticated as a whole - use [`Download::download`].
+    /// - The response is validated strictly (`206 Partial Content`, matching `Content-Range`, exact length);
+    ///   a server ignoring the range or returning a different file size results in an error, never in
+    ///   wrong data.
+    /// - Every call requests a new download URL. Successive calls are not guaranteed to read the same
+    ///   file version: compare node metadata (e.g. `id`, `size`, `updated_at`) if the file may change.
+    ///
+    /// Example
+    /// ```no_run
+    /// use dco3::{Dracoon, OAuth2Flow, Download, Nodes};
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///    let client = Dracoon::builder()
+    ///      .with_base_url("https://dracoon.team")
+    ///      .with_client_id("client_id")
+    ///      .with_client_secret("client_secret")
+    ///      .build()
+    ///      .unwrap()
+    ///      .connect(OAuth2Flow::password_flow("username", "password"))
+    ///      .await
+    ///      .unwrap();
+    ///
+    ///   let node = client.nodes().get_node(123).await.unwrap();
+    ///
+    ///   // read 4 KiB starting at byte 1 MiB
+    ///   let bytes = client.download_range(&node, 1024 * 1024, 4096).await.unwrap();
+    ///   println!("read {} bytes", bytes.len());
+    /// }
+    /// ```
+    async fn download_range(
+        &self,
+        node: &Node,
+        offset: u64,
+        length: usize,
+    ) -> Result<bytes::Bytes, DracoonClientError>;
 }
 
 /// This trait represents the upload functionality and provides
@@ -721,6 +767,11 @@ pub trait Download {
 #[async_trait]
 pub trait Upload<R: AsyncRead> {
     /// Uploads a stream (buffered reader) with given file meta info to the given parent node
+    ///
+    /// **Deprecated for NFS:** uploads to DRACOON Server instances without S3 storage (NFS) are
+    /// deprecated and will be removed in a future release. A warning is logged once when used.
+    ///
+    /// On S3 storage, a `chunk_size` below 5 MiB is raised to 5 MiB (S3 minimum part size).
     /// # Example
     /// ```no_run
     /// use dco3::{Dracoon, OAuth2Flow, Upload, Nodes, nodes::{FileMeta, UploadOptions, ResolutionStrategy}};

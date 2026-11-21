@@ -62,7 +62,7 @@ impl Folders for NodesEndpoint<Connected> {
 
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         nodes::{NodeType, UserType},
@@ -95,19 +95,19 @@ mod tests {
         assert!(folder.has_activities_log.unwrap());
         assert_eq!(
             folder.clone().timestamp_creation.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().timestamp_modification.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
+            "2020-02-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().created_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(folder.clone().size.unwrap(), 123456);
         assert_eq!(folder.clone().classification.unwrap(), 4);
@@ -140,7 +140,7 @@ mod tests {
 
         let folder_res = include_str!("../tests/responses/nodes/folder_ok.json");
 
-        let folder_mock = mock_server
+        let _folder_mock = mock_server
             .mock("POST", "/api/v4/nodes/folders")
             .with_status(200)
             .with_body(folder_res)
@@ -161,7 +161,7 @@ mod tests {
 
         let folder_res = include_str!("../tests/responses/nodes/folder_ok.json");
 
-        let folder_mock = mock_server
+        let _folder_mock = mock_server
             .mock("PUT", "/api/v4/nodes/folders/123")
             .with_status(200)
             .with_body(folder_res)

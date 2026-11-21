@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_crypto::UserKeyPairContainer;
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,11 @@ pub struct UserAccount {
     pub auth_data: UserAuthData,
     pub must_set_email: Option<bool>,
     pub needs_to_accept_EULA: Option<bool>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub is_encryption_enabled: Option<bool>,
     pub last_login_success_at: Option<String>,
     pub last_login_fail_at: Option<String>,
@@ -193,4 +197,59 @@ pub struct CustomerData {
     pub cnt_internal_user: Option<u64>,
     pub cnt_guest_user: Option<u64>,
     pub customer_encryption_enabled: bool,
+}
+
+/// Request body to set a user keypair (`POST /user/account/keypair`).
+///
+/// Serializes only the documented key container fields and omits empty ones: DRACOON rejects
+/// `UserKeyPairContainer` as serialized by `dco3_crypto` (explicit nulls and the undocumented
+/// `expireAt`) with "JSON parsing error".
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SetUserKeyPairRequest<'a> {
+    private_key_container: PrivateKeyContainerRequest<'a>,
+    public_key_container: PublicKeyContainerRequest<'a>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PrivateKeyContainerRequest<'a> {
+    version: &'a dco3_crypto::UserKeyPairVersion,
+    private_key: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_at: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_by: Option<u64>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PublicKeyContainerRequest<'a> {
+    version: &'a dco3_crypto::UserKeyPairVersion,
+    public_key: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_at: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    created_by: Option<u64>,
+}
+
+impl<'a> From<&'a UserKeyPairContainer> for SetUserKeyPairRequest<'a> {
+    fn from(keypair: &'a UserKeyPairContainer) -> Self {
+        let private = &keypair.private_key_container;
+        let public = &keypair.public_key_container;
+        Self {
+            private_key_container: PrivateKeyContainerRequest {
+                version: &private.version,
+                private_key: &private.private_key,
+                created_at: private.created_at.as_deref(),
+                created_by: private.created_by,
+            },
+            public_key_container: PublicKeyContainerRequest {
+                version: &public.version,
+                public_key: &public.public_key,
+                created_at: public.created_at.as_deref(),
+                created_by: public.created_by,
+            },
+        }
+    }
 }

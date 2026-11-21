@@ -2,9 +2,9 @@
 name = "dco3_derive"
 version = "0.2.0"
 edition = "2021"
+rust-version = "1.88"
 authors = ["Octavio Simone"]
 repository = "https://github.com/unbekanntes-pferd/dco3/dco3_derive"
-homepage = "https://github.com/unbekanntes-pferd/dco3/dco3_derive"
 license = "MIT"
 readme = "README.md"
 keywords = ["derive", "macro", "rust-sdk", "dracoon"]

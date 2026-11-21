@@ -1,8 +1,8 @@
 //! This module implments basic models for the DRACOON API.
 use std::fmt::Debug;
 
-use chrono::{DateTime, Utc};
 use dco3_crypto::PlainUserKeyPairContainer;
+use jiff::Timestamp;
 use secrecy::{zeroize::Zeroize, CloneableSecret};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -56,6 +56,31 @@ impl<T: Clone> Container<T> {
     pub async fn is_none(&self) -> bool {
         let lock = self.data.read().await;
         lock.is_none()
+    }
+}
+
+/// JSON schema for [`jiff::Timestamp`] fields (RFC 3339 string, format `date-time`).
+///
+/// schemars only implements `JsonSchema` for jiff 0.2 - fields use
+/// `#[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]`.
+#[cfg(feature = "mcp")]
+pub(crate) struct TimestampSchema;
+
+#[cfg(feature = "mcp")]
+impl schemars::JsonSchema for TimestampSchema {
+    fn inline_schema() -> bool {
+        true
+    }
+
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "DateTime".into()
+    }
+
+    fn json_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "string",
+            "format": "date-time"
+        })
     }
 }
 
@@ -134,6 +159,27 @@ impl ListAllParams {
             && self.limit.is_none()
             && self.filter.is_none()
             && self.sort.is_none()
+    }
+
+    /// Adds the set params as query parameters (`limit`, `offset`, `filter`, `sort`) to the url
+    pub(crate) fn apply_to(&self, url: &mut url::Url) {
+        if self.is_empty() {
+            return;
+        }
+
+        let mut query = url.query_pairs_mut();
+        if let Some(limit) = self.limit {
+            query.append_pair("limit", &limit.to_string());
+        }
+        if let Some(offset) = self.offset {
+            query.append_pair("offset", &offset.to_string());
+        }
+        if self.filter.is_some() {
+            query.append_pair("filter", &self.filter_to_string());
+        }
+        if self.sort.is_some() {
+            query.append_pair("sort", &self.sort_to_string());
+        }
     }
 }
 
@@ -243,10 +289,10 @@ pub struct ObjectExpiration {
 }
 
 impl ObjectExpiration {
-    pub fn new(expire_at: DateTime<Utc>) -> Self {
+    pub fn new(expire_at: Timestamp) -> Self {
         Self {
             enable_expiration: true,
-            expire_at: Some(expire_at.to_rfc3339()),
+            expire_at: Some(expire_at.to_string()),
         }
     }
 }
@@ -257,8 +303,8 @@ impl AsRef<ObjectExpiration> for ObjectExpiration {
     }
 }
 
-impl From<DateTime<Utc>> for ObjectExpiration {
-    fn from(value: DateTime<Utc>) -> Self {
+impl From<Timestamp> for ObjectExpiration {
+    fn from(value: Timestamp) -> Self {
         Self::new(value)
     }
 }

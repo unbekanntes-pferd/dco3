@@ -3,7 +3,7 @@ use secrecy::SecretString;
 use std::fmt::{Display, Formatter};
 use url::ParseError;
 
-use chrono::Utc;
+use jiff::Timestamp;
 use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +19,7 @@ pub(crate) trait GetClient<S> {
 }
 
 /// represents form data payload for `OAuth2` password flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2PasswordFlow {
     pub username: String,
     pub password: String,
@@ -38,7 +38,7 @@ impl OAuth2PasswordFlow {
 }
 
 /// represents form data payload for `OAuth2` authorization code flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2AuthCodeFlow {
     pub client_id: String,
     pub client_secret: String,
@@ -61,7 +61,7 @@ impl OAuth2AuthCodeFlow {
 }
 
 /// represents form data payload for `OAuth2` refresh token flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2RefreshTokenFlow {
     client_id: String,
     client_secret: String,
@@ -82,7 +82,7 @@ impl OAuth2RefreshTokenFlow {
 }
 
 /// represents form data payload for `OAuth2` token revoke
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2TokenRevoke {
     client_id: String,
     client_secret: String,
@@ -103,14 +103,77 @@ impl OAuth2TokenRevoke {
 }
 
 /// DRACOON `OAuth2` token response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2TokenResponse {
     access_token: String,
-    refresh_token: String,
+    /// not issued by every OAuth client (e.g. `dracoon_legacy_scripting`)
+    #[serde(default)]
+    refresh_token: Option<String>,
     token_type: Option<String>,
     expires_in: u64,
     expires_in_inactive: Option<u64>,
     scope: Option<String>,
+}
+
+const REDACTED: &str = "[redacted]";
+
+// manual `Debug` implementations: never print passwords, client secrets, codes or tokens
+
+impl std::fmt::Debug for OAuth2PasswordFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2PasswordFlow")
+            .field("username", &self.username)
+            .field("password", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2AuthCodeFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2AuthCodeFlow")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .field("code", &REDACTED)
+            .field("redirect_uri", &self.redirect_uri)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2RefreshTokenFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2RefreshTokenFlow")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .field("refresh_token", &REDACTED)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2TokenRevoke {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2TokenRevoke")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("token_type_hint", &self.token_type_hint)
+            .field("token", &REDACTED)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2TokenResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2TokenResponse")
+            .field("access_token", &REDACTED)
+            .field("refresh_token", &REDACTED)
+            .field("token_type", &self.token_type)
+            .field("expires_in", &self.expires_in)
+            .field("expires_in_inactive", &self.expires_in_inactive)
+            .field("scope", &self.scope)
+            .finish()
+    }
 }
 
 /// DRACOON http error response
@@ -282,9 +345,10 @@ impl From<OAuth2TokenResponse> for Connection {
     /// transforms a `OAuth2` token response into a connection for the client
     fn from(value: OAuth2TokenResponse) -> Self {
         Self {
-            connected_at: Utc::now(),
+            connected_at: Timestamp::now(),
             access_token: SecretString::from(value.access_token),
-            refresh_token: SecretString::from(value.refresh_token),
+            // without a refresh token, an expired access token results in an auth error
+            refresh_token: SecretString::from(value.refresh_token.unwrap_or_default()),
             expires_in: value.expires_in,
         }
     }
@@ -329,6 +393,11 @@ impl RetryableStrategy for DracoonCustomRetryStrategy {
 // it is not possible to access the response body due to async / sync code limitations
 // therefore all 401 requests are retried
 // in any case, token validity is checked before a request
+/// matches `/oauth/...` also behind a base url with a path prefix (e.g. `/dracoon/oauth/token`)
+fn is_oauth_path(path: &str) -> bool {
+    path.split('/').any(|segment| segment == "oauth")
+}
+
 fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> {
     let status = success.status();
     if status.is_server_error() {
@@ -345,12 +414,60 @@ fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> 
         || status == StatusCode::TOO_MANY_REQUESTS
         || status == StatusCode::UNAUTHORIZED
     {
-        if status == StatusCode::UNAUTHORIZED && success.url().path().starts_with("/oauth") {
+        // never retry 401 on OAuth2 endpoints (wrong credentials / invalid refresh token);
+        // other endpoints can fail intermittently with 401 at the API gateway and are retried
+        if status == StatusCode::UNAUTHORIZED && is_oauth_path(success.url().path()) {
             Some(Retryable::Fatal)
         } else {
             Some(Retryable::Transient)
         }
     } else {
         Some(Retryable::Fatal)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_oauth_payloads_do_not_leak_secrets_in_debug_output() {
+        let outputs = [
+            format!("{:?}", OAuth2PasswordFlow::new("user", "s3cr3t-password")),
+            format!(
+                "{:?}",
+                OAuth2AuthCodeFlow::new("id", "s3cr3t-client", "s3cr3t-code", "https://cb")
+            ),
+            format!(
+                "{:?}",
+                OAuth2RefreshTokenFlow::new("id", "s3cr3t-client", "s3cr3t-refresh")
+            ),
+            format!(
+                "{:?}",
+                OAuth2TokenRevoke::new("id", "s3cr3t-client", "access_token", "s3cr3t-token")
+            ),
+            format!(
+                "{:?}",
+                serde_json::from_str::<OAuth2TokenResponse>(
+                    r#"{"access_token": "s3cr3t-access", "refresh_token": "s3cr3t-refresh", "expires_in": 3600}"#
+                )
+                .unwrap()
+            ),
+        ];
+
+        for output in outputs {
+            assert!(!output.contains("s3cr3t"), "secret leaked: {output}");
+            assert!(output.contains("[redacted]"), "unexpected output: {output}");
+        }
+    }
+
+    #[test]
+    fn test_is_oauth_path() {
+        assert!(is_oauth_path("/oauth/token"));
+        assert!(is_oauth_path("/oauth/revoke"));
+        // base url with a path prefix
+        assert!(is_oauth_path("/dracoon/oauth/token"));
+        assert!(!is_oauth_path("/api/v4/user/account"));
+        assert!(!is_oauth_path("/api/v4/nodes/oauthfiles"));
     }
 }

@@ -12,8 +12,11 @@ use crate::{
         DEFAULT_DOWNLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES,
         PUBLIC_SHARES_BASE,
     },
-    nodes::DownloadProgressCallback,
-    utils::{build_s3_error, FromResponse},
+    nodes::{
+        download::{check_range_response, RangeProgressGuard},
+        DownloadProgressCallback,
+    },
+    utils::FromResponse,
     DracoonClientError,
 };
 
@@ -161,7 +164,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         let chunksize = chunksize.unwrap_or(DEFAULT_DOWNLOAD_CHUNK_SIZE);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < size {
+            range_guard.check(downloaded_bytes)?;
             let url = self
                 .generate_download_url(access_key.clone(), req.clone())
                 .await?
@@ -185,11 +190,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response = check_range_response(response, size > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -233,7 +234,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         let chunksize = chunksize.unwrap_or(DEFAULT_DOWNLOAD_CHUNK_SIZE);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < size {
+            range_guard.check(downloaded_bytes)?;
             let url = self
                 .generate_download_url(
                     access_key.clone(),
@@ -260,11 +263,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response = check_range_response(response, size > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -366,7 +365,7 @@ mod tests {
 
         let res = include_str!("../tests/responses/download/download_url_ok.json");
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -420,7 +419,7 @@ mod tests {
         let res = include_str!("../tests/responses/download/download_url_ok_template.json");
         let res = res.replace("$url", &download_url);
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -464,10 +463,10 @@ mod tests {
                 .unwrap();
         let enc_keypair =
             DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
-        let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
+        let _enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
         let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
 
-        let file_key_json = serde_json::to_string(&file_key).unwrap();
+        let _file_key_json = serde_json::to_string(&file_key).unwrap();
 
         let download_mock = mock_server
             .mock("GET", "/some/download/url")
@@ -489,7 +488,7 @@ mod tests {
         let res = include_str!("../tests/responses/download/download_url_ok_template.json");
         let res = res.replace("$url", &download_url);
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -580,6 +579,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_download_unencrypted_chunked_fails_if_server_ignores_range() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        let client = Dracoon::builder()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        // full content with 200 instead of the requested range
+        let _download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(200)
+            .with_body([7u8; 16])
+            .create_async()
+            .await;
+
+        let download_url = format!("{}/some/download/url", mock_server.url());
+        let res = include_str!("../tests/responses/download/download_url_ok_template.json")
+            .replace("$url", &download_url);
+        let _url_mock = mock_server
+            .mock("POST", "/api/v4/public/shares/downloads/123456")
+            .with_status(200)
+            .with_body(res)
+            .create_async()
+            .await;
+
+        let mut writer = RecordingAsyncWriter::default();
+        let res = client
+            .public()
+            .download_unencrypted("123456".to_string(), &mut writer, 16, None, Some(8), None)
+            .await;
+
+        assert!(res.is_err(), "expected error, got {res:?}");
+    }
+
+    #[tokio::test]
     async fn test_download_encrypted_chunked() {
         let mut mock_server = mockito::Server::new_async().await;
 
@@ -604,10 +641,10 @@ mod tests {
                 .unwrap();
         let enc_keypair =
             DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
-        let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
+        let _enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
         let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
 
-        let file_key_json = serde_json::to_string(&file_key).unwrap();
+        let _file_key_json = serde_json::to_string(&file_key).unwrap();
 
         // First chunk mock
         let download_mock_1 = mock_server

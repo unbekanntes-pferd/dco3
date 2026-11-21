@@ -4,6 +4,7 @@ pub mod tests {
         nodes::UserType,
         roles::{RoleGroup, RoleUser, Roles},
         tests::dracoon::get_connected_client,
+        ListAllParams,
     };
 
     pub fn assert_role_group(role_group: &RoleGroup) {
@@ -61,6 +62,38 @@ pub mod tests {
         assert_eq!(role_item.id, 1);
         assert_eq!(role_item.name, "item name");
         assert_eq!(role_item.description, "item description");
+    }
+
+    #[tokio::test]
+    async fn get_role_groups_and_users_apply_params() {
+        let (dracoon, mut mock_server) = get_connected_client().await;
+
+        let groups_mock = mock_server
+            .mock("GET", "/api/v4/roles/1/groups?limit=10&offset=500")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!("./responses/roles/role_group_list_ok.json"))
+            .create();
+        let users_mock = mock_server
+            .mock("GET", "/api/v4/roles/1/users?limit=10&offset=500")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!("./responses/roles/role_user_list_ok.json"))
+            .create();
+
+        let params = || {
+            Some(
+                ListAllParams::builder()
+                    .with_limit(10)
+                    .with_offset(500)
+                    .build(),
+            )
+        };
+        dracoon.roles().get_role_groups(1, params()).await.unwrap();
+        dracoon.roles().get_role_users(1, params()).await.unwrap();
+
+        groups_mock.assert();
+        users_mock.assert();
     }
 
     #[tokio::test]

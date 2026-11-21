@@ -41,7 +41,7 @@ pub trait Eventlog {
     ///    .with_user_id(1)
     ///    .with_operation_type(1)
     ///    .with_status(EventStatus::Success)
-    ///    .with_date_end(chrono::Utc::now())
+    ///    .with_date_end(jiff::Timestamp::now())
     ///    .build();
     /// // pass EventlogParams::default() if you don't want to use any params
     /// let event_list = dracoon.eventlog().get_events(params).await.unwrap();
@@ -91,18 +91,16 @@ impl Eventlog for EventlogEndpoint<Connected> {
                 .extend_pairs(params.user_id.map(|v| ("user_id", v.to_string())))
                 .extend_pairs(params.operation_type.map(|v| ("type", v.to_string())))
                 .extend_pairs(params.status.map(|v| ("status", (v as i64).to_string())))
-                .extend_pairs(params.date_start.map(|v| {
-                    (
-                        "date_start",
-                        v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    )
-                }))
-                .extend_pairs(params.date_end.map(|v| {
-                    (
-                        "date_end",
-                        v.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    )
-                }))
+                .extend_pairs(
+                    params
+                        .date_start
+                        .map(|v| ("date_start", v.strftime("%Y-%m-%dT%H:%M:%SZ").to_string())),
+                )
+                .extend_pairs(
+                    params
+                        .date_end
+                        .map(|v| ("date_end", v.strftime("%Y-%m-%dT%H:%M:%SZ").to_string())),
+                )
                 .finish();
         };
 
@@ -154,8 +152,8 @@ impl Eventlog for EventlogEndpoint<Connected> {
                 .query_pairs_mut()
                 .extend_pairs(params.limit.map(|v| ("limit", v.to_string())))
                 .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
-                .extend_pairs(params.sort.map(|v| ("sort", sort)))
-                .extend_pairs(params.filter.map(|v| ("filter", filter)))
+                .extend_pairs(params.sort.map(|_v| ("sort", sort)))
+                .extend_pairs(params.filter.map(|_v| ("filter", filter)))
                 .finish();
         };
 
@@ -178,7 +176,7 @@ impl Eventlog for EventlogEndpoint<Connected> {
 #[cfg(test)]
 #[allow(deprecated)]
 mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
     use mockito::Matcher;
 
     use crate::{
@@ -417,9 +415,7 @@ mod tests {
             .create_async()
             .await;
 
-        let date = DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
-            .unwrap()
-            .to_utc();
+        let date = "2021-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
         let params = EventlogParams::builder().with_date_start(date).build();
 
         let events = client.eventlog().get_events(params).await;
@@ -452,9 +448,7 @@ mod tests {
             .create_async()
             .await;
 
-        let date = DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
-            .unwrap()
-            .to_utc();
+        let date = "2021-01-01T00:00:00Z".parse::<Timestamp>().unwrap();
 
         let params = EventlogParams::builder().with_date_end(date).build();
 
@@ -550,15 +544,11 @@ mod tests {
         assert_eq!(node.node_is_encrypted, Some(true));
         assert_eq!(
             node.node_created_at.unwrap(),
-            DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
-                .unwrap()
-                .to_utc()
+            "2021-01-01T00:00:00Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             node.node_updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2021-01-01T00:00:00Z")
-                .unwrap()
-                .to_utc()
+            "2021-01-01T00:00:00Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(node.node_created_by.as_ref().unwrap().id, 2);
         assert_eq!(node.node_updated_by.as_ref().unwrap().id, 2);

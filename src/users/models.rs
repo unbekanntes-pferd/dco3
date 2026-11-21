@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_crypto::PublicKeyContainer;
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -72,7 +72,11 @@ pub struct UserItem {
     pub avatar_uuid: String,
     pub email: Option<String>,
     pub phone: Option<String>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub has_manageable_rooms: Option<bool>,
     pub is_encryption_enabled: Option<bool>,
     pub last_login_success_at: Option<String>,
@@ -441,10 +445,10 @@ impl UserAuthDataUpdateRequest {
         oid_config_id: Option<u64>,
     ) -> Self {
         Self {
-            method: None,
+            method: method.map(Into::into),
             login,
-            ad_config_id: None,
-            oid_config_id: None,
+            ad_config_id,
+            oid_config_id,
         }
     }
 }
@@ -517,14 +521,8 @@ impl From<AuthMethod> for String {
     fn from(auth_method: AuthMethod) -> Self {
         match auth_method {
             AuthMethod::Basic => "basic".to_string(),
-            AuthMethod::ActiveDirectory {
-                ad_config_id,
-                login,
-            } => "active_directory".to_string(),
-            AuthMethod::OpenIdConnect {
-                oid_config_id,
-                login,
-            } => "openid".to_string(),
+            AuthMethod::ActiveDirectory { .. } => "active_directory".to_string(),
+            AuthMethod::OpenIdConnect { .. } => "openid".to_string(),
         }
     }
 }
@@ -834,5 +832,31 @@ impl From<UsersSortBy> for Box<dyn SortQuery> {
 impl From<UsersFilter> for Box<dyn FilterQuery> {
     fn from(f: UsersFilter) -> Self {
         Box::new(f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_auth_data_update_request_new_keeps_all_fields() {
+        let req = UserAuthDataUpdateRequest::new(
+            Some("login".to_string()),
+            Some(AuthMethod::new_open_id_connect(2, "login")),
+            Some(1),
+            Some(2),
+        );
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "method": "openid",
+                "login": "login",
+                "adConfigId": 1,
+                "oidConfigId": 2
+            })
+        );
     }
 }
