@@ -26,9 +26,9 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_crypto::FileKey;
 use dco3_crypto::PublicKeyContainer;
+use jiff::Timestamp;
 use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -86,16 +86,16 @@ impl CloneableUploadProgressCallback {
 pub struct FileMeta {
     pub name: String,
     pub size: u64,
-    pub timestamp_creation: Option<DateTime<Utc>>,
-    pub timestamp_modification: Option<DateTime<Utc>>,
+    pub timestamp_creation: Option<Timestamp>,
+    pub timestamp_modification: Option<Timestamp>,
 }
 
 #[derive(Default)]
 pub struct FileMetaBuilder {
     name: String,
     size: u64,
-    timestamp_creation: Option<DateTime<Utc>>,
-    timestamp_modification: Option<DateTime<Utc>>,
+    timestamp_creation: Option<Timestamp>,
+    timestamp_modification: Option<Timestamp>,
 }
 
 impl FileMeta {
@@ -114,12 +114,12 @@ impl FileMetaBuilder {
         }
     }
 
-    pub fn with_timestamp_creation(mut self, timestamp_creation: DateTime<Utc>) -> Self {
+    pub fn with_timestamp_creation(mut self, timestamp_creation: Timestamp) -> Self {
         self.timestamp_creation = Some(timestamp_creation);
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp_modification: DateTime<Utc>) -> Self {
+    pub fn with_timestamp_modification(mut self, timestamp_modification: Timestamp) -> Self {
         self.timestamp_modification = Some(timestamp_modification);
         self
     }
@@ -239,15 +239,35 @@ pub struct Node {
     #[serde(rename = "type")]
     pub node_type: NodeType,
     pub name: String,
-    pub timestamp_creation: Option<DateTime<Utc>>,
-    pub timestamp_modification: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub timestamp_creation: Option<Timestamp>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub timestamp_modification: Option<Timestamp>,
     pub parent_id: Option<u64>,
     pub parent_path: Option<String>,
-    pub created_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub created_at: Option<Timestamp>,
     pub created_by: Option<UserInfo>,
-    pub updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub updated_at: Option<Timestamp>,
     pub updated_by: Option<UserInfo>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub hash: Option<String>,
     pub file_type: Option<String>,
     pub media_type: Option<String>,
@@ -675,12 +695,12 @@ impl CreateFileUploadRequestBuilder {
         self.expiration = Some(expiration.into());
         self
     }
-    pub fn with_timestamp_creation(mut self, timestamp_creation: DateTime<Utc>) -> Self {
-        self.timestamp_creation = Some(timestamp_creation.to_rfc3339());
+    pub fn with_timestamp_creation(mut self, timestamp_creation: Timestamp) -> Self {
+        self.timestamp_creation = Some(timestamp_creation.to_string());
         self
     }
-    pub fn with_timestamp_modification(mut self, timestamp_modification: DateTime<Utc>) -> Self {
-        self.timestamp_modification = Some(timestamp_modification.to_rfc3339());
+    pub fn with_timestamp_modification(mut self, timestamp_modification: Timestamp) -> Self {
+        self.timestamp_modification = Some(timestamp_modification.to_string());
         self
     }
 

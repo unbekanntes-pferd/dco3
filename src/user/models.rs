@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_crypto::UserKeyPairContainer;
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,11 @@ pub struct UserAccount {
     pub auth_data: UserAuthData,
     pub must_set_email: Option<bool>,
     pub needs_to_accept_EULA: Option<bool>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub is_encryption_enabled: Option<bool>,
     pub last_login_success_at: Option<String>,
     pub last_login_fail_at: Option<String>,

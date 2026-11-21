@@ -62,7 +62,7 @@ impl Folders for NodesEndpoint<Connected> {
 
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         nodes::{NodeType, UserType},
@@ -95,19 +95,19 @@ mod tests {
         assert!(folder.has_activities_log.unwrap());
         assert_eq!(
             folder.clone().timestamp_creation.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().timestamp_modification.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-02-01T00:00:00.000Z").unwrap()
+            "2020-02-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             folder.clone().created_at.unwrap(),
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(folder.clone().size.unwrap(), 123456);
         assert_eq!(folder.clone().classification.unwrap(), 4);

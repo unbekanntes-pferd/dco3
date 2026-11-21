@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -21,11 +21,20 @@ pub struct UploadShare {
     pub target_id: u64,
     pub is_protected: bool,
     pub access_key: String,
-    pub created_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub created_at: Timestamp,
     pub created_by: UserInfo,
-    pub updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub updated_at: Option<Timestamp>,
     pub updated_by: Option<UserInfo>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub target_path: Option<String>,
     pub is_encrypted: Option<bool>,
     pub notes: Option<String>,

@@ -224,7 +224,7 @@ impl Config for ConfigEndpoint<Connected> {
 
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         config::{AlgorithmStatus, CharacterRule, MinimumClassification},
@@ -448,7 +448,7 @@ mod tests {
         );
         assert_eq!(
             login_password_policies.updated_at,
-            DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z").unwrap()
+            "2023-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         let updated_by = &login_password_policies.updated_by;
         assert_eq!(updated_by.id, 1);
@@ -468,7 +468,7 @@ mod tests {
         assert_eq!(shares_password_policies.min_length, Some(1024));
         assert_eq!(
             shares_password_policies.updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z").unwrap()
+            "2023-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         let updated_by = shares_password_policies.updated_by.as_ref().unwrap();
         assert_eq!(updated_by.id, 1);
@@ -488,7 +488,7 @@ mod tests {
         assert_eq!(encryption_password_policies.min_length, Some(1024));
         assert_eq!(
             encryption_password_policies.updated_at.unwrap(),
-            DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z").unwrap()
+            "2023-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         let updated_by = encryption_password_policies.updated_by.as_ref().unwrap();
         assert_eq!(updated_by.id, 1);

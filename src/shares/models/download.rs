@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_crypto::UserKeyPairContainer;
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
@@ -22,9 +22,14 @@ pub struct DownloadShare {
     pub name: String,
     pub access_key: String,
     pub cnt_downloads: u32,
-    pub created_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub created_at: Timestamp,
     pub created_by: UserInfo,
-    pub updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub updated_at: Option<Timestamp>,
     pub updated_by: Option<UserInfo>,
     pub notes: Option<String>,
     pub show_creator_name: Option<bool>,
@@ -36,7 +41,11 @@ pub struct DownloadShare {
     pub is_protected: Option<bool>,
     pub node_type: Option<NodeType>,
     pub max_downloads: Option<u32>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
 }
 
 pub type DownloadSharesList = RangedItems<DownloadShare>;

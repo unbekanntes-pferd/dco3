@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use serde::Deserialize;
 
 use crate::{client::DracoonClient, nodes::UserInfo};
@@ -192,7 +192,8 @@ pub struct LoginPasswordPolicies {
     pub number_of_archived_passwords: u8,
     pub password_expiration: PasswordExpiration,
     pub user_lockout: UserLockout,
-    pub updated_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub updated_at: Timestamp,
     pub updated_by: UserInfo,
 }
 
@@ -205,7 +206,11 @@ pub struct SharesPasswordPolicies {
     pub reject_dictionary_words: Option<bool>,
     pub reject_user_info: Option<bool>,
     pub reject_keyboard_patterns: Option<bool>,
-    pub updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub updated_at: Option<Timestamp>,
     pub updated_by: Option<UserInfo>,
 }
 
@@ -218,7 +223,11 @@ pub struct EncryptionPasswordPolicies {
     pub reject_dictionary_words: Option<bool>,
     pub reject_user_info: Option<bool>,
     pub reject_keyboard_patterns: Option<bool>,
-    pub updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub updated_at: Option<Timestamp>,
     pub updated_by: Option<UserInfo>,
 }
 

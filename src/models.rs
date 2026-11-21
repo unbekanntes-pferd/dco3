@@ -1,8 +1,8 @@
 //! This module implments basic models for the DRACOON API.
 use std::fmt::Debug;
 
-use chrono::{DateTime, Utc};
 use dco3_crypto::PlainUserKeyPairContainer;
+use jiff::Timestamp;
 use secrecy::{zeroize::Zeroize, CloneableSecret};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -56,6 +56,31 @@ impl<T: Clone> Container<T> {
     pub async fn is_none(&self) -> bool {
         let lock = self.data.read().await;
         lock.is_none()
+    }
+}
+
+/// JSON schema for [`jiff::Timestamp`] fields (RFC 3339 string, format `date-time`).
+///
+/// schemars only implements `JsonSchema` for jiff 0.2 - fields use
+/// `#[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]`.
+#[cfg(feature = "mcp")]
+pub(crate) struct TimestampSchema;
+
+#[cfg(feature = "mcp")]
+impl schemars::JsonSchema for TimestampSchema {
+    fn inline_schema() -> bool {
+        true
+    }
+
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "DateTime".into()
+    }
+
+    fn json_schema(_generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        schemars::json_schema!({
+            "type": "string",
+            "format": "date-time"
+        })
     }
 }
 
@@ -264,10 +289,10 @@ pub struct ObjectExpiration {
 }
 
 impl ObjectExpiration {
-    pub fn new(expire_at: DateTime<Utc>) -> Self {
+    pub fn new(expire_at: Timestamp) -> Self {
         Self {
             enable_expiration: true,
-            expire_at: Some(expire_at.to_rfc3339()),
+            expire_at: Some(expire_at.to_string()),
         }
     }
 }
@@ -278,8 +303,8 @@ impl AsRef<ObjectExpiration> for ObjectExpiration {
     }
 }
 
-impl From<DateTime<Utc>> for ObjectExpiration {
-    fn from(value: DateTime<Utc>) -> Self {
+impl From<Timestamp> for ObjectExpiration {
+    fn from(value: Timestamp) -> Self {
         Self::new(value)
     }
 }

@@ -30,6 +30,12 @@ mod tests {
         assert!(defs.contains_key("RoleList"));
         assert_eq!(schema["properties"]["createdAt"]["type"], "string");
         assert_eq!(schema["properties"]["createdAt"]["format"], "date-time");
+        // optional timestamps
+        assert_eq!(
+            schema["properties"]["updatedAt"]["type"],
+            serde_json::json!(["string", "null"])
+        );
+        assert_eq!(schema["properties"]["updatedAt"]["format"], "date-time");
     }
 
     #[test]

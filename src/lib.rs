@@ -465,6 +465,9 @@ pub use self::{
     users::Users,
 };
 
+/// re-export of the date-time library used for all timestamps (`jiff::Timestamp`)
+pub use jiff;
+
 pub mod client;
 pub mod config;
 pub mod constants;

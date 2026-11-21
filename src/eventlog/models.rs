@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use chrono::{DateTime, Utc};
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use reqwest::Response;
 use serde::Deserialize;
 
@@ -63,7 +63,8 @@ impl TryFrom<i64> for EventStatus {
 #[serde(rename_all = "camelCase")]
 pub struct LogEvent {
     pub id: i64,
-    pub time: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub time: Timestamp,
     pub user_id: i64,
     pub message: String,
     pub operation_id: Option<i64>,
@@ -116,8 +117,8 @@ pub struct EventlogParams {
     pub offset: Option<u64>,
     pub limit: Option<u64>,
     pub sort: Option<Box<dyn SortQuery>>,
-    pub date_start: Option<DateTime<Utc>>,
-    pub date_end: Option<DateTime<Utc>>,
+    pub date_start: Option<Timestamp>,
+    pub date_end: Option<Timestamp>,
     pub user_id: Option<i64>,
     pub operation_type: Option<i64>,
     pub status: Option<EventStatus>,
@@ -147,8 +148,8 @@ pub struct EventlogParamsBuilder {
     pub offset: Option<u64>,
     pub limit: Option<u64>,
     pub sort: Option<Box<dyn SortQuery>>,
-    pub date_start: Option<DateTime<Utc>>,
-    pub date_end: Option<DateTime<Utc>>,
+    pub date_start: Option<Timestamp>,
+    pub date_end: Option<Timestamp>,
     pub user_id: Option<i64>,
     pub operation_type: Option<i64>,
     pub status: Option<EventStatus>,
@@ -175,12 +176,12 @@ impl EventlogParamsBuilder {
         self
     }
 
-    pub fn with_date_start(mut self, date_start: DateTime<Utc>) -> Self {
+    pub fn with_date_start(mut self, date_start: Timestamp) -> Self {
         self.date_start = Some(date_start);
         self
     }
 
-    pub fn with_date_end(mut self, date_end: DateTime<Utc>) -> Self {
+    pub fn with_date_end(mut self, date_end: Timestamp) -> Self {
         self.date_end = Some(date_end);
         self
     }
@@ -268,8 +269,16 @@ pub struct AuditNodeResponse {
     pub node_quota: Option<u64>,
     pub node_is_encrypted: Option<bool>,
     pub node_has_activities_log: Option<bool>,
-    pub node_created_at: Option<DateTime<Utc>>,
-    pub node_updated_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub node_created_at: Option<Timestamp>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub node_updated_at: Option<Timestamp>,
     pub node_created_by: Option<UserInfo>,
     pub node_updated_by: Option<UserInfo>,
 }

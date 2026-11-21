@@ -3,7 +3,7 @@ use secrecy::SecretString;
 use std::fmt::{Display, Formatter};
 use url::ParseError;
 
-use chrono::Utc;
+use jiff::Timestamp;
 use reqwest::{Response, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -343,7 +343,7 @@ impl From<OAuth2TokenResponse> for Connection {
     /// transforms a `OAuth2` token response into a connection for the client
     fn from(value: OAuth2TokenResponse) -> Self {
         Self {
-            connected_at: Utc::now(),
+            connected_at: Timestamp::now(),
             access_token: SecretString::from(value.access_token),
             refresh_token: SecretString::from(value.refresh_token),
             expires_in: value.expires_in,

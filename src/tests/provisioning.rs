@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use chrono::DateTime;
+    use jiff::Timestamp;
 
     use crate::{
         client::Provisioning,
@@ -34,11 +34,11 @@ mod tests {
         assert_eq!(customer.cnt_internal_user.unwrap(), 99);
         assert_eq!(
             customer.created_at,
-            DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            "2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(
             customer.updated_at.as_ref().unwrap(),
-            &DateTime::parse_from_rfc3339("2020-01-01T00:00:00.000Z").unwrap()
+            &"2020-01-01T00:00:00.000Z".parse::<Timestamp>().unwrap()
         );
         assert_eq!(customer.trial_days_left.unwrap(), 0);
         assert_eq!(customer.customer_uuid.as_ref().unwrap(), "string");

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
 use dco3_crypto::{FileKey, PrivateKeyContainer};
 use dco3_derive::FromResponse;
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -41,7 +41,8 @@ impl<S> GetClient<S> for PublicEndpoint<S> {
 pub struct SoftwareVersionData {
     pub rest_api_version: String,
     pub sds_server_version: String,
-    pub build_date: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub build_date: Timestamp,
     pub is_dracoon_cloud: Option<bool>,
 }
 
@@ -76,12 +77,17 @@ pub struct PublicDownloadShare {
     pub size: u64,
     pub limit_reached: bool,
     pub creator_name: Option<String>,
-    pub created_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub created_at: Timestamp,
     pub has_download_limit: bool,
     pub media_type: String,
     pub name: Option<String>,
     pub creator_username: Option<String>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub notes: Option<String>,
     pub is_encrypted: Option<bool>,
     pub file_key: Option<FileKey>,
@@ -134,10 +140,15 @@ impl PublicShareEncryption {
 #[serde(rename_all = "camelCase")]
 pub struct PublicUploadShare {
     pub is_protected: bool,
-    pub created_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub created_at: Timestamp,
     pub name: Option<String>,
     pub is_encrypted: Option<bool>,
-    pub expire_at: Option<DateTime<Utc>>,
+    #[cfg_attr(
+        feature = "mcp",
+        schemars(with = "Option<crate::models::TimestampSchema>")
+    )]
+    pub expire_at: Option<Timestamp>,
     pub notes: Option<String>,
     pub uploaded_files: Option<Vec<PublicUploadedFileData>>,
     pub user_user_public_key_list: Option<UserUserPublicKeyList>,
@@ -152,7 +163,8 @@ pub struct PublicUploadShare {
 pub struct PublicUploadedFileData {
     pub name: String,
     pub size: u64,
-    pub created_at: DateTime<Utc>,
+    #[cfg_attr(feature = "mcp", schemars(with = "crate::models::TimestampSchema"))]
+    pub created_at: Timestamp,
     pub hash: Option<String>,
 }
 
@@ -251,13 +263,13 @@ impl CreateShareUploadChannelRequestBuilder {
         self
     }
 
-    pub fn with_timestamp_creation(mut self, timestamp: DateTime<Utc>) -> Self {
-        self.timestamp_creation = Some(timestamp.to_rfc3339());
+    pub fn with_timestamp_creation(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp_creation = Some(timestamp.to_string());
         self
     }
 
-    pub fn with_timestamp_modification(mut self, timestamp: DateTime<Utc>) -> Self {
-        self.timestamp_modification = Some(timestamp.to_rfc3339());
+    pub fn with_timestamp_modification(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp_modification = Some(timestamp.to_string());
         self
     }
 

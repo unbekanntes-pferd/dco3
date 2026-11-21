@@ -259,7 +259,6 @@ impl<S: Send + Sync> Public for PublicEndpoint<S> {
 #[cfg(test)]
 mod tests {
 
-    use chrono::Datelike;
     use dco3_crypto::{DracoonCrypto, DracoonRSACrypto, FileKeyVersion, UserKeyPairVersion};
 
     use crate::{
@@ -322,9 +321,13 @@ mod tests {
 
         assert_eq!(software_version.rest_api_version, "5.4.6");
         assert_eq!(software_version.sds_server_version, "5.4.6");
-        assert_eq!(software_version.build_date.month(), 3);
-        assert_eq!(software_version.build_date.day(), 19);
-        assert_eq!(software_version.build_date.year(), 2024);
+        assert_eq!(
+            software_version
+                .build_date
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .date(),
+            jiff::civil::date(2024, 3, 19)
+        );
         assert!(software_version.is_dracoon_cloud.unwrap());
     }
 
@@ -353,9 +356,13 @@ mod tests {
         software_version_mock.assert();
         assert_eq!(software_version.rest_api_version, "5.4.6");
         assert_eq!(software_version.sds_server_version, "5.4.6");
-        assert_eq!(software_version.build_date.month(), 3);
-        assert_eq!(software_version.build_date.day(), 19);
-        assert_eq!(software_version.build_date.year(), 2024);
+        assert_eq!(
+            software_version
+                .build_date
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .date(),
+            jiff::civil::date(2024, 3, 19)
+        );
         assert!(software_version.is_dracoon_cloud.unwrap());
     }
 
@@ -423,9 +430,13 @@ mod tests {
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
         assert!(public_download_share.has_download_limit);
-        assert_eq!(public_download_share.created_at.month(), 1);
-        assert_eq!(public_download_share.created_at.day(), 1);
-        assert_eq!(public_download_share.created_at.year(), 2021);
+        assert_eq!(
+            public_download_share
+                .created_at
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .date(),
+            jiff::civil::date(2021, 1, 1)
+        );
         assert_eq!(public_download_share.notes, Some("string".to_string()));
         assert_eq!(
             public_download_share.expire_at,
@@ -487,9 +498,13 @@ mod tests {
         assert!(public_download_share.is_protected);
         assert!(!public_download_share.limit_reached);
         assert!(public_download_share.has_download_limit);
-        assert_eq!(public_download_share.created_at.month(), 1);
-        assert_eq!(public_download_share.created_at.day(), 1);
-        assert_eq!(public_download_share.created_at.year(), 2021);
+        assert_eq!(
+            public_download_share
+                .created_at
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .date(),
+            jiff::civil::date(2021, 1, 1)
+        );
         assert_eq!(public_download_share.notes, Some("string".to_string()));
         assert_eq!(
             public_download_share.expire_at,
@@ -828,9 +843,13 @@ mod tests {
         public_upload_share_mock.assert();
 
         assert!(public_upload_share.is_protected);
-        assert_eq!(public_upload_share.created_at.month(), 1);
-        assert_eq!(public_upload_share.created_at.day(), 1);
-        assert_eq!(public_upload_share.created_at.year(), 2021);
+        assert_eq!(
+            public_upload_share
+                .created_at
+                .to_zoned_datetime(jiff::tz::TimeZone::UTC)
+                .date(),
+            jiff::civil::date(2021, 1, 1)
+        );
         assert_eq!(public_upload_share.name, Some("string".to_string()));
         assert_eq!(public_upload_share.notes, Some("string".to_string()));
         assert_eq!(

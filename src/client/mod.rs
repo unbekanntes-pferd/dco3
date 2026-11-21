@@ -1,6 +1,6 @@
 //! This module is responsible for the authentication with DRACOON and implements
 //! the [DracoonClient] struct which is used to interact with the DRACOON API.
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use reqwest::{Client, Url};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -76,7 +76,7 @@ pub struct Connection {
     access_token: SecretString,
     refresh_token: SecretString,
     expires_in: u64,
-    connected_at: DateTime<Utc>,
+    connected_at: Timestamp,
 }
 
 impl Connection {
@@ -92,7 +92,7 @@ impl Connection {
         self.expires_in
     }
 
-    pub fn connected_at(&self) -> DateTime<Utc> {
+    pub fn connected_at(&self) -> Timestamp {
         self.connected_at
     }
 
@@ -101,10 +101,10 @@ impl Connection {
     /// A token is treated as expired [`TOKEN_EXPIRY_SKEW_SECS`] early (at most half of its lifetime),
     /// so that it does not expire while a request (including retries) is in flight.
     pub fn is_expired(&self) -> bool {
-        self.is_expired_at(Utc::now())
+        self.is_expired_at(Timestamp::now())
     }
 
-    fn is_expired_at(&self, now: DateTime<Utc>) -> bool {
+    fn is_expired_at(&self, now: Timestamp) -> bool {
         // this handles OAuth2Flow::Simple (expires_in is not known)
         // the access token is valid or fails with 401
         if self.expires_in == u64::MAX {
@@ -114,12 +114,13 @@ impl Connection {
         let skew = TOKEN_EXPIRY_SKEW_SECS.min(self.expires_in / 2);
         let valid_for = i64::try_from(self.expires_in - skew).unwrap_or(i64::MAX);
 
-        match chrono::Duration::try_seconds(valid_for)
-            .and_then(|valid_for| self.connected_at.checked_add_signed(valid_for))
+        match self
+            .connected_at
+            .checked_add(jiff::SignedDuration::from_secs(valid_for))
         {
-            Some(expires_at) => now >= expires_at,
+            Ok(expires_at) => now >= expires_at,
             // lifetime too large to represent - treat as not expiring
-            None => false,
+            Err(_) => false,
         }
     }
 
@@ -135,7 +136,7 @@ impl Connection {
             access_token: SecretString::from(access_token),
             refresh_token: SecretString::from(String::new()),
             expires_in: u64::MAX,
-            connected_at: Utc::now(),
+            connected_at: Timestamp::now(),
         }
     }
 }
@@ -893,7 +894,8 @@ mod tests {
             access_token: SecretString::from(token.to_string()),
             refresh_token: SecretString::from("refresh_token".to_string()),
             expires_in: lifetime,
-            connected_at: Utc::now() - chrono::Duration::milliseconds(valid_for_ms - expires_in_ms),
+            connected_at: Timestamp::now()
+                - jiff::SignedDuration::from_millis(valid_for_ms - expires_in_ms),
         }
     }
 
@@ -972,14 +974,14 @@ mod tests {
 
     #[test]
     fn test_connection_is_expired_with_skew() {
-        let connected_at = Utc::now();
+        let connected_at = Timestamp::now();
         let connection = Connection {
             access_token: SecretString::from("a".to_string()),
             refresh_token: SecretString::from("r".to_string()),
             expires_in: 3600,
             connected_at,
         };
-        let at = |secs: i64| connected_at + chrono::Duration::seconds(secs);
+        let at = |secs: i64| connected_at + jiff::SignedDuration::from_secs(secs);
 
         assert!(!connection.is_expired_at(at(0)));
         assert!(!connection.is_expired_at(at(3539)));
