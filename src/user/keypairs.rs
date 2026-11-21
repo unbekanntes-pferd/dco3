@@ -62,7 +62,11 @@ impl UserAccountKeyPairs for UserEndpoint<Connected> {
             .send()
             .await?;
 
-        Ok(())
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(DracoonClientError::from_response(response).await?)
+        }
     }
 
     async fn delete_user_keypair(&self) -> Result<(), DracoonClientError> {
@@ -83,6 +87,10 @@ impl UserAccountKeyPairs for UserEndpoint<Connected> {
             .send()
             .await?;
 
-        Ok(())
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(DracoonClientError::from_response(response).await?)
+        }
     }
 }

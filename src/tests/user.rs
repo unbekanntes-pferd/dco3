@@ -86,6 +86,42 @@ mod tests {
         assert!(res.is_ok());
     }
 
+    const CONFLICT_RES: &str = r#"{"code": 409, "message": "Conflict", "debugInfo": "keypair exists", "errorCode": -70022}"#;
+
+    #[tokio::test]
+    async fn test_set_keypair_returns_api_error() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let keypair_mock = mock_server
+            .mock("POST", "/api/v4/user/account/keypair")
+            .with_status(409)
+            .with_header("content-type", "application/json")
+            .with_body(CONFLICT_RES)
+            .create();
+
+        let res = client.user().set_user_keypair("TopSecret1234!").await;
+
+        keypair_mock.assert();
+        assert!(res.unwrap_err().is_conflict());
+    }
+
+    #[tokio::test]
+    async fn test_delete_keypair_returns_api_error() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let keypair_mock = mock_server
+            .mock("DELETE", "/api/v4/user/account/keypair")
+            .with_status(409)
+            .with_header("content-type", "application/json")
+            .with_body(CONFLICT_RES)
+            .create();
+
+        let res = client.user().delete_user_keypair().await;
+
+        keypair_mock.assert();
+        assert!(res.unwrap_err().is_conflict());
+    }
+
     #[tokio::test]
     async fn test_get_user_account() {
         let (client, mut mock_server) = get_connected_client().await;
