@@ -51,6 +51,10 @@ cargo test --test e2e -- transfers         # filter by name
 E2E_CRYPTO=1 cargo test --test e2e         # include encrypted tests (replaces the test user's keypair)
 ```
 
+Encrypted tests replace the test user's keypair. After an encrypted run, the server can refuse to delete that keypair
+(`404 Node not found`, a known server behaviour after removing an encrypted room with deleted files); the next encrypted run
+then fails until the keypair is reset server-side.
+
 Each run creates a top level room `e2e-run-<id>` (plus `e2e-run-<id>-crypto` for encrypted tests), works only inside it
 and with uniquely named users and groups, and removes everything afterwards - also if tests fail.
 Without configuration, the e2e tests are reported as ignored. In CI they run manually via the `e2e` workflow.

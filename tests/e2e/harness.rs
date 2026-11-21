@@ -220,9 +220,18 @@ impl TestRun {
         let secret = format!("{}{}aA1!", random_hex(), random_hex());
         let dracoon = self.config.connect(None).await?;
 
-        match dracoon.user().delete_user_keypair().await {
-            Err(err) if !err.is_not_found() => return Err(err),
-            _ => {}
+        // only "not found" means there is no keypair - a wrong secret means there is one
+        let has_keypair = match dracoon.user().get_user_keypair(&secret).await {
+            Err(err) if err.is_not_found() => false,
+            Ok(_) | Err(DracoonClientError::CryptoError(_)) => true,
+            Err(err) => return Err(err),
+        };
+
+        if has_keypair {
+            // known server behaviour: after an encrypted room with deleted files was removed,
+            // deleting the keypair can fail with 404 "Node not found" - the keypair then has to be
+            // reset server-side before encrypted tests can run again
+            dracoon.user().delete_user_keypair().await?;
         }
         dracoon.user().set_user_keypair(&secret).await?;
 
