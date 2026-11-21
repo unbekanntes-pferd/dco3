@@ -45,6 +45,10 @@ pub enum DracoonClientError {
     MissingEncryptionSecret,
     #[error("Missing argument")]
     MissingArgument,
+    #[error("Invalid argument: {0}")]
+    InvalidArgument(String),
+    #[error("Unsupported operation: {0}")]
+    Unsupported(String),
 }
 
 impl From<ReqError> for DracoonClientError {
@@ -136,6 +140,16 @@ impl DracoonClientError {
         }
     }
 
+    /// Check if the error is caused by an invalid argument (e.g. a range that is too large)
+    pub fn is_invalid_argument(&self) -> bool {
+        matches!(self, DracoonClientError::InvalidArgument(_))
+    }
+
+    /// Check if the error is caused by an unsupported operation (e.g. a range read of an encrypted file)
+    pub fn is_unsupported(&self) -> bool {
+        matches!(self, DracoonClientError::Unsupported(_))
+    }
+
     /// Check if the error is an authentication error
     pub fn is_auth_error(&self) -> bool {
         matches!(self, DracoonClientError::Auth(_))
@@ -223,6 +237,21 @@ mod tests {
             .body(Body::from(body.to_string()))
             .unwrap()
             .into()
+    }
+
+    #[test]
+    fn invalid_argument_and_unsupported_errors_carry_their_reason() {
+        let invalid = DracoonClientError::InvalidArgument("length too large".into());
+        let unsupported = DracoonClientError::Unsupported("encrypted ranges".into());
+
+        assert_eq!(invalid.to_string(), "Invalid argument: length too large");
+        assert_eq!(
+            unsupported.to_string(),
+            "Unsupported operation: encrypted ranges"
+        );
+        assert!(invalid.is_invalid_argument());
+        assert!(unsupported.is_unsupported());
+        assert!(!invalid.is_unsupported());
     }
 
     #[tokio::test]
