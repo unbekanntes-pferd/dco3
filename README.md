@@ -40,6 +40,21 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo fmt --all --check
 ```
 
+### End-to-end tests
+
+`tests/e2e` runs against a real DRACOON instance. Copy `.env.example` to `.env` and set the base url and the
+credentials of a dedicated local test user (no MFA; roles: room manager, user manager, group manager):
+
+```bash
+cargo test --test e2e                      # all e2e tests (parallel)
+cargo test --test e2e -- transfers         # filter by name
+E2E_CRYPTO=1 cargo test --test e2e         # include encrypted tests (replaces the test user's keypair)
+```
+
+Each run creates a top level room `e2e-run-<id>` (plus `e2e-run-<id>-crypto` for encrypted tests), works only inside it
+and with uniquely named users and groups, and removes everything afterwards - also if tests fail.
+Without configuration, the e2e tests are reported as ignored. In CI they run manually via the `e2e` workflow.
+
 ## Releasing
 
 Releases are published to crates.io by the `release` workflow (trusted publishing, no API token):
