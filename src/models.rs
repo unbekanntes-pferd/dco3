@@ -135,6 +135,27 @@ impl ListAllParams {
             && self.filter.is_none()
             && self.sort.is_none()
     }
+
+    /// Adds the set params as query parameters (`limit`, `offset`, `filter`, `sort`) to the url
+    pub(crate) fn apply_to(&self, url: &mut url::Url) {
+        if self.is_empty() {
+            return;
+        }
+
+        let mut query = url.query_pairs_mut();
+        if let Some(limit) = self.limit {
+            query.append_pair("limit", &limit.to_string());
+        }
+        if let Some(offset) = self.offset {
+            query.append_pair("offset", &offset.to_string());
+        }
+        if self.filter.is_some() {
+            query.append_pair("filter", &self.filter_to_string());
+        }
+        if self.sort.is_some() {
+            query.append_pair("sort", &self.sort_to_string());
+        }
+    }
 }
 
 pub struct ListAllParamsBuilder {
