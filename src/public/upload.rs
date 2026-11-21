@@ -191,10 +191,6 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             .await?;
                         let url = url.urls.first().ok_or_else(missing_presigned_url_error)?;
 
-                        // truncation is safe because chunk_size is 32 MB
-                        #[allow(clippy::cast_possible_truncation, clippy::cast_lossless)]
-                        let curr_pos: u64 = ((url_part - 1) * (chunk_size as u32)) as u64;
-
                         let e_tag = self
                             .upload_stream_to_s3(
                                 Box::pin(stream),
@@ -244,8 +240,6 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                 .await?;
 
                 let url = url.urls.first().ok_or_else(missing_presigned_url_error)?;
-
-                let curr_pos: u64 = (url_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
                 let e_tag = self
                     .upload_stream_to_s3(
