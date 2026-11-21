@@ -270,6 +270,22 @@ pub mod tests {
     }
 
     #[tokio::test]
+    async fn test_get_user_with_effective_roles() {
+        let (client, mut mock_server) = get_connected_client().await;
+
+        let user_mock = mock_server
+            .mock("GET", "/api/v4/users/123?effective_roles=true")
+            .with_status(200)
+            .with_body(include_str!("./responses/users/user_ok.json"))
+            .create();
+
+        let user = client.users().get_user(123, Some(true)).await.unwrap();
+
+        user_mock.assert();
+        assert_user_data(&user);
+    }
+
+    #[tokio::test]
     async fn test_update_user() {
         let (client, mut mock_server) = get_connected_client().await;
         let user_res = include_str!("./responses/users/user_ok.json");
