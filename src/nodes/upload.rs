@@ -14,9 +14,9 @@ use crate::{
     client::{errors::DracoonClientError, Connected, GetClient},
     constants::{
         DEFAULT_UPLOAD_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE,
-        FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS,
-        MISSING_KEYS_BATCH, NODES_BASE, POLLING_MAX_DELAY, POLLING_START_DELAY, POLLING_TIMEOUT,
-        UPLOADS_BASE,
+        FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MIN_S3_UPLOAD_CHUNK_SIZE,
+        MISSING_FILE_KEYS, MISSING_KEYS_BATCH, NODES_BASE, POLLING_MAX_DELAY, POLLING_START_DELAY,
+        POLLING_TIMEOUT, UPLOADS_BASE,
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, build_s3_protocol_error, FromResponse},
@@ -51,6 +51,22 @@ fn missing_upload_error_details_error() -> DracoonClientError {
         "missing_upload_error_details",
         "Upload status 'error' did not include error details",
     )
+}
+
+/// Chunk size for an upload: on S3, every part but the last must have at least
+/// [`MIN_S3_UPLOAD_CHUNK_SIZE`] bytes - smaller chunk sizes are raised to that minimum.
+pub(crate) fn upload_chunk_size(chunk_size: Option<usize>, is_s3_upload: bool) -> Option<usize> {
+    match chunk_size {
+        Some(size) if is_s3_upload && size < MIN_S3_UPLOAD_CHUNK_SIZE => {
+            warn!(
+                chunk_size = size,
+                min_chunk_size = MIN_S3_UPLOAD_CHUNK_SIZE,
+                "Chunk size below S3 minimum - using minimum"
+            );
+            Some(MIN_S3_UPLOAD_CHUNK_SIZE)
+        }
+        other => other,
+    }
 }
 
 /// Waits between S3 upload status polls.
@@ -107,6 +123,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
     ) -> Result<Node, DracoonClientError> {
         let is_s3_upload = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = parent_node.is_encrypted.unwrap_or(false);
+        let chunk_size = upload_chunk_size(chunk_size, is_s3_upload);
 
         let upload_fn = match (is_encrypted, is_s3_upload) {
             (true, true) => Self::upload_to_s3_encrypted,
@@ -2175,8 +2192,8 @@ mod tests {
         keys_mock.assert();
     }
 
-    #[tokio::test]
-    async fn test_full_upload_unencrypted_s3() {
+    /// full unencrypted S3 upload of 16 bytes - returns after asserting the expected number of parts
+    async fn full_upload_unencrypted_s3(chunk_size: Option<usize>, expected_parts: usize) {
         let (client, mut mock_server) = get_connected_client().await;
 
         let parent_node: Node =
@@ -2223,6 +2240,7 @@ mod tests {
             .with_status(201)
             .with_body(s3_urls_response.clone())
             .with_header("content-type", "application/json")
+            .expect(expected_parts)
             .create();
 
         let upload_res =
@@ -2233,6 +2251,7 @@ mod tests {
             .mock("PUT", "/upload_url")
             .with_status(202)
             .with_header("etag", "string")
+            .expect(expected_parts)
             .create();
 
         // mock finalize upload
@@ -2256,7 +2275,7 @@ mod tests {
             upload_options,
             reader_clone,
             None,
-            None,
+            chunk_size,
         )
         .await
         .unwrap();
@@ -2266,6 +2285,17 @@ mod tests {
         upload_mock.assert();
         finalize_mock.assert();
         status_mock.assert();
+    }
+
+    #[tokio::test]
+    async fn test_full_upload_unencrypted_s3() {
+        full_upload_unencrypted_s3(None, 1).await;
+    }
+
+    #[tokio::test]
+    async fn test_full_upload_s3_clamps_chunk_size_to_s3_minimum() {
+        // 4 byte chunks would be 4 parts - S3 rejects non-final parts below 5 MiB
+        full_upload_unencrypted_s3(Some(4), 1).await;
     }
 
     #[tokio::test]
@@ -2472,6 +2502,19 @@ mod tests {
 
         let count = chunk_stream(bytes::Bytes::new(), None, 0).count().await;
         assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_upload_chunk_size_respects_s3_minimum() {
+        assert_eq!(upload_chunk_size(None, true), None);
+        assert_eq!(
+            upload_chunk_size(Some(4), true),
+            Some(MIN_S3_UPLOAD_CHUNK_SIZE)
+        );
+        let big = MIN_S3_UPLOAD_CHUNK_SIZE * 2;
+        assert_eq!(upload_chunk_size(Some(big), true), Some(big));
+        // no minimum outside of S3
+        assert_eq!(upload_chunk_size(Some(4), false), Some(4));
     }
 
     #[test]

@@ -58,6 +58,8 @@ pub const SHARES_DOWNLOAD: &str = "downloads";
 // DEFAULTS
 pub const DEFAULT_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
 pub const DEFAULT_DOWNLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
+/// S3 rejects multipart upload parts (except the last one) below 5 MiB
+pub const MIN_S3_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 5;
 /// size of the slices an upload chunk is streamed in (and progress is reported for)
 pub const DEFAULT_UPLOAD_GRANULARITY: usize = 64 * 1024;
 pub const POLLING_START_DELAY: u64 = 300;
