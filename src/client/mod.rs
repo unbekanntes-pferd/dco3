@@ -584,6 +584,25 @@ impl DracoonClient<Disconnected> {
     }
 }
 
+/// Maps a failed token revoke response to an error
+async fn check_revoke_response(res: reqwest::Response) -> Result<(), DracoonClientError> {
+    let status = res.status();
+    if status.is_success() {
+        return Ok(());
+    }
+
+    match res.json::<DracoonAuthErrorResponse>().await {
+        Ok(error) => Err(error.into()),
+        Err(err) => {
+            error!("Failed to parse revoke error body ({}): {}", status, err);
+            Err(DracoonClientError::Http(crate::utils::fallback_http_error(
+                status,
+                "failed to parse error body",
+            )))
+        }
+    }
+}
+
 /// `DracoonClient` implementation for Connected state
 impl DracoonClient<Connected> {
     /// disconnects the client and optionally revokes the access and refresh token
@@ -653,9 +672,9 @@ impl DracoonClient<Connected> {
             &access_token,
         );
 
-        self.token_http.post(api_url).form(&auth).send().await?;
+        let res = self.token_http.post(api_url).form(&auth).send().await?;
 
-        Ok(())
+        check_revoke_response(res).await
     }
 
     /// Revokes the refresh token
@@ -680,9 +699,9 @@ impl DracoonClient<Connected> {
             &refresh_token,
         );
 
-        self.token_http.post(api_url).form(&auth).send().await?;
+        let res = self.token_http.post(api_url).form(&auth).send().await?;
 
-        Ok(())
+        check_revoke_response(res).await
     }
 
     /// Fetches new tokens using available refresh token from the current connection
@@ -927,6 +946,28 @@ mod tests {
 
         auth_mock.assert_async().await;
         assert!(res.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_disconnect_returns_error_if_revoke_fails() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = connect_with_token(&mut mock_server, "token1").await;
+
+        let revoke_mock = mock_server
+            .mock("POST", "/oauth/revoke")
+            .with_status(400)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!("tests/auth_error.json"))
+            .create_async()
+            .await;
+
+        let res = client.disconnect(None, None).await;
+
+        revoke_mock.assert_async().await;
+        let Err(err) = res else {
+            panic!("expected revoke error");
+        };
+        assert!(err.is_auth_error(), "unexpected error: {err:?}");
     }
 
     #[test]
