@@ -28,8 +28,7 @@ retry-policies = "0.5"
 dco3_crypto = "0.10.0"
 
 # async runtime and utils
-tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7", features = ["full"] }
+tokio = { version = "1", features = ["io-util", "sync", "time"] }
 async-trait = "0.1"
 async-stream = "0.3"
 futures-util = "0.3"
@@ -62,5 +61,5 @@ mcp = ["dep:schemars", "dco3_crypto/mcp"]
 
 [dev-dependencies]
 mockito = "1"
-tokio = { version = "1", features = ["test-util"] }
+tokio = { version = "1", features = ["fs", "macros", "rt-multi-thread", "test-util"] }
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
