@@ -28,6 +28,26 @@ Since this is in an early development stage, expect breaking changes.
 
 For now, please refer to [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) as an example client implementation.
 
+## Minimum supported Rust version
+
+The MSRV is declared as `rust-version` in `Cargo.toml` (currently **1.88**) and tested in CI.
+
+## Development
+
+```bash
+cargo test --workspace --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo fmt --all --check
+```
+
+## Releasing
+
+Releases are published to crates.io by the `release` workflow (trusted publishing, no API token):
+
+1. Bump `version` in `Cargo.toml` (and in `dco3_derive/Cargo.toml` if the derive crate changed), merge to `master`.
+2. Tag the release commit and push the tag: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+3. The workflow checks that the tag matches the `dco3` version, runs the tests, publishes `dco3_derive` (only if its version is new) and `dco3`, and creates the GitHub release.
+
 ## Contributing
 
 Contributions, feedback and issues are welcome.
