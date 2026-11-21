@@ -61,6 +61,10 @@ pub const DEFAULT_DOWNLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
 /// size of the slices an upload chunk is streamed in (and progress is reported for)
 pub const DEFAULT_UPLOAD_GRANULARITY: usize = 64 * 1024;
 pub const POLLING_START_DELAY: u64 = 300;
+/// max. delay between two S3 upload status polls (in milliseconds)
+pub const POLLING_MAX_DELAY: u64 = 30 * 1000;
+/// max. time to wait for DRACOON to finish an S3 upload (in seconds)
+pub const POLLING_TIMEOUT: u64 = 60 * 60;
 // defines how many keys (users) distributed per file on upload
 pub const MISSING_KEYS_BATCH: usize = 50;
 

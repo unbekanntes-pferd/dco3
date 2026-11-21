@@ -15,7 +15,8 @@ use crate::{
     constants::{
         DEFAULT_UPLOAD_CHUNK_SIZE, DEFAULT_UPLOAD_GRANULARITY, DRACOON_API_PREFIX, FILES_BASE,
         FILES_KEYS, FILES_S3_COMPLETE, FILES_S3_URLS, FILES_UPLOAD, MISSING_FILE_KEYS,
-        MISSING_KEYS_BATCH, NODES_BASE, POLLING_START_DELAY, UPLOADS_BASE,
+        MISSING_KEYS_BATCH, NODES_BASE, POLLING_MAX_DELAY, POLLING_START_DELAY, POLLING_TIMEOUT,
+        UPLOADS_BASE,
     },
     nodes::models::{S3FileUploadPart, UserFileKeySetRequest},
     utils::{build_s3_error, build_s3_protocol_error, FromResponse},
@@ -49,6 +50,48 @@ fn missing_upload_error_details_error() -> DracoonClientError {
         StatusCode::BAD_GATEWAY,
         "missing_upload_error_details",
         "Upload status 'error' did not include error details",
+    )
+}
+
+/// Waits between S3 upload status polls.
+///
+/// The first status request is sent right after finalizing the upload (no wait). Only if the
+/// upload is still pending, the poller waits [`POLLING_START_DELAY`], then backs off exponentially,
+/// with every single wait capped at [`POLLING_MAX_DELAY`]. Fails once [`POLLING_TIMEOUT`] has passed.
+pub(crate) struct S3UploadPoller {
+    started: tokio::time::Instant,
+    delay: Duration,
+}
+
+impl S3UploadPoller {
+    pub(crate) fn new() -> Self {
+        Self {
+            started: tokio::time::Instant::now(),
+            delay: Duration::from_millis(POLLING_START_DELAY),
+        }
+    }
+
+    /// Sleeps before the next poll - returns an error if the upload did not finish in time
+    pub(crate) async fn wait(&mut self) -> Result<(), DracoonClientError> {
+        let timeout = Duration::from_secs(POLLING_TIMEOUT);
+        let elapsed = self.started.elapsed();
+        if elapsed >= timeout {
+            error!("S3 upload not finished after {} seconds", elapsed.as_secs());
+            return Err(upload_status_timeout_error());
+        }
+
+        let delay = self.delay.min(timeout - elapsed);
+        tokio::time::sleep(delay).await;
+        self.delay = (self.delay * 2).min(Duration::from_millis(POLLING_MAX_DELAY));
+        Ok(())
+    }
+}
+
+fn upload_status_timeout_error() -> DracoonClientError {
+    build_s3_protocol_error(
+        StatusCode::GATEWAY_TIMEOUT,
+        "upload_status_timeout",
+        "S3 upload was not finished by DRACOON in time",
     )
 }
 
@@ -526,7 +569,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response = <Dracoon<Connected> as UploadInternal<R>>::get_upload_status(
                 self,
@@ -550,10 +593,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                     error!("Error uploading file: {}", response);
                     return Err(DracoonClientError::Http(response));
                 }
-                _ => {
-                    tokio::time::sleep(Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -633,7 +673,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response = <Dracoon<Connected> as UploadInternal<R>>::get_upload_status(
                 self,
@@ -700,10 +740,7 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
                             .ok_or_else(missing_upload_error_details_error)?,
                     ));
                 }
-                _ => {
-                    tokio::time::sleep(Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -2355,6 +2392,45 @@ mod tests {
         finalize_mock.assert();
         status_mock.assert();
         keys_mock.assert();
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn test_s3_upload_poller_backoff_is_capped() {
+        let mut poller = S3UploadPoller::new();
+        let mut delays = Vec::new();
+
+        for _ in 0..10 {
+            let before = tokio::time::Instant::now();
+            poller.wait().await.unwrap();
+            delays.push(before.elapsed().as_millis());
+        }
+
+        assert_eq!(
+            delays,
+            vec![300, 600, 1200, 2400, 4800, 9600, 19200, 30000, 30000, 30000]
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn test_s3_upload_poller_times_out() {
+        let started = tokio::time::Instant::now();
+        let mut poller = S3UploadPoller::new();
+
+        let err = loop {
+            if let Err(err) = poller.wait().await {
+                break err;
+            }
+        };
+
+        assert_eq!(started.elapsed(), Duration::from_secs(POLLING_TIMEOUT));
+        let DracoonClientError::S3Error(err) = err else {
+            panic!("expected S3 error, got {err:?}");
+        };
+        assert_eq!(err.status, StatusCode::GATEWAY_TIMEOUT);
+        match &err.kind {
+            S3ErrorKind::Protocol { code, .. } => assert_eq!(*code, "upload_status_timeout"),
+            other => panic!("expected protocol error, got {other:?}"),
+        }
     }
 
     #[tokio::test]

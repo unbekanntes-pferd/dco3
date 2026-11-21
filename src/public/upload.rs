@@ -7,11 +7,11 @@ use tracing::{error, warn};
 use crate::{
     constants::{
         DEFAULT_UPLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_S3_COMPLETE, FILES_S3_URLS,
-        POLLING_START_DELAY, PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
+        PUBLIC_BASE, PUBLIC_SHARES_BASE, PUBLIC_UPLOAD_SHARES,
     },
     nodes::{
         models::StreamingEncryptedUpload,
-        upload::{calculate_s3_url_count, chunk_stream, StreamUploadInternal},
+        upload::{calculate_s3_url_count, chunk_stream, S3UploadPoller, StreamUploadInternal},
         CloneableUploadProgressCallback, GeneratePresignedUrlsRequest, PresignedUrlList,
         S3FileUploadPart, S3UploadStatus, UploadOptions, UploadProgressCallback,
     },
@@ -274,7 +274,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response =
                 <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
@@ -295,10 +295,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                     error!("Error uploading file: {}", response);
                     return Err(DracoonClientError::Http(response));
                 }
-                _ => {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
@@ -422,7 +419,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
         // return node if upload is done
         // return error if upload failed
         // polling with exponential backoff
-        let mut sleep_duration = POLLING_START_DELAY;
+        let mut poller = S3UploadPoller::new();
         loop {
             let status_response =
                 <PublicEndpoint<S> as PublicUploadInternal<R, S>>::get_upload_status(
@@ -447,10 +444,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
                             .ok_or_else(missing_upload_error_details_error)?,
                     ));
                 }
-                _ => {
-                    tokio::time::sleep(tokio::time::Duration::from_millis(sleep_duration)).await;
-                    sleep_duration *= 2;
-                }
+                _ => poller.wait().await?,
             }
         }
     }
