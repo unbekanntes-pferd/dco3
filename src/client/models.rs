@@ -19,7 +19,7 @@ pub(crate) trait GetClient<S> {
 }
 
 /// represents form data payload for `OAuth2` password flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2PasswordFlow {
     pub username: String,
     pub password: String,
@@ -38,7 +38,7 @@ impl OAuth2PasswordFlow {
 }
 
 /// represents form data payload for `OAuth2` authorization code flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2AuthCodeFlow {
     pub client_id: String,
     pub client_secret: String,
@@ -61,7 +61,7 @@ impl OAuth2AuthCodeFlow {
 }
 
 /// represents form data payload for `OAuth2` refresh token flow
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2RefreshTokenFlow {
     client_id: String,
     client_secret: String,
@@ -82,7 +82,7 @@ impl OAuth2RefreshTokenFlow {
 }
 
 /// represents form data payload for `OAuth2` token revoke
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2TokenRevoke {
     client_id: String,
     client_secret: String,
@@ -103,7 +103,7 @@ impl OAuth2TokenRevoke {
 }
 
 /// DRACOON `OAuth2` token response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct OAuth2TokenResponse {
     access_token: String,
     refresh_token: String,
@@ -111,6 +111,67 @@ pub struct OAuth2TokenResponse {
     expires_in: u64,
     expires_in_inactive: Option<u64>,
     scope: Option<String>,
+}
+
+const REDACTED: &str = "[redacted]";
+
+// manual `Debug` implementations: never print passwords, client secrets, codes or tokens
+
+impl std::fmt::Debug for OAuth2PasswordFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2PasswordFlow")
+            .field("username", &self.username)
+            .field("password", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2AuthCodeFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2AuthCodeFlow")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .field("code", &REDACTED)
+            .field("redirect_uri", &self.redirect_uri)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2RefreshTokenFlow {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2RefreshTokenFlow")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("grant_type", &self.grant_type)
+            .field("refresh_token", &REDACTED)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2TokenRevoke {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2TokenRevoke")
+            .field("client_id", &self.client_id)
+            .field("client_secret", &REDACTED)
+            .field("token_type_hint", &self.token_type_hint)
+            .field("token", &REDACTED)
+            .finish()
+    }
+}
+
+impl std::fmt::Debug for OAuth2TokenResponse {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OAuth2TokenResponse")
+            .field("access_token", &REDACTED)
+            .field("refresh_token", &REDACTED)
+            .field("token_type", &self.token_type)
+            .field("expires_in", &self.expires_in)
+            .field("expires_in_inactive", &self.expires_in_inactive)
+            .field("scope", &self.scope)
+            .finish()
+    }
 }
 
 /// DRACOON http error response
@@ -365,6 +426,37 @@ fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_oauth_payloads_do_not_leak_secrets_in_debug_output() {
+        let outputs = [
+            format!("{:?}", OAuth2PasswordFlow::new("user", "s3cr3t-password")),
+            format!(
+                "{:?}",
+                OAuth2AuthCodeFlow::new("id", "s3cr3t-client", "s3cr3t-code", "https://cb")
+            ),
+            format!(
+                "{:?}",
+                OAuth2RefreshTokenFlow::new("id", "s3cr3t-client", "s3cr3t-refresh")
+            ),
+            format!(
+                "{:?}",
+                OAuth2TokenRevoke::new("id", "s3cr3t-client", "access_token", "s3cr3t-token")
+            ),
+            format!(
+                "{:?}",
+                serde_json::from_str::<OAuth2TokenResponse>(
+                    r#"{"access_token": "s3cr3t-access", "refresh_token": "s3cr3t-refresh", "expires_in": 3600}"#
+                )
+                .unwrap()
+            ),
+        ];
+
+        for output in outputs {
+            assert!(!output.contains("s3cr3t"), "secret leaked: {output}");
+            assert!(output.contains("[redacted]"), "unexpected output: {output}");
+        }
+    }
 
     #[test]
     fn test_is_oauth_path() {
