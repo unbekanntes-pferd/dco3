@@ -18,6 +18,7 @@ description = "Async API wrapper for DRACOON in Rust."
 reqwest = {version = "0.13", features = ["json", "stream"]}
 reqwest-middleware = {version = "0.5", features = ["json", "form"]}
 reqwest-retry = "0.9"
+http = "1"
 retry-policies = "0.5"
 
 # crypto
@@ -59,4 +60,3 @@ mcp = ["dep:schemars", "dco3_crypto/mcp"]
 [dev-dependencies]
 mockito = "1"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
-http = "1"

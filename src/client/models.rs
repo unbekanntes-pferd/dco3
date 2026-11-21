@@ -329,6 +329,11 @@ impl RetryableStrategy for DracoonCustomRetryStrategy {
 // it is not possible to access the response body due to async / sync code limitations
 // therefore all 401 requests are retried
 // in any case, token validity is checked before a request
+/// matches `/oauth/...` also behind a base url with a path prefix (e.g. `/dracoon/oauth/token`)
+fn is_oauth_path(path: &str) -> bool {
+    path.split('/').any(|segment| segment == "oauth")
+}
+
 fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> {
     let status = success.status();
     if status.is_server_error() {
@@ -345,12 +350,29 @@ fn default_on_request_success(success: &reqwest::Response) -> Option<Retryable> 
         || status == StatusCode::TOO_MANY_REQUESTS
         || status == StatusCode::UNAUTHORIZED
     {
-        if status == StatusCode::UNAUTHORIZED && success.url().path().starts_with("/oauth") {
+        // never retry 401 on OAuth2 endpoints (wrong credentials / invalid refresh token);
+        // other endpoints can fail intermittently with 401 at the API gateway and are retried
+        if status == StatusCode::UNAUTHORIZED && is_oauth_path(success.url().path()) {
             Some(Retryable::Fatal)
         } else {
             Some(Retryable::Transient)
         }
     } else {
         Some(Retryable::Fatal)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_oauth_path() {
+        assert!(is_oauth_path("/oauth/token"));
+        assert!(is_oauth_path("/oauth/revoke"));
+        // base url with a path prefix
+        assert!(is_oauth_path("/dracoon/oauth/token"));
+        assert!(!is_oauth_path("/api/v4/user/account"));
+        assert!(!is_oauth_path("/api/v4/nodes/oauthfiles"));
     }
 }

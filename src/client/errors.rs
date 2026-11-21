@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use dco3_crypto::DracoonCryptoError;
 use reqwest::{Error as ClientError, Response};
 use reqwest_middleware::Error as ReqError;
+use reqwest_retry::RetryError;
 use thiserror::Error;
 use tracing::error;
 
@@ -50,7 +51,22 @@ impl From<ReqError> for DracoonClientError {
     fn from(value: ReqError) -> Self {
         match value {
             ReqError::Middleware(error) => {
-                DracoonClientError::ConnectionFailed("Error in middleware".into())
+                // the retry middleware wraps every error (incl. timeouts / connection errors) - unwrap it
+                let error = match error.downcast::<RetryError>() {
+                    Ok(RetryError::WithRetries { err, .. } | RetryError::Error(err)) => {
+                        return err.into()
+                    }
+                    Err(error) => error,
+                };
+
+                match error.downcast::<DracoonClientError>() {
+                    // errors raised by our own middleware (e.g. failed token refresh) are passed through
+                    Ok(error) => error,
+                    Err(error) => {
+                        error!("Error in middleware: {:#}", error);
+                        DracoonClientError::ConnectionFailed("Error in middleware".into())
+                    }
+                }
             }
             ReqError::Reqwest(error) => {
                 if error.is_timeout() {

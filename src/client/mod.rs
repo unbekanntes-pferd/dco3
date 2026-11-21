@@ -6,7 +6,8 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use retry_policies::Jitter;
 use secrecy::{ExposeSecret, SecretString};
-use std::{marker::PhantomData, time::Duration};
+use std::{marker::PhantomData, sync::Arc, time::Duration};
+use tokio::sync::Mutex;
 use tracing::{debug, error};
 
 use base64::{
@@ -15,6 +16,7 @@ use base64::{
     Engine,
 };
 
+mod auth;
 pub mod errors;
 pub mod models;
 
@@ -23,7 +25,7 @@ pub use models::*;
 use crate::{
     constants::{
         DRACOON_TOKEN_REVOKE_URL, DRACOON_TOKEN_URL, MAX_RETRIES, MAX_RETRY_DELAY, MAX_TOKEN_COUNT,
-        MIN_RETRY_DELAY, MIN_TOKEN_COUNT, TOKEN_TYPE_HINT_ACCESS_TOKEN,
+        MIN_RETRY_DELAY, MIN_TOKEN_COUNT, TOKEN_EXPIRY_SKEW_SECS, TOKEN_TYPE_HINT_ACCESS_TOKEN,
     },
     models::Container,
     ConnectedClient,
@@ -98,19 +100,31 @@ impl Connection {
         self.connected_at
     }
 
+    /// Returns true if the access token is expired or about to expire.
+    ///
+    /// A token is treated as expired [`TOKEN_EXPIRY_SKEW_SECS`] early (at most half of its lifetime),
+    /// so that it does not expire while a request (including retries) is in flight.
     pub fn is_expired(&self) -> bool {
-        let now = Utc::now();
+        self.is_expired_at(Utc::now())
+    }
 
+    fn is_expired_at(&self, now: DateTime<Utc>) -> bool {
         // this handles OAuth2Flow::Simple (expires_in is not known)
         // the access token is valid or fails with 401
         if self.expires_in == u64::MAX {
             return false;
         }
 
-        let expires_at = self.connected_at
-            + chrono::Duration::try_seconds(self.expires_in as i64)
-                .expect("overflow creating seconds");
-        now > expires_at
+        let skew = TOKEN_EXPIRY_SKEW_SECS.min(self.expires_in / 2);
+        let valid_for = i64::try_from(self.expires_in - skew).unwrap_or(i64::MAX);
+
+        match chrono::Duration::try_seconds(valid_for)
+            .and_then(|valid_for| self.connected_at.checked_add_signed(valid_for))
+        {
+            Some(expires_at) => now >= expires_at,
+            // lifetime too large to represent - treat as not expiring
+            None => false,
+        }
     }
 
     pub fn update_tokens(&mut self, connection: Connection) {
@@ -143,8 +157,13 @@ pub struct DracoonClient<State = Disconnected> {
     redirect_uri: Option<Url>,
     client_id: String,
     client_secret: SecretString,
+    /// HTTP client for API calls (retries; when connected, also refreshes stale tokens per attempt)
     pub http: ClientWithMiddleware,
     pub stream_http: Client,
+    /// HTTP client for `OAuth2` token calls (retries only, no token handling)
+    token_http: ClientWithMiddleware,
+    /// serializes token refreshes, so concurrent requests trigger a single refresh
+    refresh_lock: Arc<Mutex<()>>,
     connection: Container<Connection>,
     token_rotation: Option<u8>,
     additional_connections: Container<Vec<Connection>>,
@@ -305,8 +324,10 @@ impl DracoonClientBuilder {
             redirect_uri: None,
             client_id: String::new(),
             client_secret: SecretString::from(String::new()),
+            token_http: http.clone(),
             http,
             stream_http: upload_http,
+            refresh_lock: Arc::new(Mutex::new(())),
             state: PhantomData,
             connection: Container::new(),
             additional_connections: Container::new(),
@@ -365,7 +386,9 @@ impl DracoonClientBuilder {
             additional_connections: Container::new(),
             token_rotation,
             state: PhantomData,
+            token_http: http.clone(),
             http,
+            refresh_lock: Arc::new(Mutex::new(())),
             curr_connection: Container::new_from(CurrentConnection::Main),
             stream_http: upload_http,
             provisioning_token: None,
@@ -414,7 +437,7 @@ impl DracoonClient<Disconnected> {
                 .await;
         }
 
-        Ok(DracoonClient {
+        let connected = DracoonClient {
             client_id: self.client_id.clone(),
             client_secret: self.client_secret.clone(),
             connection: Container::new_from(connection),
@@ -424,10 +447,21 @@ impl DracoonClient<Disconnected> {
             base_url: self.base_url.clone(),
             redirect_uri: self.redirect_uri.clone(),
             state: PhantomData,
-            http: self.http.clone(),
+            http: self.token_http.clone(),
+            token_http: self.token_http.clone(),
             stream_http: self.stream_http.clone(),
+            refresh_lock: Arc::new(Mutex::new(())),
             provisioning_token: None,
-        })
+        };
+
+        // API calls get a middleware *inside* the retry middleware, which replaces a stale
+        // access token before every attempt (the token state is shared via `Container`s).
+        // The middleware's own client only uses `token_http`, so there is no reference cycle.
+        let http = reqwest_middleware::ClientBuilder::from_client(self.token_http.clone())
+            .with(auth::RefreshAuthHeader::new(Arc::new(connected.clone())))
+            .build();
+
+        Ok(DracoonClient { http, ..connected })
     }
 
     /// returns client id and client secret bas64 encoded for the basic auth header
@@ -486,7 +520,7 @@ impl DracoonClient<Disconnected> {
         let auth_header = format!("Basic {}", self.client_credentials());
 
         let res = self
-            .http
+            .token_http
             .post(token_url)
             .header("Authorization", auth_header)
             .form(&auth)
@@ -514,7 +548,7 @@ impl DracoonClient<Disconnected> {
         );
 
         let res = self
-            .http
+            .token_http
             .post(token_url)
             .form(&auth)
             .send()
@@ -542,7 +576,7 @@ impl DracoonClient<Disconnected> {
         );
 
         let res = self
-            .http
+            .token_http
             .post(token_url)
             .form(&auth)
             .send()
@@ -587,8 +621,10 @@ impl DracoonClient<Connected> {
             base_url: self.base_url,
             redirect_uri: self.redirect_uri,
             state: PhantomData,
-            http: self.http,
+            http: self.token_http.clone(),
+            token_http: self.token_http,
             stream_http: self.stream_http,
+            refresh_lock: Arc::new(Mutex::new(())),
             provisioning_token: None,
         })
     }
@@ -622,7 +658,7 @@ impl DracoonClient<Connected> {
             &access_token,
         );
 
-        self.http.post(api_url).form(&auth).send().await?;
+        self.token_http.post(api_url).form(&auth).send().await?;
 
         Ok(())
     }
@@ -649,7 +685,7 @@ impl DracoonClient<Connected> {
             &refresh_token,
         );
 
-        self.http.post(api_url).form(&auth).send().await?;
+        self.token_http.post(api_url).form(&auth).send().await?;
 
         Ok(())
     }
@@ -679,100 +715,114 @@ impl DracoonClient<Connected> {
             refresh_token.expose_secret(),
         );
 
-        let res = self.http.post(token_url).form(&auth).send().await?;
+        let res = self.token_http.post(token_url).form(&auth).send().await?;
         Ok(OAuth2TokenResponse::from_response(res).await?.into())
     }
 
     /// Returns the necessary token header for any API call that requires authentication in DRACOON
+    ///
+    /// Expired (or soon expiring) tokens are refreshed first. Concurrent callers share a single refresh.
     pub async fn get_auth_header(&self) -> Result<String, DracoonClientError> {
+        let slot = self
+            .curr_connection
+            .get()
+            .await
+            .unwrap_or(CurrentConnection::Main);
+        let connection = self.connection_in_slot(&slot).await;
+
+        if connection.is_expired() {
+            // no need to rotate, there's a new access token
+            let connection = self.refresh_connection_in_slot(&slot).await?;
+            return Ok(format!("Bearer {}", connection.access_token()));
+        }
+
         if let Some(token_rotation) = self.token_rotation {
-            // get the next connection in the rotation
-            let connection = match self.curr_connection.get().await {
-                Some(CurrentConnection::Main) => self
-                    .connection
-                    .get()
-                    .await
-                    .expect("Connected client has no connection"),
-                Some(CurrentConnection::Additional(idx)) => {
-                    let additional_connections = self
-                        .additional_connections
-                        .get()
-                        .await
-                        .expect("Connected client has no additional connections");
-
-                    additional_connections
-                        .get(idx as usize)
-                        .expect("Invalid connection index")
-                        .clone()
-                }
-                None => self
-                    .connection
-                    .get()
-                    .await
-                    .expect("Connected client has no connection"),
-            };
-
-            // check if the current connection is expired and replace it if necessary
-            if connection.is_expired() {
-                let new_connection = self.connect_refresh_token().await?;
-                let access_token = new_connection.access_token.clone();
-
-                match self.curr_connection.get().await {
-                    Some(CurrentConnection::Main) => self.connection.set(new_connection).await,
-                    Some(CurrentConnection::Additional(idx)) => {
-                        let mut additional_connections = self
-                            .additional_connections
-                            .get()
-                            .await
-                            .expect("Connected client has no additional connections");
-
-                        additional_connections[idx as usize] = new_connection;
-                        self.additional_connections
-                            .set(additional_connections)
-                            .await;
-                    }
-                    None => self.connection.set(new_connection).await,
-                }
-
-                // no need to rotate, there's a new access token
-                return Ok(format!("Bearer {}", access_token.expose_secret()));
-            }
-
             // rotate the connection
-            let next_connection = match self.curr_connection.get().await {
-                Some(CurrentConnection::Main) => CurrentConnection::Additional(0),
-                Some(CurrentConnection::Additional(idx)) => {
+            let next_connection = match slot {
+                CurrentConnection::Main => CurrentConnection::Additional(0),
+                CurrentConnection::Additional(idx) => {
                     if idx + 1 < token_rotation - 1 {
                         CurrentConnection::Additional(idx + 1)
                     } else {
                         CurrentConnection::Main
                     }
                 }
-                None => CurrentConnection::Main,
             };
 
             self.curr_connection.set(next_connection).await;
-
-            return Ok(format!(
-                "Bearer {}",
-                connection.access_token.expose_secret()
-            ));
         }
 
-        if self.is_connection_expired().await {
-            let new_connection = self.connect_refresh_token().await?;
-            self.connection.set(new_connection).await;
-        }
+        Ok(format!("Bearer {}", connection.access_token()))
+    }
 
-        Ok(format!(
-            "Bearer {}",
-            self.connection
+    /// Returns the connection stored in the given rotation slot
+    async fn connection_in_slot(&self, slot: &CurrentConnection) -> Connection {
+        match slot {
+            CurrentConnection::Main => self
+                .connection
                 .get()
                 .await
-                .expect("Connected client has no connection")
-                .access_token
-                .expose_secret()
-        ))
+                .expect("Connected client has no connection"),
+            CurrentConnection::Additional(idx) => self
+                .additional_connections
+                .get()
+                .await
+                .expect("Connected client has no additional connections")
+                .get(*idx as usize)
+                .expect("Invalid connection index")
+                .clone(),
+        }
+    }
+
+    /// Refreshes the connection in the given slot - unless another task refreshed it in the meantime
+    async fn refresh_connection_in_slot(
+        &self,
+        slot: &CurrentConnection,
+    ) -> Result<Connection, DracoonClientError> {
+        let _guard = self.refresh_lock.lock().await;
+
+        // double check: a concurrent caller may have refreshed while we waited for the lock
+        let current = self.connection_in_slot(slot).await;
+        if !current.is_expired() {
+            return Ok(current);
+        }
+
+        debug!("Access token expired - refreshing");
+        let new_connection = self.connect_refresh_token().await?;
+
+        match slot {
+            CurrentConnection::Main => self.connection.set(new_connection.clone()).await,
+            CurrentConnection::Additional(idx) => {
+                let mut additional_connections = self
+                    .additional_connections
+                    .get()
+                    .await
+                    .expect("Connected client has no additional connections");
+                additional_connections[*idx as usize] = new_connection.clone();
+                self.additional_connections
+                    .set(additional_connections)
+                    .await;
+            }
+        }
+
+        Ok(new_connection)
+    }
+
+    /// Checks whether an `Authorization` header still carries a valid access token of this client.
+    /// Returns false if the token was replaced by a refresh or is (about to be) expired.
+    /// Headers that do not carry a bearer token are left alone (returns true).
+    pub(crate) async fn is_auth_header_current(&self, auth_header: &str) -> bool {
+        let Some(token) = auth_header.strip_prefix("Bearer ") else {
+            return true;
+        };
+
+        let main = self.connection.get().await;
+        let additional = self.additional_connections.get().await.unwrap_or_default();
+
+        main.into_iter()
+            .chain(additional)
+            .find(|connection| connection.access_token() == token)
+            .is_some_and(|connection| !connection.is_expired())
     }
 
     /// Returns the refresh token
@@ -783,15 +833,6 @@ impl DracoonClient<Connected> {
             .expect("Connected client has no connection")
             .refresh_token()
             .to_string()
-    }
-
-    /// Checks if the access token is still valid
-    async fn is_connection_expired(&self) -> bool {
-        self.connection
-            .get()
-            .await
-            .expect("Connected client has no connection")
-            .is_expired()
     }
 }
 
@@ -825,6 +866,271 @@ mod tests {
     use reqwest::header::USER_AGENT;
 
     use super::*;
+
+    fn token_response(token: &str) -> String {
+        include_str!("tests/auth_ok_placeholder.json").replace("$token", token)
+    }
+
+    /// a connection with `token` that (incl. skew) expires `expires_in_ms` from now
+    fn connection_expiring_in(token: &str, expires_in_ms: i64) -> Connection {
+        let lifetime = 3600;
+        let valid_for_ms = (lifetime - TOKEN_EXPIRY_SKEW_SECS) as i64 * 1000;
+        Connection {
+            access_token: SecretString::from(token.to_string()),
+            refresh_token: SecretString::from("refresh_token".to_string()),
+            expires_in: lifetime,
+            connected_at: Utc::now() - chrono::Duration::milliseconds(valid_for_ms - expires_in_ms),
+        }
+    }
+
+    async fn connect_with_token(
+        mock_server: &mut mockito::ServerGuard,
+        token: &str,
+    ) -> DracoonClient<Connected> {
+        let auth_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response(token))
+            .create_async()
+            .await;
+
+        let client = get_test_client(&mock_server.url())
+            .connect(OAuth2Flow::refresh_token("refresh_token"))
+            .await
+            .expect("connect");
+        auth_mock.remove_async().await;
+        client
+    }
+
+    #[test]
+    fn test_connection_is_expired_with_skew() {
+        let connected_at = Utc::now();
+        let connection = Connection {
+            access_token: SecretString::from("a".to_string()),
+            refresh_token: SecretString::from("r".to_string()),
+            expires_in: 3600,
+            connected_at,
+        };
+        let at = |secs: i64| connected_at + chrono::Duration::seconds(secs);
+
+        assert!(!connection.is_expired_at(at(0)));
+        assert!(!connection.is_expired_at(at(3539)));
+        // expired 60 seconds before the token actually expires
+        assert!(connection.is_expired_at(at(3540)));
+        assert!(connection.is_expired_at(at(3601)));
+
+        // short-lived tokens: skew is capped at half the lifetime
+        let short = Connection {
+            expires_in: 60,
+            ..connection.clone()
+        };
+        assert!(!short.is_expired_at(at(29)));
+        assert!(short.is_expired_at(at(30)));
+
+        // simple flow (unknown lifetime) and absurd lifetimes never expire / never panic
+        let simple = Connection::new_from_access_token("a".to_string());
+        assert!(!simple.is_expired());
+        let huge = Connection {
+            expires_in: u64::MAX - 1,
+            ..connection
+        };
+        assert!(!huge.is_expired_at(at(1)));
+    }
+
+    #[tokio::test]
+    async fn test_get_auth_header_refreshes_token_about_to_expire() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = connect_with_token(&mut mock_server, "token1").await;
+
+        // still valid for 30 seconds - inside the skew window
+        client
+            .connection
+            .set(connection_expiring_in("token1", -30_000))
+            .await;
+
+        let refresh_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response("token2"))
+            .expect(1)
+            .create_async()
+            .await;
+
+        let header = client.get_auth_header().await.unwrap();
+
+        refresh_mock.assert_async().await;
+        assert_eq!(header, "Bearer token2");
+    }
+
+    #[tokio::test]
+    async fn test_get_auth_header_concurrent_callers_share_one_refresh() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = Arc::new(connect_with_token(&mut mock_server, "token1").await);
+
+        client
+            .connection
+            .set(connection_expiring_in("token1", -1_000))
+            .await;
+
+        let refresh_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response("token2"))
+            .expect(1)
+            .create_async()
+            .await;
+
+        let calls = (0..10).map(|_| {
+            let client = Arc::clone(&client);
+            tokio::spawn(async move { client.get_auth_header().await })
+        });
+        let headers = futures_util::future::join_all(calls).await;
+
+        refresh_mock.assert_async().await;
+        for header in headers {
+            assert_eq!(header.unwrap().unwrap(), "Bearer token2");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_stale_token_is_replaced_before_sending() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = connect_with_token(&mut mock_server, "token1").await;
+
+        // the caller built the request with token1, which has expired since
+        client
+            .connection
+            .set(connection_expiring_in("token1", -1_000))
+            .await;
+
+        let refresh_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response("token2"))
+            .expect(1)
+            .create_async()
+            .await;
+        let api_mock = mock_server
+            .mock("GET", "/api/v4/user/account")
+            .match_header("authorization", "Bearer token2")
+            .with_status(200)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let res = client
+            .http
+            .get(client.build_api_url("api/v4/user/account"))
+            .header(reqwest::header::AUTHORIZATION, "Bearer token1")
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+        refresh_mock.assert_async().await;
+        api_mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_retry_after_401_uses_token_refreshed_in_between() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = connect_with_token(&mut mock_server, "token1").await;
+
+        // token1 is valid for the first attempt, but expires before the retry (min delay 300 ms)
+        client
+            .connection
+            .set(connection_expiring_in("token1", 150))
+            .await;
+        let header = client.get_auth_header().await.unwrap();
+        assert_eq!(header, "Bearer token1");
+
+        let refresh_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(token_response("token2"))
+            .expect(1)
+            .create_async()
+            .await;
+        let gateway_401 = mock_server
+            .mock("GET", "/api/v4/user/account")
+            .match_header("authorization", "Bearer token1")
+            .with_status(401)
+            .expect(1)
+            .create_async()
+            .await;
+        let api_ok = mock_server
+            .mock("GET", "/api/v4/user/account")
+            .match_header("authorization", "Bearer token2")
+            .with_status(200)
+            .expect(1)
+            .create_async()
+            .await;
+
+        let res = client
+            .http
+            .get(client.build_api_url("api/v4/user/account"))
+            .header(reqwest::header::AUTHORIZATION, header)
+            .send()
+            .await
+            .unwrap();
+
+        assert!(res.status().is_success());
+        gateway_401.assert_async().await;
+        refresh_mock.assert_async().await;
+        api_ok.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_connection_error_is_not_reported_as_middleware_error() {
+        // nothing listens on port 1
+        let client = get_test_client("http://127.0.0.1:1");
+
+        let Err(err) = client
+            .connect(OAuth2Flow::refresh_token("refresh_token"))
+            .await
+        else {
+            panic!("expected connection error");
+        };
+
+        assert_eq!(
+            err,
+            DracoonClientError::ConnectionFailed("Connection failed".into())
+        );
+    }
+
+    #[tokio::test]
+    async fn test_failed_refresh_in_middleware_returns_auth_error() {
+        let mut mock_server = mockito::Server::new_async().await;
+        let client = connect_with_token(&mut mock_server, "token1").await;
+        client
+            .connection
+            .set(connection_expiring_in("token1", -1_000))
+            .await;
+
+        let _refresh_mock = mock_server
+            .mock("POST", "/oauth/token")
+            .with_status(401)
+            .with_header("content-type", "application/json")
+            .with_body(include_str!("tests/auth_error.json"))
+            .create_async()
+            .await;
+
+        let err = client
+            .http
+            .get(client.build_api_url("api/v4/user/account"))
+            .header(reqwest::header::AUTHORIZATION, "Bearer token1")
+            .send()
+            .await
+            .map_err(DracoonClientError::from)
+            .unwrap_err();
+
+        assert!(err.is_auth_error(), "unexpected error: {err:?}");
+    }
 
     fn get_test_client(url: &str) -> DracoonClient<Disconnected> {
         DracoonClientBuilder::new()

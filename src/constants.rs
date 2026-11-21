@@ -15,6 +15,8 @@ pub const TOKEN_TYPE_HINT_ACCESS_TOKEN: &str = "access_token";
 pub const TOKEN_TYPE_HINT_REFRESH_TOKEN: &str = "refresh_token";
 pub const MAX_TOKEN_COUNT: u8 = 5;
 pub const MIN_TOKEN_COUNT: u8 = 1;
+/// access tokens are treated as expired this many seconds early (capped at half the token lifetime)
+pub const TOKEN_EXPIRY_SKEW_SECS: u64 = 60;
 
 // API
 pub const DRACOON_API_PREFIX: &str = "api/v4";
