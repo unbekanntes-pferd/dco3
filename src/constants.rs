@@ -58,6 +58,8 @@ pub const SHARES_DOWNLOAD: &str = "downloads";
 // DEFAULTS
 pub const DEFAULT_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
 pub const DEFAULT_DOWNLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 32; // 32 MB
+/// max. number of bytes a single `Download::download_range` call returns (32 MiB)
+pub const MAX_DOWNLOAD_RANGE_SIZE: usize = DEFAULT_DOWNLOAD_CHUNK_SIZE;
 /// S3 rejects multipart upload parts (except the last one) below 5 MiB
 pub const MIN_S3_UPLOAD_CHUNK_SIZE: usize = 1024 * 1024 * 5;
 /// size of the slices an upload chunk is streamed in (and progress is reported for)
