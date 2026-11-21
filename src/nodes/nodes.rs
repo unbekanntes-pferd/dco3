@@ -95,10 +95,7 @@ impl Nodes for NodesEndpoint<Connected> {
 
         debug!("Found {} nodes", nodes.items.len());
 
-        match nodes.items.len() {
-            1 => Ok(nodes.items.into_iter().next()),
-            _ => Ok(None),
-        }
+        Ok(select_node_by_name(nodes.items, &name))
     }
 
     async fn get_node(&self, node_id: u64) -> Result<Node, DracoonClientError> {
@@ -372,6 +369,22 @@ impl MissingFileKeysInternal for Dracoon<Connected> {
 }
 
 type ParsedPath = (String, String, u64);
+
+/// Picks the node named exactly `name` from search results (the search matches names *containing*
+/// the search string). Falls back to a single case-insensitive match.
+fn select_node_by_name(nodes: Vec<Node>, name: &str) -> Option<Node> {
+    if let Some(idx) = nodes.iter().position(|node| node.name == name) {
+        return nodes.into_iter().nth(idx);
+    }
+
+    let mut matches = nodes
+        .into_iter()
+        .filter(|node| node.name.to_lowercase() == name.to_lowercase());
+    match (matches.next(), matches.next()) {
+        (Some(node), None) => Some(node),
+        _ => None,
+    }
+}
 
 pub fn parse_node_path(path: &str) -> Result<ParsedPath, DracoonClientError> {
     if path == "/" {
