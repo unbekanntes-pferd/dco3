@@ -1,0 +1,43 @@
+name: e2e
+
+on:
+  workflow_dispatch:
+    inputs:
+      crypto:
+        description: "Run encrypted tests (replaces the e2e user's keypair)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# runs share the e2e user (its keypair may be replaced per run) - queue them
+concurrency:
+  group: e2e
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  e2e:
+    environment:
+      testing
+    env:
+      E2E_BASE_URL: ${{ secrets.E2E_BASE_URL }}
+      E2E_USER_NAME: ${{ secrets.E2E_USER_NAME }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      E2E_EMAIL_DOMAIN: ${{ secrets.E2E_EMAIL_DOMAIN }}
+      E2E_CRYPTO: ${{ inputs.crypto && '1' || '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: dtolnay/rust-toolchain@df2a88e9fe4098bad09cb42c3dec7187f15861fc # master
+      with:
+        toolchain: stable
+    - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+    - name: Run e2e tests
+      run: cargo test --test e2e --locked
