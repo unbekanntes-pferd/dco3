@@ -441,10 +441,10 @@ impl UserAuthDataUpdateRequest {
         oid_config_id: Option<u64>,
     ) -> Self {
         Self {
-            method: None,
+            method: method.map(Into::into),
             login,
-            ad_config_id: None,
-            oid_config_id: None,
+            ad_config_id,
+            oid_config_id,
         }
     }
 }
@@ -834,5 +834,31 @@ impl From<UsersSortBy> for Box<dyn SortQuery> {
 impl From<UsersFilter> for Box<dyn FilterQuery> {
     fn from(f: UsersFilter) -> Self {
         Box::new(f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_auth_data_update_request_new_keeps_all_fields() {
+        let req = UserAuthDataUpdateRequest::new(
+            Some("login".to_string()),
+            Some(AuthMethod::new_open_id_connect(2, "login")),
+            Some(1),
+            Some(2),
+        );
+
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({
+                "method": "openid",
+                "login": "login",
+                "adConfigId": 1,
+                "oidConfigId": 2
+            })
+        );
     }
 }
