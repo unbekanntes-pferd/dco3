@@ -4,7 +4,7 @@ use reqwest::{Error as ClientError, Response};
 use reqwest_middleware::Error as ReqError;
 use reqwest_retry::RetryError;
 use thiserror::Error;
-use tracing::error;
+use tracing::{debug, error};
 
 use crate::{
     nodes::models::S3ErrorResponse,
@@ -68,22 +68,16 @@ impl From<ReqError> for DracoonClientError {
                     }
                 }
             }
-            ReqError::Reqwest(error) => {
-                if error.is_timeout() {
-                    return DracoonClientError::ConnectionFailed("Timeout".into());
-                }
-
-                if error.is_connect() {
-                    return DracoonClientError::ConnectionFailed("Connection failed".into());
-                }
-                DracoonClientError::ConnectionFailed("Unknown".into())
-            }
+            ReqError::Reqwest(error) => error.into(),
         }
     }
 }
 
 impl From<ClientError> for DracoonClientError {
     fn from(error: ClientError) -> Self {
+        // keep the full error chain in the logs - the variant only carries a message
+        debug!("HTTP request failed: {:?}", error);
+
         if error.is_timeout() {
             return DracoonClientError::ConnectionFailed("Timeout".into());
         }
@@ -92,8 +86,20 @@ impl From<ClientError> for DracoonClientError {
             return DracoonClientError::ConnectionFailed("Connection failed".into());
         }
 
-        DracoonClientError::ConnectionFailed("Unknown".into())
+        DracoonClientError::ConnectionFailed(error_chain(&error))
     }
+}
+
+/// formats an error with all its sources (`outer: inner: innermost`)
+fn error_chain(error: &dyn std::error::Error) -> String {
+    let mut message = error.to_string();
+    let mut source = error.source();
+    while let Some(err) = source {
+        message.push_str(": ");
+        message.push_str(&err.to_string());
+        source = err.source();
+    }
+    message
 }
 
 #[async_trait]
@@ -217,6 +223,25 @@ mod tests {
             .body(Body::from(body.to_string()))
             .unwrap()
             .into()
+    }
+
+    #[tokio::test]
+    async fn reqwest_errors_keep_their_description() {
+        // a URL without a host fails while building the request
+        let err = reqwest::Client::new()
+            .get("http://")
+            .send()
+            .await
+            .unwrap_err();
+
+        let DracoonClientError::ConnectionFailed(message) = DracoonClientError::from(err) else {
+            panic!("expected ConnectionFailed");
+        };
+        assert_ne!(message, "Unknown");
+        assert!(
+            message.contains("builder error"),
+            "unexpected message: {message}"
+        );
     }
 
     #[tokio::test]
