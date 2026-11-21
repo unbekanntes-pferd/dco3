@@ -12,8 +12,11 @@ use crate::{
         DEFAULT_DOWNLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, PUBLIC_BASE, PUBLIC_DOWNLOAD_SHARES,
         PUBLIC_SHARES_BASE,
     },
-    nodes::DownloadProgressCallback,
-    utils::{build_s3_error, FromResponse},
+    nodes::{
+        download::{check_range_response, RangeProgressGuard},
+        DownloadProgressCallback,
+    },
+    utils::FromResponse,
     DracoonClientError,
 };
 
@@ -161,7 +164,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         let chunksize = chunksize.unwrap_or(DEFAULT_DOWNLOAD_CHUNK_SIZE);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < size {
+            range_guard.check(downloaded_bytes)?;
             let url = self
                 .generate_download_url(access_key.clone(), req.clone())
                 .await?
@@ -185,11 +190,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response = check_range_response(response, size > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -233,7 +234,9 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
         let chunksize = chunksize.unwrap_or(DEFAULT_DOWNLOAD_CHUNK_SIZE);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < size {
+            range_guard.check(downloaded_bytes)?;
             let url = self
                 .generate_download_url(
                     access_key.clone(),
@@ -260,11 +263,7 @@ impl<S: Send + Sync> PublicDownloadInternal for PublicEndpoint<S> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response = check_range_response(response, size > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -577,6 +576,44 @@ mod tests {
         assert_eq!(writer.buffer().len(), 16);
 
         assert_eq!(writer.buffer(), &mock_bytes.to_vec());
+    }
+
+    #[tokio::test]
+    async fn test_download_unencrypted_chunked_fails_if_server_ignores_range() {
+        let mut mock_server = mockito::Server::new_async().await;
+
+        let client = Dracoon::builder()
+            .with_base_url(mock_server.url())
+            .with_client_id("client_id")
+            .with_client_secret("client_secret")
+            .build()
+            .unwrap();
+
+        // full content with 200 instead of the requested range
+        let _download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(200)
+            .with_body([7u8; 16])
+            .create_async()
+            .await;
+
+        let download_url = format!("{}/some/download/url", mock_server.url());
+        let res = include_str!("../tests/responses/download/download_url_ok_template.json")
+            .replace("$url", &download_url);
+        let _url_mock = mock_server
+            .mock("POST", "/api/v4/public/shares/downloads/123456")
+            .with_status(200)
+            .with_body(res)
+            .create_async()
+            .await;
+
+        let mut writer = RecordingAsyncWriter::default();
+        let res = client
+            .public()
+            .download_unencrypted("123456".to_string(), &mut writer, 16, None, Some(8), None)
+            .await;
+
+        assert!(res.is_err(), "expected error, got {res:?}");
     }
 
     #[tokio::test]

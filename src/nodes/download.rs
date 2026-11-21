@@ -8,13 +8,16 @@ use crate::{
         DEFAULT_DOWNLOAD_CHUNK_SIZE, DRACOON_API_PREFIX, FILES_BASE, FILES_FILE_KEY, NODES_BASE,
         NODES_DOWNLOAD_URL,
     },
-    utils::{build_s3_error, FromResponse},
+    utils::{build_s3_error, build_s3_protocol_error, FromResponse},
     Dracoon,
 };
 use async_trait::async_trait;
 use dco3_crypto::{DracoonCrypto, FileKey};
 use futures_util::TryStreamExt;
-use reqwest::header::{self, CONTENT_RANGE, RANGE};
+use reqwest::{
+    header::{self, CONTENT_RANGE, RANGE},
+    Response, StatusCode,
+};
 use std::cmp::min;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 use tracing::{debug, error};
@@ -98,28 +101,9 @@ impl DownloadInternal for Dracoon<Connected> {
         let url = self.get_download_url(node.id).await?.download_url;
 
         // if size is given, use it
-        let content_length = if let Some(size) = node.size {
-            size
-        } else {
-            self.client
-                .http
-                .get(&url)
-                .header(RANGE, "bytes=0-0")
-                .send()
-                .await
-                .map_err(|err| {
-                    debug!("Error while getting content length: {}", err);
-                    err
-                })?
-                .headers()
-                .get(CONTENT_RANGE)
-                .and_then(|val| val.to_str().ok())
-                .and_then(|val| {
-                    // get size from bytes=0-0/size
-                    let parts: Vec<&str> = val.split('/').collect();
-                    parts.get(1).and_then(|&len| len.parse().ok())
-                })
-                .unwrap_or(0)
+        let content_length = match node.size {
+            Some(size) => size,
+            None => probe_content_length(&self.client.http, &url).await?,
         };
 
         // offset (in bytes)
@@ -129,7 +113,9 @@ impl DownloadInternal for Dracoon<Connected> {
         debug!("Content length: {}", content_length);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < content_length {
+            range_guard.check(downloaded_bytes)?;
             let url = if downloaded_bytes == 0 {
                 url.clone()
             } else {
@@ -154,11 +140,8 @@ impl DownloadInternal for Dracoon<Connected> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response =
+                check_range_response(response, content_length > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -199,28 +182,9 @@ impl DownloadInternal for Dracoon<Connected> {
         let url = self.get_download_url(node.id).await?.download_url;
 
         // if size is given, use it
-        let content_length = if let Some(size) = node.size {
-            size
-        } else {
-            self.client
-                .http
-                .get(&url)
-                .header(RANGE, "bytes=0-0")
-                .send()
-                .await
-                .map_err(|err| {
-                    debug!("Error while getting content length: {}", err);
-                    err
-                })?
-                .headers()
-                .get(CONTENT_RANGE)
-                .and_then(|val| val.to_str().ok())
-                .and_then(|val| {
-                    // get size from bytes=0-0/size
-                    let parts: Vec<&str> = val.split('/').collect();
-                    parts.get(1).and_then(|&len| len.parse().ok())
-                })
-                .unwrap_or(0)
+        let content_length = match node.size {
+            Some(size) => size,
+            None => probe_content_length(&self.client.http, &url).await?,
         };
 
         let mut crypter = DracoonCrypto::file_decryptor(file_key, keypair)?;
@@ -232,7 +196,9 @@ impl DownloadInternal for Dracoon<Connected> {
         debug!("Content length: {}", content_length);
 
         // loop until all bytes are downloaded
+        let mut range_guard = RangeProgressGuard::default();
         while downloaded_bytes < content_length {
+            range_guard.check(downloaded_bytes)?;
             let url = if downloaded_bytes == 0 {
                 url.clone()
             } else {
@@ -256,11 +222,8 @@ impl DownloadInternal for Dracoon<Connected> {
                     err
                 })?;
 
-            // handle error
-            if response.error_for_status_ref().is_err() {
-                let error = build_s3_error(response).await;
-                return Err(error);
-            }
+            let response =
+                check_range_response(response, content_length > chunksize as u64).await?;
 
             // write chunk to writer
             let mut stream = response.bytes_stream();
@@ -307,6 +270,91 @@ impl DownloadInternal for Dracoon<Connected> {
             .await?;
 
         FileKey::from_response(response).await
+    }
+}
+
+/// Determines the size of a download via a `Range: bytes=0-0` request (`Content-Range: bytes 0-0/<size>`)
+async fn probe_content_length(
+    http: &reqwest_middleware::ClientWithMiddleware,
+    url: &str,
+) -> Result<u64, DracoonClientError> {
+    let response = http
+        .get(url)
+        .header(RANGE, "bytes=0-0")
+        .send()
+        .await
+        .map_err(|err| {
+            debug!("Error while getting content length: {}", err);
+            err
+        })?;
+
+    let status = response.status();
+    if !status.is_success() {
+        return Err(build_s3_error(response).await);
+    }
+
+    response
+        .headers()
+        .get(CONTENT_RANGE)
+        .and_then(|val| val.to_str().ok())
+        .and_then(|val| val.rsplit('/').next())
+        .and_then(|len| len.parse().ok())
+        .ok_or_else(|| {
+            error!("Download size unknown: no valid Content-Range in probe response");
+            build_s3_protocol_error(
+                status,
+                "unknown_content_length",
+                "Download size could not be determined (missing Content-Range)",
+            )
+        })
+}
+
+/// Checks the response to a ranged download request.
+/// If the file is downloaded in several ranges, the server must answer with `206 Partial Content` -
+/// a server ignoring `Range` would otherwise make us write the content several times.
+pub(crate) async fn check_range_response(
+    response: Response,
+    multiple_ranges: bool,
+) -> Result<Response, DracoonClientError> {
+    let status = response.status();
+    if !status.is_success() {
+        return Err(build_s3_error(response).await);
+    }
+
+    if multiple_ranges && status != StatusCode::PARTIAL_CONTENT {
+        error!(
+            "Expected partial content for ranged download, got {}",
+            status
+        );
+        return Err(build_s3_protocol_error(
+            status,
+            "range_not_supported",
+            "Download server ignored the requested byte range",
+        ));
+    }
+
+    Ok(response)
+}
+
+/// Fails a download loop if a range request did not make any progress (empty response body),
+/// instead of requesting the same range forever.
+#[derive(Default)]
+pub(crate) struct RangeProgressGuard {
+    last_offset: Option<u64>,
+}
+
+impl RangeProgressGuard {
+    pub(crate) fn check(&mut self, offset: u64) -> Result<(), DracoonClientError> {
+        if self.last_offset == Some(offset) {
+            error!("Download made no progress at offset {}", offset);
+            return Err(build_s3_protocol_error(
+                StatusCode::BAD_GATEWAY,
+                "empty_range_response",
+                "Download server returned no data for the requested byte range",
+            ));
+        }
+        self.last_offset = Some(offset);
+        Ok(())
     }
 }
 
@@ -653,6 +701,102 @@ mod tests {
         download_url_mock.assert();
 
         assert_eq!(writer.buffer(), mock_bytes.to_vec());
+    }
+
+    /// mocks the download url endpoint for node 2 and returns the download url
+    async fn mock_download_url(mock_server: &mut mockito::ServerGuard, base_url: &str) -> String {
+        let download_url = format!("{base_url}some/download/url");
+        let download_url_res =
+            include_str!("../tests/responses/download/download_url_ok_template.json")
+                .replace("$url", &download_url);
+
+        mock_server
+            .mock("POST", "/api/v4/nodes/files/2/downloads")
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(download_url_res)
+            .create_async()
+            .await;
+
+        download_url
+    }
+
+    #[tokio::test]
+    async fn test_download_without_size_fails_if_content_length_is_unknown() {
+        let (dracoon, mut mock_server) = get_connected_client().await;
+        mock_download_url(&mut mock_server, dracoon.get_base_url().as_str()).await;
+
+        // probe response without Content-Range header
+        let probe_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .match_header("Range", "bytes=0-0")
+            .with_status(200)
+            .with_body([0u8])
+            .create_async()
+            .await;
+
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let mut node: Node = serde_json::from_str(node_json).unwrap();
+        node.size = None;
+
+        let mut writer = RecordingAsyncWriter::default();
+        let res = dracoon
+            .download_unencrypted(&node, &mut writer, None, None)
+            .await;
+
+        probe_mock.assert_async().await;
+        assert!(res.is_err(), "expected error, got {res:?}");
+        assert!(writer.flattened().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_download_chunked_fails_if_server_ignores_range() {
+        let (dracoon, mut mock_server) = get_connected_client().await;
+        mock_download_url(&mut mock_server, dracoon.get_base_url().as_str()).await;
+
+        // full content with 200 instead of the requested range
+        let _download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(200)
+            .with_body([7u8; 16])
+            .create_async()
+            .await;
+
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let node: Node = serde_json::from_str(node_json).unwrap();
+
+        let mut writer = RecordingAsyncWriter::default();
+        let res = dracoon
+            .download_unencrypted(&node, &mut writer, None, Some(8))
+            .await;
+
+        assert!(res.is_err(), "expected error, got {res:?}");
+    }
+
+    #[tokio::test]
+    async fn test_download_fails_on_empty_range_response_instead_of_looping() {
+        let (dracoon, mut mock_server) = get_connected_client().await;
+        mock_download_url(&mut mock_server, dracoon.get_base_url().as_str()).await;
+
+        let _download_mock = mock_server
+            .mock("GET", "/some/download/url")
+            .with_status(206)
+            .with_body([])
+            .create_async()
+            .await;
+
+        let node_json = include_str!("../tests/responses/nodes/node_ok.json");
+        let node: Node = serde_json::from_str(node_json).unwrap();
+
+        let mut writer = RecordingAsyncWriter::default();
+        let res = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            dracoon.download_unencrypted(&node, &mut writer, None, Some(8)),
+        )
+        .await
+        .expect("download must not loop forever");
+
+        assert!(res.is_err(), "expected error, got {res:?}");
     }
 
     #[tokio::test]
