@@ -53,6 +53,16 @@ fn missing_upload_error_details_error() -> DracoonClientError {
     )
 }
 
+/// Logs (once per process) that NFS (DRACOON Server) uploads are deprecated
+pub(crate) fn warn_nfs_upload_deprecated() {
+    static WARNED: std::sync::Once = std::sync::Once::new();
+    WARNED.call_once(|| {
+        warn!(
+            "NFS (DRACOON Server) uploads are deprecated and will be removed in a future release"
+        );
+    });
+}
+
 /// Chunk size for an upload: on S3, every part but the last must have at least
 /// [`MIN_S3_UPLOAD_CHUNK_SIZE`] bytes - smaller chunk sizes are raised to that minimum.
 pub(crate) fn upload_chunk_size(chunk_size: Option<usize>, is_s3_upload: bool) -> Option<usize> {
@@ -124,6 +134,9 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> Upload<R> for Dracoon<Connect
         let is_s3_upload = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = parent_node.is_encrypted.unwrap_or(false);
         let chunk_size = upload_chunk_size(chunk_size, is_s3_upload);
+        if !is_s3_upload {
+            warn_nfs_upload_deprecated();
+        }
 
         let upload_fn = match (is_encrypted, is_s3_upload) {
             (true, true) => Self::upload_to_s3_encrypted,

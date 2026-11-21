@@ -19,6 +19,11 @@ This crate is an async wrapper built around `reqwest` ([reqwest](https://crates.
 All API calls are async and thread-safe. 
 Since this is in an early development stage, expect breaking changes.
 
+## Deprecations
+
+* Uploads to DRACOON Server instances using NFS storage (no S3) are deprecated and will be removed in a future release.
+  A warning is logged once per process when such an upload is used.
+
 ## Examples
 
 For now, please refer to [dccmd-rs](https://github.com/unbekanntes-pferd/dccmd-rs) as an example client implementation.

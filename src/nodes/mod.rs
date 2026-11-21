@@ -721,6 +721,11 @@ pub trait Download {
 #[async_trait]
 pub trait Upload<R: AsyncRead> {
     /// Uploads a stream (buffered reader) with given file meta info to the given parent node
+    ///
+    /// **Deprecated for NFS:** uploads to DRACOON Server instances without S3 storage (NFS) are
+    /// deprecated and will be removed in a future release. A warning is logged once when used.
+    ///
+    /// On S3 storage, a `chunk_size` below 5 MiB is raised to 5 MiB (S3 minimum part size).
     /// # Example
     /// ```no_run
     /// use dco3::{Dracoon, OAuth2Flow, Upload, Nodes, nodes::{FileMeta, UploadOptions, ResolutionStrategy}};

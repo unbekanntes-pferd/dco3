@@ -12,8 +12,8 @@ use crate::{
     nodes::{
         models::StreamingEncryptedUpload,
         upload::{
-            calculate_s3_url_count, chunk_stream, upload_chunk_size, S3UploadPoller,
-            StreamUploadInternal,
+            calculate_s3_url_count, chunk_stream, upload_chunk_size, warn_nfs_upload_deprecated,
+            S3UploadPoller, StreamUploadInternal,
         },
         CloneableUploadProgressCallback, GeneratePresignedUrlsRequest, PresignedUrlList,
         S3FileUploadPart, S3UploadStatus, UploadOptions, UploadProgressCallback,
@@ -60,6 +60,9 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUpload<
         let use_s3_storage = self.get_system_info().await?.use_s3_storage;
         let is_encrypted = share.is_encrypted.unwrap_or(false);
         let chunk_size = upload_chunk_size(chunk_size, use_s3_storage);
+        if !use_s3_storage {
+            warn_nfs_upload_deprecated();
+        }
 
         let upload_fn = match (use_s3_storage, is_encrypted) {
             (true, true) => PublicUploadInternal::upload_to_s3_encrypted,
