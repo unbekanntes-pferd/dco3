@@ -97,7 +97,7 @@ mod tests {
 
         let room_res = include_str!("../tests/responses/nodes/node_ok.json");
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("POST", "/api/v4/nodes/rooms")
             .with_status(201)
             .with_body(room_res)
@@ -117,7 +117,7 @@ mod tests {
 
         let room_res = include_str!("../tests/responses/nodes/node_ok.json");
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("PUT", "/api/v4/nodes/rooms/123")
             .with_status(200)
             .with_body(room_res)
@@ -137,7 +137,7 @@ mod tests {
 
         let room_res = include_str!("../tests/responses/nodes/node_ok.json");
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("PUT", "/api/v4/nodes/rooms/123/config")
             .with_status(200)
             .with_body(room_res)
@@ -160,7 +160,7 @@ mod tests {
 
         let room_policies_res = include_str!("../tests/responses/nodes/room_policies_ok.json");
 
-        let room_policies_mock = mock_server
+        let _room_policies_mock = mock_server
             .mock("GET", "/api/v4/nodes/rooms/123/policies")
             .with_status(200)
             .with_body(room_policies_res)
@@ -177,7 +177,7 @@ mod tests {
     async fn test_update_room_policies() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("PUT", "/api/v4/nodes/rooms/123/policies")
             .with_status(204)
             .with_header("content-type", "application/json")
@@ -202,7 +202,7 @@ mod tests {
 
         let room_res = include_str!("../tests/responses/nodes/node_ok.json");
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("PUT", "/api/v4/nodes/rooms/123/encrypt")
             .with_status(200)
             .with_body(room_res)
@@ -224,7 +224,7 @@ mod tests {
 
         let room_res = include_str!("../tests/responses/nodes/node_ok.json");
 
-        let room_mock = mock_server
+        let _room_mock = mock_server
             .mock("PUT", "/api/v4/nodes/rooms/123/encrypt")
             .with_status(200)
             .with_body(room_res)

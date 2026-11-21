@@ -1716,7 +1716,7 @@ mod tests {
             .create();
 
         let dracoon = get_test_client(&base_url);
-        let dracoon = dracoon
+        let _dracoon = dracoon
             .connect(OAuth2Flow::AuthCodeFlow("hello world".to_string()))
             .await
             .unwrap();
@@ -1741,7 +1741,7 @@ mod tests {
             .match_header(USER_AGENT.as_str(), custom_user_agent.as_str())
             .create();
 
-        let dracoon = DracoonClientBuilder::new()
+        let _dracoon = DracoonClientBuilder::new()
             .with_base_url(base_url.as_str())
             .with_client_id("client_id")
             .with_client_secret("client_secret")

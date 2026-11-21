@@ -365,7 +365,7 @@ mod tests {
 
         let res = include_str!("../tests/responses/download/download_url_ok.json");
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -419,7 +419,7 @@ mod tests {
         let res = include_str!("../tests/responses/download/download_url_ok_template.json");
         let res = res.replace("$url", &download_url);
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -463,10 +463,10 @@ mod tests {
                 .unwrap();
         let enc_keypair =
             DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
-        let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
+        let _enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
         let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
 
-        let file_key_json = serde_json::to_string(&file_key).unwrap();
+        let _file_key_json = serde_json::to_string(&file_key).unwrap();
 
         let download_mock = mock_server
             .mock("GET", "/some/download/url")
@@ -488,7 +488,7 @@ mod tests {
         let res = include_str!("../tests/responses/download/download_url_ok_template.json");
         let res = res.replace("$url", &download_url);
 
-        let url_mock = mock_server
+        let _url_mock = mock_server
             .mock("POST", "/api/v4/public/shares/downloads/123456")
             .with_status(200)
             .with_body(res)
@@ -641,10 +641,10 @@ mod tests {
                 .unwrap();
         let enc_keypair =
             DracoonCrypto::encrypt_private_key("TopSecret1234!", keypair.clone()).unwrap();
-        let enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
+        let _enc_keypair_json = serde_json::to_string(&enc_keypair).unwrap();
         let file_key = DracoonCrypto::encrypt_file_key(plain_key, keypair).unwrap();
 
-        let file_key_json = serde_json::to_string(&file_key).unwrap();
+        let _file_key_json = serde_json::to_string(&file_key).unwrap();
 
         // First chunk mock
         let download_mock_1 = mock_server

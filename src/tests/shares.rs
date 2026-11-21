@@ -359,7 +359,7 @@ mod download_share_tests {
     async fn test_delete_download_share() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let share_res = include_str!("./responses/shares/download_share_ok.json");
+        let _share_res = include_str!("./responses/shares/download_share_ok.json");
 
         let share_mock = mock_server
             .mock("DELETE", "/api/v4/shares/downloads/123")
@@ -377,7 +377,7 @@ mod download_share_tests {
     async fn test_send_download_share_email() {
         let (client, mut mock_server) = get_connected_client().await;
 
-        let share_res = include_str!("./responses/shares/download_share_ok.json");
+        let _share_res = include_str!("./responses/shares/download_share_ok.json");
 
         let share_mock = mock_server
             .mock("POST", "/api/v4/shares/downloads/123/email")

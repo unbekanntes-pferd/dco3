@@ -154,8 +154,8 @@ impl Eventlog for EventlogEndpoint<Connected> {
                 .query_pairs_mut()
                 .extend_pairs(params.limit.map(|v| ("limit", v.to_string())))
                 .extend_pairs(params.offset.map(|v| ("offset", v.to_string())))
-                .extend_pairs(params.sort.map(|v| ("sort", sort)))
-                .extend_pairs(params.filter.map(|v| ("filter", filter)))
+                .extend_pairs(params.sort.map(|_v| ("sort", sort)))
+                .extend_pairs(params.filter.map(|_v| ("filter", filter)))
                 .finish();
         };
 

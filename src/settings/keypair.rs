@@ -80,7 +80,7 @@ impl RescueKeypairInternal for SettingsEndpoint<Connected> {
         let params = params.unwrap_or_default();
         let url_part = format!("{DRACOON_API_PREFIX}/{NODES_BASE}/{MISSING_FILE_KEYS}");
 
-        let limit = params.limit.unwrap_or(100);
+        let limit = params.limit.unwrap_or(MISSING_KEYS_LIMIT);
 
         let mut api_url = self.client().build_api_url(&url_part);
 
@@ -249,7 +249,7 @@ mod tests {
             .with_status(200)
             .create();
 
-        let keypair = client
+        let _keypair = client
             .settings()
             .get_system_rescue_keypair("TopSecret1234!")
             .await
@@ -300,7 +300,7 @@ mod tests {
         let response = include_str!("../tests/responses/nodes/missing_file_keys_ok.json");
         let keypair_response = include_str!("../tests/responses/keypair_ok.json");
 
-        let missing_keys_mock = mock_server
+        let _missing_keys_mock = mock_server
             .mock(
                 "GET",
                 "/api/v4/nodes/missingFileKeys?use_key=system_rescue_key&limit=100&offset=0",

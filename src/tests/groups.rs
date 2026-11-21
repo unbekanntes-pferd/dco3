@@ -122,7 +122,7 @@ mod tests {
             .with_filter(GroupsFilter::Name(FilterOperator::Eq, "string".to_string()))
             .build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -145,7 +145,7 @@ mod tests {
             .with_sort(GroupsSortBy::Name(SortOrder::Asc))
             .build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -166,7 +166,7 @@ mod tests {
 
         let params = ListAllParams::default();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }
@@ -187,7 +187,7 @@ mod tests {
 
         let params = ListAllParams::builder().with_limit(10).build();
 
-        let groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
+        let _groups = dracoon.groups().get_groups(Some(params)).await.unwrap();
 
         groups_mock.assert();
     }

@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 //! # dco3 - DRACOON API wrapper in Rust
 //!
 //! `dco3` is an async wrapper around API calls in DRACOON.

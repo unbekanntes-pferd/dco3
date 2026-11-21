@@ -517,14 +517,8 @@ impl From<AuthMethod> for String {
     fn from(auth_method: AuthMethod) -> Self {
         match auth_method {
             AuthMethod::Basic => "basic".to_string(),
-            AuthMethod::ActiveDirectory {
-                ad_config_id,
-                login,
-            } => "active_directory".to_string(),
-            AuthMethod::OpenIdConnect {
-                oid_config_id,
-                login,
-            } => "openid".to_string(),
+            AuthMethod::ActiveDirectory { .. } => "active_directory".to_string(),
+            AuthMethod::OpenIdConnect { .. } => "openid".to_string(),
         }
     }
 }

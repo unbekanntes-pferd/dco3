@@ -485,7 +485,7 @@ mod tests {
             include_str!("../tests/responses/download/download_url_ok_template.json");
         let download_url_res = download_url_res.replace("$url", &download_url);
 
-        let download_url_mock = mock_server
+        let _download_url_mock = mock_server
             .mock("POST", "/api/v4/nodes/files/2/downloads")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -565,7 +565,7 @@ mod tests {
             include_str!("../tests/responses/download/download_url_ok_template.json");
         let download_url_res = download_url_res.replace("$url", &download_url);
 
-        let download_url_mock = mock_server
+        let _download_url_mock = mock_server
             .mock("POST", "/api/v4/nodes/files/2/downloads")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -605,7 +605,7 @@ mod tests {
 
         let file_key_json = serde_json::to_string(&file_key).unwrap();
 
-        let file_key_mock = mock_server
+        let _file_key_mock = mock_server
             .mock("GET", "/api/v4/nodes/files/2/user_file_key")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -626,7 +626,7 @@ mod tests {
             include_str!("../tests/responses/download/download_url_ok_template.json");
         let download_url_res = download_url_res.replace("$url", &download_url);
 
-        let download_url_mock = mock_server
+        let _download_url_mock = mock_server
             .mock("POST", "/api/v4/nodes/files/2/downloads")
             .with_status(200)
             .with_header("content-type", "application/json")

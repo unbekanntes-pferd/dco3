@@ -361,7 +361,7 @@ mod tests {
     async fn test_delete_customer() {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
 
-        let del_mock = mock_server
+        let _del_mock = mock_server
             .mock("DELETE", "/api/v4/provisioning/customers/1")
             .with_status(204)
             .create();
@@ -375,7 +375,7 @@ mod tests {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
         let res = include_str!("./responses/users/users_ok.json");
 
-        let customer_mock = mock_server
+        let _customer_mock = mock_server
             .mock("GET", "/api/v4/provisioning/customers/1/users?offset=0")
             .with_status(200)
             .with_header("content-type", "application/json")
@@ -400,7 +400,7 @@ mod tests {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
         let res = include_str!("./responses/users/users_ok.json");
 
-        let customer_mock = mock_server
+        let _customer_mock = mock_server
             .mock(
                 "GET",
                 "/api/v4/provisioning/customers/1/users?limit=100&offset=0",
@@ -430,7 +430,7 @@ mod tests {
         let (dracoon, mut mock_server) = get_provisioning_client().await;
         let res = include_str!("./responses/users/users_ok.json");
 
-        let customer_mock = mock_server
+        let _customer_mock = mock_server
             .mock("GET", "/api/v4/provisioning/customers/1/users?offset=500")
             .with_status(200)
             .with_header("content-type", "application/json")

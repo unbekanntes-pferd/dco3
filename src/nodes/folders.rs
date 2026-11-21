@@ -140,7 +140,7 @@ mod tests {
 
         let folder_res = include_str!("../tests/responses/nodes/folder_ok.json");
 
-        let folder_mock = mock_server
+        let _folder_mock = mock_server
             .mock("POST", "/api/v4/nodes/folders")
             .with_status(200)
             .with_body(folder_res)
@@ -161,7 +161,7 @@ mod tests {
 
         let folder_res = include_str!("../tests/responses/nodes/folder_ok.json");
 
-        let folder_mock = mock_server
+        let _folder_mock = mock_server
             .mock("PUT", "/api/v4/nodes/folders/123")
             .with_status(200)
             .with_body(folder_res)

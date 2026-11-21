@@ -507,7 +507,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternal<R> for Dracoon
             while url_part < count_urls {
                 let mut buffer = vec![0; chunk_size];
                 let cb = cloneable_callback.clone();
-                let fm = fm.clone();
 
                 match reader.read_exact(&mut buffer).await {
                     Ok(0) => break,
@@ -912,7 +911,6 @@ impl<R: AsyncRead + Sync + Send + Unpin + 'static> UploadInternalNfs<R, Connecte
             while chunk_part < count_chunks {
                 let mut buffer = vec![0; chunk_size];
                 let cb = cloneable_callback.clone();
-                let fm = fm.clone();
 
                 match reader.read_exact(&mut buffer).await {
                     Ok(0) => break,
@@ -1488,7 +1486,7 @@ mod tests {
             part_number: 1,
         };
 
-        let file_meta = FileMeta::builder("test", 16).build();
+        let _file_meta = FileMeta::builder("test", 16).build();
 
         let e_tag = <Dracoon<Connected> as StreamUploadInternal<Connected>>::upload_stream_to_s3(
             &client,
@@ -1621,7 +1619,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1646,7 +1644,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -1705,7 +1703,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1730,7 +1728,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -1811,7 +1809,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -1845,16 +1843,17 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
-            &client,
-            &parent_node,
-            upload_options,
-            reader_clone,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let _node =
+            <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
+                &client,
+                &parent_node,
+                upload_options,
+                reader_clone,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         upload_channel_mock.assert();
         s3_urls_mock.assert();
@@ -2041,7 +2040,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2075,16 +2074,17 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
-            &client,
-            &parent_node,
-            upload_options,
-            reader_clone,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let _node =
+            <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_encrypted(
+                &client,
+                &parent_node,
+                upload_options,
+                reader_clone,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
 
         upload_channel_mock.assert();
         s3_urls_mock.assert();
@@ -2210,7 +2210,7 @@ mod tests {
 
         let sys_info_res = include_str!("../tests/responses/public/system_info_ok.json");
 
-        let system_info_mock = mock_server
+        let _system_info_mock = mock_server
             .mock("GET", "/api/v4/public/system/info")
             .with_status(200)
             .with_body(sys_info_res)
@@ -2243,7 +2243,7 @@ mod tests {
             .expect(expected_parts)
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2269,7 +2269,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
+        let _node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
             &parent_node,
             upload_options,
@@ -2316,7 +2316,7 @@ mod tests {
 
         let sys_info_res = include_str!("../tests/responses/public/system_info_ok.json");
 
-        let system_info_mock = mock_server
+        let _system_info_mock = mock_server
             .mock("GET", "/api/v4/public/system/info")
             .with_status(200)
             .with_body(sys_info_res)
@@ -2371,7 +2371,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2405,7 +2405,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
+        let _node = <Dracoon<Connected> as Upload<Cursor<Vec<u8>>>>::upload(
             &client,
             &parent_node,
             upload_options,
@@ -2585,7 +2585,7 @@ mod tests {
             .with_header("content-type", "application/json")
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2613,15 +2613,15 @@ mod tests {
         let arc_processed = Arc::new(AtomicU64::new(0));
         let cloned_processed = arc_processed.clone();
 
-        let callback = move |processed: u64, total: u64| {
-            let current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
+        let callback = move |processed: u64, _total: u64| {
+            let _current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
 
             cloned_processed.fetch_add(processed, std::sync::atomic::Ordering::Release);
         };
 
         let callback_boxed = Box::new(callback);
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,
@@ -2686,7 +2686,7 @@ mod tests {
             .expect(2)
             .create();
 
-        let upload_res =
+        let _upload_res =
             serde_json::from_str::<PresignedUrlList>(s3_urls_response.as_str()).unwrap();
 
         // mock upload to S3
@@ -2715,15 +2715,15 @@ mod tests {
         let arc_processed = Arc::new(AtomicU64::new(0));
         let cloned_processed = arc_processed.clone();
 
-        let callback = move |processed: u64, total: u64| {
-            let current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
+        let callback = move |processed: u64, _total: u64| {
+            let _current = cloned_processed.load(std::sync::atomic::Ordering::Acquire);
 
             cloned_processed.fetch_add(processed, std::sync::atomic::Ordering::Release);
         };
 
         let callback_boxed = Box::new(callback);
 
-        let node =
+        let _node =
             <Dracoon<Connected> as UploadInternal<Cursor<Vec<u8>>>>::upload_to_s3_unencrypted(
                 &client,
                 &parent_node,

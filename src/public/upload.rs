@@ -137,7 +137,7 @@ impl<S: Send + Sync, R: AsyncRead + Send + Sync + Unpin + 'static> PublicUploadI
     async fn upload_to_s3_unencrypted(
         &self,
         access_key: String,
-        share: &PublicUploadShare,
+        _share: &PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
         callback: Option<UploadProgressCallback>,
@@ -578,7 +578,7 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
     async fn upload_to_nfs_unencrypted(
         &self,
         access_key: String,
-        share: &PublicUploadShare,
+        _share: &PublicUploadShare,
         upload_options: UploadOptions,
         mut reader: BufReader<R>,
         callback: Option<UploadProgressCallback>,
@@ -666,15 +666,14 @@ impl<R: AsyncRead + Send + Sync + Unpin + 'static, S: Send + Sync> PublicUploadI
 
                 let curr_pos: u64 = (chunk_part - 1) as u64 * (DEFAULT_UPLOAD_CHUNK_SIZE as u64);
 
-                let e_tag = self
-                    .upload_stream_to_nfs(
-                        Box::pin(stream),
-                        &url,
-                        upload_options.file_meta.size,
-                        n,
-                        Some(curr_pos),
-                    )
-                    .await?;
+                self.upload_stream_to_nfs(
+                    Box::pin(stream),
+                    &url,
+                    upload_options.file_meta.size,
+                    n,
+                    Some(curr_pos),
+                )
+                .await?;
             }
             Err(err) => {
                 error!("Error reading file: {}", err);

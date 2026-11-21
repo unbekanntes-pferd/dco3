@@ -364,7 +364,7 @@ pub mod tests {
 
         let node_res = include_str!("./responses/nodes/node_ok.json");
 
-        let node_mock = mock_server
+        let _node_mock = mock_server
             .mock("GET", "/api/v4/nodes/123")
             .with_status(200)
             .with_header("content-type", "application/json")
