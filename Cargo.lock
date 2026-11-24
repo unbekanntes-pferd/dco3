@@ -364,7 +364,7 @@ name = "dco3_derive"
 version = "0.2.0"
 dependencies = [
  "quote",
- "syn 2.0.119",
+ "syn 3.0.10",
 ]
 
 [[package]]
